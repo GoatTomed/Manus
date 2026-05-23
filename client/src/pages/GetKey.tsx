@@ -1,11 +1,10 @@
 /**
- * Design: Cyberpunk Minimal Dark — Page Get Key
- * - Titre "Get Your Key" avec "Key" en bleu
- * - Sous-titre avec description
- * - Carte avec 2 étapes de vérification (cercles numérotés)
- * - Barre de progression
- * - Bouton "Start Verification" bleu plein
- * - Lien "Redeem it here" en bas
+ * Design: Modern Clean — Page Get Key
+ * - Titre "Get Your Key"
+ * - Deux cartes d'étapes côte à côte
+ * - Chaque carte avec icône, titre, description
+ * - Bouton "Start Verification" au centre
+ * - Design épuré et moderne
  */
 
 import { useState } from "react";
@@ -16,27 +15,26 @@ const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
 
 export default function GetKey() {
-  const [isStarted, setIsStarted] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [completed, setCompleted] = useState(false);
 
   const handleStartVerification = () => {
-    setIsStarted(true);
-    setCurrentStep(1);
-    setProgress(50);
-    // Simulate step 2
+    setIsVerifying(true);
+    toast.loading("Starting verification...");
+    
     setTimeout(() => {
-      setCurrentStep(2);
-      setProgress(100);
-    }, 2000);
+      setIsVerifying(false);
+      setCompleted(true);
+      toast.success("Verification completed! Your key is ready.");
+    }, 3000);
   };
 
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col">
-      <main className="flex-1 flex items-center justify-center pt-14 relative z-10">
-        <div className="w-full max-w-2xl px-4">
-          {/* Logo Standalone */}
-          <div className="flex justify-center mb-6 animate-fade-in-up">
+      <main className="flex-1 flex items-center justify-center pt-20 pb-20 relative z-10">
+        <div className="w-full max-w-4xl px-4">
+          {/* Logo */}
+          <div className="flex justify-center mb-8 animate-fade-in-up">
             <img
               src={LOGO_URL}
               alt="YouSuck mascot"
@@ -45,8 +43,8 @@ export default function GetKey() {
           </div>
 
           {/* Title */}
-          <div className="text-center mb-2 animate-fade-in-up-delay-1">
-            <h1 className="text-4xl font-bold tracking-tight">
+          <div className="text-center mb-4 animate-fade-in-up-delay-1">
+            <h1 className="text-5xl font-bold tracking-tight">
               <span className="text-white">Get Your </span>
               <span style={{ color: "#00ABFF" }}>Key</span>
             </h1>
@@ -54,118 +52,109 @@ export default function GetKey() {
 
           {/* Subtitle */}
           <p
-            className="text-center text-sm mb-8 animate-fade-in-up-delay-2"
-            style={{ color: "oklch(0.60 0.015 264)" }}
+            className="text-center text-base mb-16 animate-fade-in-up-delay-2"
+            style={{ color: "oklch(0.55 0.015 264)" }}
           >
-            Complete 2 quick checkpoints to receive your free key.
+            Complete a quick verification to unlock your free key
           </p>
 
-          {/* Card */}
-          <div className="redeem-card p-8 animate-fade-in-up-delay-3 mb-6">
-            {/* Verification Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-2">
-                <svg
-                  className="w-5 h-5"
-                  style={{ color: "#00ABFF" }}
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span className="text-sm font-semibold" style={{ color: "#00ABFF" }}>
-                  Verification
-                </span>
-              </div>
-              <span className="text-xs font-medium" style={{ color: "oklch(0.50 0.015 264)" }}>
-                {currentStep} / 2
-              </span>
-            </div>
-
-            {/* Steps */}
-            <div className="flex justify-center gap-16 mb-10">
-              {/* Step 1 */}
-              <div className="flex flex-col items-center gap-3">
+          {/* Steps Container */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 animate-fade-in-up-delay-3">
+            {/* Step 1 Card */}
+            <div
+              className="p-8 rounded-lg border transition-all duration-300"
+              style={{
+                background: "oklch(0.12 0.012 264 / 0.6)",
+                borderColor: completed ? "#00ABFF" : "oklch(0.20 0.01 264)",
+              }}
+            >
+              <div className="flex items-start gap-4">
                 <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300"
+                  className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-lg"
                   style={{
-                    background: currentStep >= 1 ? "#00ABFF" : "oklch(0.16 0.012 264)",
-                    color: currentStep >= 1 ? "white" : "oklch(0.45 0.01 264)",
-                    border: currentStep >= 1 ? "none" : "2px solid oklch(0.25 0.01 264)",
+                    background: completed ? "#00ABFF" : "oklch(0.18 0.015 264)",
+                    color: completed ? "white" : "#00ABFF",
                   }}
                 >
                   1
                 </div>
-                <span
-                  className="text-xs font-medium"
-                  style={{ color: currentStep >= 1 ? "#00ABFF" : "oklch(0.45 0.01 264)" }}
-                >
-                  Step 1
-                </span>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-2">Email Verification</h3>
+                  <p style={{ color: "oklch(0.50 0.015 264)" }} className="text-sm">
+                    Verify your email address to get started
+                  </p>
+                </div>
               </div>
+            </div>
 
-              {/* Step 2 */}
-              <div className="flex flex-col items-center gap-3">
+            {/* Step 2 Card */}
+            <div
+              className="p-8 rounded-lg border transition-all duration-300"
+              style={{
+                background: "oklch(0.12 0.012 264 / 0.6)",
+                borderColor: completed ? "#00ABFF" : "oklch(0.20 0.01 264)",
+              }}
+            >
+              <div className="flex items-start gap-4">
                 <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300"
+                  className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-lg"
                   style={{
-                    background: currentStep >= 2 ? "#00ABFF" : "oklch(0.16 0.012 264)",
-                    color: currentStep >= 2 ? "white" : "oklch(0.45 0.01 264)",
-                    border: currentStep >= 2 ? "none" : "2px solid oklch(0.25 0.01 264)",
+                    background: completed ? "#00ABFF" : "oklch(0.18 0.015 264)",
+                    color: completed ? "white" : "#00ABFF",
                   }}
                 >
                   2
                 </div>
-                <span
-                  className="text-xs font-medium"
-                  style={{ color: currentStep >= 2 ? "#00ABFF" : "oklch(0.45 0.01 264)" }}
-                >
-                  Step 2
-                </span>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-2">Account Setup</h3>
+                  <p style={{ color: "oklch(0.50 0.015 264)" }} className="text-sm">
+                    Create your account and receive your key
+                  </p>
+                </div>
               </div>
             </div>
-
-            {/* Progress Bar */}
-            <div className="mb-8">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-medium" style={{ color: "oklch(0.50 0.015 264)" }}>
-                  Progress
-                </span>
-                <span className="text-xs font-medium" style={{ color: "oklch(0.50 0.015 264)" }}>
-                  {progress}%
-                </span>
-              </div>
-              <div
-                className="w-full h-2 rounded-full"
-                style={{ background: "oklch(0.16 0.012 264)" }}
-              >
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${progress}%`,
-                    background: "#00ABFF",
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Button */}
-            <button
-              onClick={handleStartVerification}
-              disabled={isStarted}
-              className="verify-btn w-full"
-            >
-              {isStarted ? "Verifying..." : "Start Verification"}
-            </button>
           </div>
+
+          {/* Main CTA Button */}
+          {!completed ? (
+            <div className="flex justify-center mb-12 animate-fade-in-up-delay-4">
+              <button
+                onClick={handleStartVerification}
+                disabled={isVerifying}
+                className="verify-btn px-12 py-3 text-base font-semibold"
+              >
+                {isVerifying ? "Verifying..." : "Start Verification"}
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-center mb-12 animate-fade-in-up-delay-4">
+              <div
+                className="p-6 rounded-lg border text-center"
+                style={{
+                  background: "oklch(0.12 0.012 264 / 0.8)",
+                  borderColor: "#00ABFF",
+                }}
+              >
+                <p className="text-white font-semibold mb-2">✓ Verification Complete!</p>
+                <p style={{ color: "oklch(0.55 0.015 264)" }} className="text-sm mb-4">
+                  Your key has been generated and sent to your email
+                </p>
+                <code
+                  className="block p-3 rounded text-sm font-mono"
+                  style={{
+                    background: "oklch(0.08 0.01 264)",
+                    color: "#00ABFF",
+                  }}
+                >
+                  YOUSUCK-XXXX-XXXX-XXXX
+                </code>
+              </div>
+            </div>
+          )}
 
           {/* Bottom Link */}
           <div className="text-center animate-fade-in-up-delay-4">
-            <span style={{ color: "oklch(0.50 0.015 264)" }}>Got your key? </span>
+            <span style={{ color: "oklch(0.50 0.015 264)" }}>Already have a key? </span>
             <Link href="/redeem">
               <span style={{ color: "#00ABFF", cursor: "pointer", fontWeight: 600 }}>
                 Redeem it here
