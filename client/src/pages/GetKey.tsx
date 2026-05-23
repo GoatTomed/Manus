@@ -38,10 +38,10 @@ export default function GetKey() {
 
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col">
-      <main className="flex-1 flex items-center justify-center py-96 relative z-10">
+      <main className="flex-1 flex items-center justify-center relative z-10" style={{ minHeight: '200vh' }}>
         <div className="w-full max-w-4xl px-4">
           {/* Logo */}
-          <div className="flex justify-center mb-40">
+          <div className="flex justify-center mb-56">
             <img
               src={LOGO_URL}
               alt="YouSuck mascot"
@@ -50,7 +50,7 @@ export default function GetKey() {
           </div>
 
           {/* Title */}
-          <div className="text-center mb-16">
+          <div className="text-center mb-24">
             <h1 className="text-5xl font-bold tracking-tight leading-tight">
               <span className="text-white">Get Your </span>
               <span style={{ color: "#00ABFF" }}>Key</span>
@@ -59,7 +59,7 @@ export default function GetKey() {
 
           {/* Description */}
           <p
-            className="text-center text-lg mb-48"
+            className="text-center text-lg mb-64"
             style={{ color: "oklch(0.55 0.015 264)" }}
           >
             Complete 2 simple steps to unlock your key
@@ -68,7 +68,7 @@ export default function GetKey() {
           {/* Main Card */}
           {!started ? (
             <div
-              className="p-12 rounded-xl border text-center mb-48"
+              className="p-12 rounded-xl border text-center mb-64"
               style={{
                 background: "oklch(0.12 0.012 264 / 0.6)",
                 borderColor: "oklch(0.20 0.01 264)",
@@ -89,14 +89,14 @@ export default function GetKey() {
             </div>
           ) : (
             <div
-              className="p-12 rounded-xl border mb-48"
+              className="p-12 rounded-xl border mb-64"
               style={{
                 background: "oklch(0.12 0.012 264 / 0.6)",
                 borderColor: "oklch(0.20 0.01 264)",
               }}
             >
               {/* Steps Display */}
-              <div className="space-y-32">
+              <div className="space-y-48">
                 {/* Step 1 */}
                 <div
                   className="p-8 rounded-lg border transition-all"
