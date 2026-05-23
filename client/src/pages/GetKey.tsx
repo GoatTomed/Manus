@@ -1,8 +1,8 @@
 /**
- * Design: Large Vertical — Page Get Key
- * - Plus d'espace vertical
- * - Hauteur plus grande
- * - Éléments bien espacés
+ * Design: Tall Unzoomed — Page Get Key
+ * - Page beaucoup plus haute
+ * - Dézoomée (texte plus petit)
+ * - Beaucoup d'espace vertical
  */
 
 import { useState } from "react";
@@ -38,20 +38,20 @@ export default function GetKey() {
 
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col">
-      <main className="flex-1 flex items-center justify-center py-32 relative z-10">
-        <div className="w-full max-w-5xl px-4">
+      <main className="flex-1 flex items-center justify-center py-96 relative z-10">
+        <div className="w-full max-w-4xl px-4">
           {/* Logo */}
-          <div className="flex justify-center mb-24">
+          <div className="flex justify-center mb-40">
             <img
               src={LOGO_URL}
               alt="YouSuck mascot"
-              className="w-32 h-32 object-contain rounded-full"
+              className="w-24 h-24 object-contain rounded-full"
             />
           </div>
 
           {/* Title */}
-          <div className="text-center mb-12">
-            <h1 className="text-7xl font-bold tracking-tight leading-tight">
+          <div className="text-center mb-16">
+            <h1 className="text-5xl font-bold tracking-tight leading-tight">
               <span className="text-white">Get Your </span>
               <span style={{ color: "#00ABFF" }}>Key</span>
             </h1>
@@ -59,7 +59,7 @@ export default function GetKey() {
 
           {/* Description */}
           <p
-            className="text-center text-2xl mb-32"
+            className="text-center text-lg mb-48"
             style={{ color: "oklch(0.55 0.015 264)" }}
           >
             Complete 2 simple steps to unlock your key
@@ -68,46 +68,46 @@ export default function GetKey() {
           {/* Main Card */}
           {!started ? (
             <div
-              className="p-16 rounded-2xl border text-center mb-32"
+              className="p-12 rounded-xl border text-center mb-48"
               style={{
                 background: "oklch(0.12 0.012 264 / 0.6)",
                 borderColor: "oklch(0.20 0.01 264)",
               }}
             >
               <p
-                className="text-2xl mb-16"
+                className="text-lg mb-12"
                 style={{ color: "oklch(0.55 0.015 264)" }}
               >
                 Ready to get started?
               </p>
               <button
                 onClick={handleStart}
-                className="verify-btn px-20 py-5 text-2xl font-bold"
+                className="verify-btn px-12 py-3 text-lg font-bold"
               >
                 Start
               </button>
             </div>
           ) : (
             <div
-              className="p-16 rounded-2xl border mb-32"
+              className="p-12 rounded-xl border mb-48"
               style={{
                 background: "oklch(0.12 0.012 264 / 0.6)",
                 borderColor: "oklch(0.20 0.01 264)",
               }}
             >
               {/* Steps Display */}
-              <div className="space-y-24">
+              <div className="space-y-32">
                 {/* Step 1 */}
                 <div
-                  className="p-10 rounded-xl border-2 transition-all"
+                  className="p-8 rounded-lg border transition-all"
                   style={{
                     background: step1Complete ? "oklch(0.15 0.015 264)" : "oklch(0.10 0.01 264)",
                     borderColor: step1Complete ? "#00ABFF" : "oklch(0.20 0.01 264)",
                   }}
                 >
-                  <div className="flex items-start gap-8 mb-10">
+                  <div className="flex items-start gap-6 mb-8">
                     <div
-                      className="w-28 h-28 rounded-lg flex items-center justify-center font-bold text-4xl transition-all flex-shrink-0 mt-2"
+                      className="w-20 h-20 rounded-lg flex items-center justify-center font-bold text-2xl transition-all flex-shrink-0"
                       style={{
                         background: step1Complete ? "#00ABFF" : "oklch(0.18 0.015 264)",
                         color: step1Complete ? "white" : "#00ABFF",
@@ -115,12 +115,12 @@ export default function GetKey() {
                     >
                       1
                     </div>
-                    <div className="flex-1 pt-2">
-                      <h3 className="text-3xl font-bold text-white mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-white mb-2">
                         Step 1: Verification
                       </h3>
                       <p
-                        className="text-xl mb-3"
+                        className="text-base mb-2"
                         style={{ color: "oklch(0.50 0.015 264)" }}
                       >
                         {step1Complete
@@ -128,7 +128,7 @@ export default function GetKey() {
                           : "Verify your identity to proceed"}
                       </p>
                       <p
-                        className="text-lg"
+                        className="text-sm"
                         style={{ color: "oklch(0.45 0.015 264)" }}
                       >
                         This step ensures you are a real player
@@ -139,7 +139,7 @@ export default function GetKey() {
                     <div className="flex justify-center">
                       <button
                         onClick={handleStep1}
-                        className="verify-btn px-16 py-4 text-xl font-bold"
+                        className="verify-btn px-10 py-2 text-base font-bold"
                       >
                         Complete Verification
                       </button>
@@ -149,16 +149,16 @@ export default function GetKey() {
 
                 {/* Step 2 */}
                 <div
-                  className="p-10 rounded-xl border-2 transition-all"
+                  className="p-8 rounded-lg border transition-all"
                   style={{
                     background: step2Complete ? "oklch(0.15 0.015 264)" : "oklch(0.10 0.01 264)",
                     borderColor: step2Complete ? "#00ABFF" : currentStep === 2 ? "oklch(0.25 0.01 264)" : "oklch(0.15 0.01 264)",
                     opacity: currentStep === 2 || step1Complete ? 1 : 0.6,
                   }}
                 >
-                  <div className="flex items-start gap-8 mb-10">
+                  <div className="flex items-start gap-6 mb-8">
                     <div
-                      className="w-28 h-28 rounded-lg flex items-center justify-center font-bold text-4xl transition-all flex-shrink-0 mt-2"
+                      className="w-20 h-20 rounded-lg flex items-center justify-center font-bold text-2xl transition-all flex-shrink-0"
                       style={{
                         background: step2Complete ? "#00ABFF" : "oklch(0.18 0.015 264)",
                         color: step2Complete ? "white" : currentStep === 2 ? "#00ABFF" : "oklch(0.35 0.01 264)",
@@ -166,12 +166,12 @@ export default function GetKey() {
                     >
                       2
                     </div>
-                    <div className="flex-1 pt-2">
-                      <h3 className="text-3xl font-bold text-white mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-white mb-2">
                         Step 2: Generate Key
                       </h3>
                       <p
-                        className="text-xl mb-3"
+                        className="text-base mb-2"
                         style={{ color: "oklch(0.50 0.015 264)" }}
                       >
                         {step2Complete
@@ -181,7 +181,7 @@ export default function GetKey() {
                             : "Complete step 1 first"}
                       </p>
                       <p
-                        className="text-lg"
+                        className="text-sm"
                         style={{ color: "oklch(0.45 0.015 264)" }}
                       >
                         Your key will be displayed below
@@ -192,7 +192,7 @@ export default function GetKey() {
                     <div className="flex justify-center">
                       <button
                         onClick={handleStep2}
-                        className="verify-btn px-16 py-4 text-xl font-bold"
+                        className="verify-btn px-10 py-2 text-base font-bold"
                       >
                         Generate Key Now
                       </button>
@@ -200,20 +200,20 @@ export default function GetKey() {
                   )}
                   {step2Complete && (
                     <div
-                      className="p-8 rounded-lg border-2 text-center"
+                      className="p-6 rounded-lg border text-center"
                       style={{
                         background: "oklch(0.08 0.01 264)",
                         borderColor: "#00ABFF",
                       }}
                     >
                       <p
-                        className="text-lg mb-6"
+                        className="text-sm mb-3"
                         style={{ color: "oklch(0.50 0.015 264)" }}
                       >
                         Your Key:
                       </p>
                       <code
-                        className="text-2xl font-mono font-bold"
+                        className="text-lg font-mono font-bold"
                         style={{ color: "#00ABFF" }}
                       >
                         YOUSUCK-XXXX-XXXX-XXXX
@@ -227,12 +227,12 @@ export default function GetKey() {
 
           {/* Bottom Link */}
           <div className="text-center">
-            <span className="text-lg" style={{ color: "oklch(0.50 0.015 264)" }}>
+            <span className="text-base" style={{ color: "oklch(0.50 0.015 264)" }}>
               Already have a key?{" "}
             </span>
             <Link href="/redeem">
               <span
-                className="text-xl font-bold"
+                className="text-base font-bold"
                 style={{ color: "#00ABFF", cursor: "pointer" }}
               >
                 Redeem it here
