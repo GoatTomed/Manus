@@ -36,12 +36,12 @@ export default function Home() {
           {/* CTA */}
           <div className="flex items-center justify-center gap-4 animate-fade-in-up-delay-2">
             <Link href="/redeem">
-              <button className="verify-btn px-8 py-3 text-sm">
+              <button className="verify-btn">
                 Redeem Key
               </button>
             </Link>
             <Link href="/get-key">
-              <button className="get-key-btn px-8 py-3 text-sm">
+              <button className="get-key-btn">
                 Get Key
               </button>
             </Link>
