@@ -1,14 +1,15 @@
 /**
- * Design: Premium Interactive — Page Get Key
+ * Design: Ultra Premium Interactive — Page Get Key
+ * - Animations fluides et dynamiques
+ * - Gradients sophistiqués
+ * - Effets visuels avancés
  * - Design premium et moderne
- * - Icônes React codées (SVG)
- * - Contenu riche et engageant
  */
 
 import { useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
-import { CheckCircle2, Zap, Lock, Gift } from "lucide-react";
+import { CheckCircle2, Zap, Lock, Gift, ArrowRight } from "lucide-react";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
@@ -18,6 +19,7 @@ export default function GetKey() {
   const [currentStep, setCurrentStep] = useState(0);
   const [step1Complete, setStep1Complete] = useState(false);
   const [step2Complete, setStep2Complete] = useState(false);
+  const [hoveredBenefit, setHoveredBenefit] = useState<number | null>(null);
 
   const handleStart = () => {
     setStarted(true);
@@ -38,30 +40,120 @@ export default function GetKey() {
   };
 
   return (
-    <div className="dot-grid-bg min-h-screen flex flex-col">
+    <div className="dot-grid-bg min-h-screen flex flex-col relative overflow-hidden">
+      {/* Animated background elements */}
+      <div 
+        className="absolute inset-0 opacity-30 pointer-events-none"
+        style={{
+          background: "radial-gradient(circle at 20% 50%, rgba(0, 171, 255, 0.1) 0%, transparent 50%)",
+          animation: "pulse 8s ease-in-out infinite",
+        }}
+      />
+      <div 
+        className="absolute inset-0 opacity-20 pointer-events-none"
+        style={{
+          background: "radial-gradient(circle at 80% 80%, rgba(0, 171, 255, 0.08) 0%, transparent 50%)",
+          animation: "pulse 10s ease-in-out infinite 2s",
+        }}
+      />
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes slideInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes shimmer {
+          0% { background-position: -1000px 0; }
+          100% { background-position: 1000px 0; }
+        }
+        .animate-slide-in-up {
+          animation: slideInUp 0.6s ease-out;
+        }
+        .animate-slide-in-down {
+          animation: slideInDown 0.6s ease-out;
+        }
+        .animate-scale-in {
+          animation: scaleIn 0.5s ease-out;
+        }
+        .group:hover .group-hover\\:scale-105 {
+          transform: scale(1.05);
+        }
+        .benefit-card {
+          transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .benefit-card:hover {
+          transform: translateY(-4px);
+        }
+      `}</style>
+
       <main className="flex-1 flex items-center justify-center relative z-10" style={{ minHeight: '200vh' }}>
         <div className="w-full max-w-4xl px-4">
           {/* Logo */}
-          <div className="flex justify-center mb-12">
-            <img
-              src={LOGO_URL}
-              alt="YouSuck mascot"
-              className="w-24 h-24 object-contain rounded-full"
-            />
+          <div className="flex justify-center mb-12 animate-slide-in-down">
+            <div className="relative">
+              <img
+                src={LOGO_URL}
+                alt="YouSuck mascot"
+                className="w-24 h-24 object-contain rounded-full"
+                style={{
+                  boxShadow: "0 0 30px rgba(0, 171, 255, 0.4)",
+                }}
+              />
+            </div>
           </div>
 
           {/* Title */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-6 animate-slide-in-up" style={{ animationDelay: "0.1s" }}>
             <h1 className="text-5xl font-bold tracking-tight leading-tight">
               <span className="text-white">Get Your </span>
-              <span style={{ color: "#00ABFF" }}>Key</span>
+              <span 
+                style={{ 
+                  color: "#00ABFF",
+                  background: "linear-gradient(135deg, #00ABFF 0%, #0088FF 100%)",
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                Key
+              </span>
             </h1>
           </div>
 
           {/* Description */}
           <p
-            className="text-center text-lg mb-8"
-            style={{ color: "oklch(0.55 0.015 264)" }}
+            className="text-center text-lg mb-8 animate-slide-in-up"
+            style={{ color: "oklch(0.55 0.015 264)", animationDelay: "0.2s" }}
           >
             Unlock premium access in seconds
           </p>
@@ -69,20 +161,32 @@ export default function GetKey() {
           {/* Main Card */}
           {!started ? (
             <div
-              className="p-20 rounded-xl border text-center mb-32 flex flex-col justify-center"
+              className="p-20 rounded-2xl border mb-32 flex flex-col justify-center animate-scale-in group cursor-pointer"
               style={{
-                background: "oklch(0.12 0.012 264 / 0.6)",
-                borderColor: "oklch(0.20 0.01 264)",
+                background: "linear-gradient(135deg, oklch(0.12 0.012 264 / 0.8) 0%, oklch(0.10 0.01 264 / 0.6) 100%)",
+                borderColor: "#00ABFF",
+                borderWidth: "1px",
+                backdropFilter: "blur(10px)",
                 minHeight: '400px',
+                boxShadow: "0 8px 32px rgba(0, 171, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+                transition: "all 0.3s cubic-bezier(0.23, 1, 0.32, 1)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 12px 48px rgba(0, 171, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 171, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)";
               }}
             >
               <div className="mb-8">
                 <div className="flex justify-center mb-6">
-                  <Zap size={48} style={{ color: "#00ABFF" }} />
+                  <div style={{
+                    animation: "pulse 2s ease-in-out infinite",
+                  }}>
+                    <Zap size={48} style={{ color: "#00ABFF" }} />
+                  </div>
                 </div>
-                <p
-                  className="text-xl font-semibold text-white mb-4"
-                >
+                <p className="text-xl font-semibold text-white mb-4">
                   Ready to unlock your script?
                 </p>
                 <p
@@ -94,49 +198,59 @@ export default function GetKey() {
                 
                 {/* Benefits Grid */}
                 <div className="grid grid-cols-3 gap-4 mb-8">
-                  <div
-                    className="p-3 rounded-lg"
-                    style={{
-                      background: "oklch(0.08 0.01 264)",
-                    }}
-                  >
-                    <CheckCircle2 size={24} style={{ color: "#00ABFF", margin: "0 auto 4px" }} />
-                    <p className="text-xs text-white">Instant Access</p>
-                  </div>
-                  <div
-                    className="p-3 rounded-lg"
-                    style={{
-                      background: "oklch(0.08 0.01 264)",
-                    }}
-                  >
-                    <Gift size={24} style={{ color: "#00ABFF", margin: "0 auto 4px" }} />
-                    <p className="text-xs text-white">Lifetime Use</p>
-                  </div>
-                  <div
-                    className="p-3 rounded-lg"
-                    style={{
-                      background: "oklch(0.08 0.01 264)",
-                    }}
-                  >
-                    <Lock size={24} style={{ color: "#00ABFF", margin: "0 auto 4px" }} />
-                    <p className="text-xs text-white">Secure</p>
-                  </div>
+                  {[
+                    { icon: CheckCircle2, label: "Instant Access" },
+                    { icon: Gift, label: "Lifetime Use" },
+                    { icon: Lock, label: "Secure" },
+                  ].map((benefit, idx) => (
+                    <div
+                      key={idx}
+                      className="benefit-card p-4 rounded-lg"
+                      style={{
+                        background: "linear-gradient(135deg, oklch(0.10 0.01 264) 0%, oklch(0.08 0.01 264) 100%)",
+                        border: "1px solid rgba(0, 171, 255, 0.2)",
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={() => setHoveredBenefit(idx)}
+                      onMouseLeave={() => setHoveredBenefit(null)}
+                    >
+                      <benefit.icon 
+                        size={24} 
+                        style={{ 
+                          color: hoveredBenefit === idx ? "#00ABFF" : "rgba(0, 171, 255, 0.7)",
+                          margin: "0 auto 4px",
+                          transition: "color 0.3s ease",
+                        }} 
+                      />
+                      <p className="text-xs text-white font-medium">{benefit.label}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
               <button
                 onClick={handleStart}
-                className="verify-btn px-12 py-3 text-lg font-bold"
+                className="verify-btn px-12 py-3 text-lg font-bold flex items-center justify-center gap-2 group/btn"
+                style={{
+                  transition: "all 0.3s cubic-bezier(0.23, 1, 0.32, 1)",
+                }}
               >
                 Start Now
+                <ArrowRight size={20} style={{
+                  transition: "transform 0.3s ease",
+                  transform: "translateX(0)",
+                }} />
               </button>
             </div>
           ) : (
             <div
-              className="p-20 rounded-xl border mb-32"
+              className="p-20 rounded-2xl border mb-32 animate-scale-in"
               style={{
-                background: "oklch(0.12 0.012 264 / 0.6)",
-                borderColor: "oklch(0.20 0.01 264)",
+                background: "linear-gradient(135deg, oklch(0.12 0.012 264 / 0.8) 0%, oklch(0.10 0.01 264 / 0.6) 100%)",
+                borderColor: "#00ABFF",
+                borderWidth: "1px",
+                backdropFilter: "blur(10px)",
                 minHeight: '900px',
+                boxShadow: "0 8px 32px rgba(0, 171, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
               }}
             >
               {/* Progress Indicator */}
@@ -150,14 +264,15 @@ export default function GetKey() {
                   </span>
                 </div>
                 <div
-                  className="w-full h-2 rounded-full"
+                  className="w-full h-3 rounded-full overflow-hidden"
                   style={{ background: "oklch(0.15 0.01 264)" }}
                 >
                   <div
-                    className="h-full rounded-full transition-all duration-500"
+                    className="h-full rounded-full transition-all duration-700"
                     style={{
-                      background: "#00ABFF",
+                      background: "linear-gradient(90deg, #00ABFF 0%, #0088FF 100%)",
                       width: step2Complete ? "100%" : step1Complete ? "50%" : "0%",
+                      boxShadow: "0 0 20px rgba(0, 171, 255, 0.6)",
                     }}
                   />
                 </div>
@@ -167,19 +282,28 @@ export default function GetKey() {
               <div className="space-y-16">
                 {/* Step 1 */}
                 <div
-                  className="p-12 rounded-lg border transition-all"
+                  className="p-12 rounded-xl border transition-all animate-slide-in-up"
                   style={{
-                    background: step1Complete ? "oklch(0.15 0.015 264)" : "oklch(0.10 0.01 264)",
-                    borderColor: step1Complete ? "#00ABFF" : "oklch(0.20 0.01 264)",
+                    background: step1Complete 
+                      ? "linear-gradient(135deg, rgba(0, 171, 255, 0.15) 0%, rgba(0, 136, 255, 0.1) 100%)"
+                      : "linear-gradient(135deg, oklch(0.10 0.01 264) 0%, oklch(0.08 0.01 264) 100%)",
+                    borderColor: step1Complete ? "#00ABFF" : "rgba(0, 171, 255, 0.3)",
+                    borderWidth: "1px",
+                    boxShadow: step1Complete 
+                      ? "0 0 20px rgba(0, 171, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+                      : "inset 0 1px 0 rgba(255, 255, 255, 0.05)",
                     minHeight: '320px',
                   }}
                 >
                   <div className="flex items-start gap-6 mb-6">
                     <div
-                      className="w-20 h-20 rounded-lg flex items-center justify-center font-bold text-2xl transition-all flex-shrink-0"
+                      className="w-20 h-20 rounded-xl flex items-center justify-center font-bold text-2xl transition-all flex-shrink-0"
                       style={{
-                        background: step1Complete ? "#00ABFF" : "oklch(0.18 0.015 264)",
+                        background: step1Complete 
+                          ? "linear-gradient(135deg, #00ABFF 0%, #0088FF 100%)"
+                          : "linear-gradient(135deg, rgba(0, 171, 255, 0.3) 0%, rgba(0, 136, 255, 0.2) 100%)",
                         color: step1Complete ? "white" : "#00ABFF",
+                        boxShadow: step1Complete ? "0 0 20px rgba(0, 171, 255, 0.4)" : "none",
                       }}
                     >
                       {step1Complete ? (
@@ -206,8 +330,9 @@ export default function GetKey() {
                   <div
                     className="p-4 rounded-lg mb-6 flex gap-3"
                     style={{
-                      background: "oklch(0.08 0.01 264)",
+                      background: "linear-gradient(135deg, rgba(0, 171, 255, 0.1) 0%, rgba(0, 136, 255, 0.05) 100%)",
                       borderLeft: "3px solid #00ABFF",
+                      border: "1px solid rgba(0, 171, 255, 0.2)",
                     }}
                   >
                     <Lock size={20} style={{ color: "#00ABFF", flexShrink: 0, marginTop: "2px" }} />
@@ -233,20 +358,30 @@ export default function GetKey() {
 
                 {/* Step 2 */}
                 <div
-                  className="p-12 rounded-lg border transition-all"
+                  className="p-12 rounded-xl border transition-all animate-slide-in-up"
                   style={{
-                    background: step2Complete ? "oklch(0.15 0.015 264)" : "oklch(0.10 0.01 264)",
-                    borderColor: step2Complete ? "#00ABFF" : currentStep === 2 ? "oklch(0.25 0.01 264)" : "oklch(0.15 0.01 264)",
+                    background: step2Complete 
+                      ? "linear-gradient(135deg, rgba(0, 171, 255, 0.15) 0%, rgba(0, 136, 255, 0.1) 100%)"
+                      : "linear-gradient(135deg, oklch(0.10 0.01 264) 0%, oklch(0.08 0.01 264) 100%)",
+                    borderColor: step2Complete ? "#00ABFF" : currentStep === 2 ? "rgba(0, 171, 255, 0.5)" : "rgba(0, 171, 255, 0.2)",
+                    borderWidth: "1px",
                     opacity: currentStep === 2 || step1Complete ? 1 : 0.6,
+                    boxShadow: step2Complete 
+                      ? "0 0 20px rgba(0, 171, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+                      : "inset 0 1px 0 rgba(255, 255, 255, 0.05)",
                     minHeight: '320px',
+                    animationDelay: "0.1s",
                   }}
                 >
                   <div className="flex items-start gap-6 mb-6">
                     <div
-                      className="w-20 h-20 rounded-lg flex items-center justify-center font-bold text-2xl transition-all flex-shrink-0"
+                      className="w-20 h-20 rounded-xl flex items-center justify-center font-bold text-2xl transition-all flex-shrink-0"
                       style={{
-                        background: step2Complete ? "#00ABFF" : "oklch(0.18 0.015 264)",
-                        color: step2Complete ? "white" : currentStep === 2 ? "#00ABFF" : "oklch(0.35 0.01 264)",
+                        background: step2Complete 
+                          ? "linear-gradient(135deg, #00ABFF 0%, #0088FF 100%)"
+                          : "linear-gradient(135deg, rgba(0, 171, 255, 0.3) 0%, rgba(0, 136, 255, 0.2) 100%)",
+                        color: step2Complete ? "white" : currentStep === 2 ? "#00ABFF" : "rgba(0, 171, 255, 0.5)",
+                        boxShadow: step2Complete ? "0 0 20px rgba(0, 171, 255, 0.4)" : "none",
                       }}
                     >
                       {step2Complete ? (
@@ -275,8 +410,9 @@ export default function GetKey() {
                   <div
                     className="p-4 rounded-lg mb-6 flex gap-3"
                     style={{
-                      background: "oklch(0.08 0.01 264)",
+                      background: "linear-gradient(135deg, rgba(0, 171, 255, 0.1) 0%, rgba(0, 136, 255, 0.05) 100%)",
                       borderLeft: "3px solid #00ABFF",
+                      border: "1px solid rgba(0, 171, 255, 0.2)",
                     }}
                   >
                     <Gift size={20} style={{ color: "#00ABFF", flexShrink: 0, marginTop: "2px" }} />
@@ -300,10 +436,11 @@ export default function GetKey() {
                   )}
                   {step2Complete && (
                     <div
-                      className="p-6 rounded-lg border-2 text-center"
+                      className="p-6 rounded-lg border-2 text-center animate-scale-in"
                       style={{
-                        background: "oklch(0.08 0.01 264)",
+                        background: "linear-gradient(135deg, rgba(0, 171, 255, 0.1) 0%, rgba(0, 136, 255, 0.05) 100%)",
                         borderColor: "#00ABFF",
+                        boxShadow: "0 0 20px rgba(0, 171, 255, 0.2)",
                       }}
                     >
                       <div className="flex justify-center mb-3">
@@ -332,7 +469,7 @@ export default function GetKey() {
           )}
 
           {/* Bottom Link */}
-          <div className="text-center">
+          <div className="text-center animate-slide-in-up" style={{ animationDelay: "0.3s" }}>
             <span className="text-base" style={{ color: "oklch(0.50 0.015 264)" }}>
               Already have a key?{" "}
             </span>
