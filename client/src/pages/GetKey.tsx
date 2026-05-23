@@ -1,13 +1,14 @@
 /**
- * Design: Rich Content — Page Get Key
- * - Texte proche de la GUI
- * - GUI remplie de contenu
- * - Beaucoup de détails et d'informations
+ * Design: Premium Interactive — Page Get Key
+ * - Design premium et moderne
+ * - Icônes React codées (SVG)
+ * - Contenu riche et engageant
  */
 
 import { useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
+import { CheckCircle2, Zap, Lock, Gift } from "lucide-react";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
@@ -62,7 +63,7 @@ export default function GetKey() {
             className="text-center text-lg mb-8"
             style={{ color: "oklch(0.55 0.015 264)" }}
           >
-            Complete 2 simple steps to unlock your key
+            Unlock premium access in seconds
           </p>
 
           {/* Main Card */}
@@ -76,30 +77,50 @@ export default function GetKey() {
               }}
             >
               <div className="mb-8">
+                <div className="flex justify-center mb-6">
+                  <Zap size={48} style={{ color: "#00ABFF" }} />
+                </div>
                 <p
                   className="text-xl font-semibold text-white mb-4"
-                  style={{}}
                 >
-                  🎮 Ready to unlock your script?
+                  Ready to unlock your script?
                 </p>
                 <p
-                  className="text-base mb-6"
+                  className="text-base mb-8"
                   style={{ color: "oklch(0.55 0.015 264)" }}
                 >
                   Get instant access to premium features
                 </p>
-                <div
-                  className="p-4 rounded-lg mb-6"
-                  style={{
-                    background: "oklch(0.08 0.01 264)",
-                    borderLeft: "3px solid #00ABFF",
-                  }}
-                >
-                  <p className="text-sm text-white">
-                    ✓ Instant key generation<br/>
-                    ✓ 24/7 support<br/>
-                    ✓ Lifetime access
-                  </p>
+                
+                {/* Benefits Grid */}
+                <div className="grid grid-cols-3 gap-4 mb-8">
+                  <div
+                    className="p-3 rounded-lg"
+                    style={{
+                      background: "oklch(0.08 0.01 264)",
+                    }}
+                  >
+                    <CheckCircle2 size={24} style={{ color: "#00ABFF", margin: "0 auto 4px" }} />
+                    <p className="text-xs text-white">Instant Access</p>
+                  </div>
+                  <div
+                    className="p-3 rounded-lg"
+                    style={{
+                      background: "oklch(0.08 0.01 264)",
+                    }}
+                  >
+                    <Gift size={24} style={{ color: "#00ABFF", margin: "0 auto 4px" }} />
+                    <p className="text-xs text-white">Lifetime Use</p>
+                  </div>
+                  <div
+                    className="p-3 rounded-lg"
+                    style={{
+                      background: "oklch(0.08 0.01 264)",
+                    }}
+                  >
+                    <Lock size={24} style={{ color: "#00ABFF", margin: "0 auto 4px" }} />
+                    <p className="text-xs text-white">Secure</p>
+                  </div>
                 </div>
               </div>
               <button
@@ -161,7 +182,11 @@ export default function GetKey() {
                         color: step1Complete ? "white" : "#00ABFF",
                       }}
                     >
-                      1
+                      {step1Complete ? (
+                        <CheckCircle2 size={32} />
+                      ) : (
+                        "1"
+                      )}
                     </div>
                     <div className="flex-1">
                       <h3 className="text-2xl font-bold text-white mb-2">
@@ -172,23 +197,26 @@ export default function GetKey() {
                         style={{ color: "oklch(0.50 0.015 264)" }}
                       >
                         {step1Complete
-                          ? "✓ Verification completed successfully"
+                          ? "Verification completed successfully"
                           : "Verify your identity to proceed"}
                       </p>
                     </div>
                   </div>
                   
                   <div
-                    className="p-4 rounded-lg mb-6"
+                    className="p-4 rounded-lg mb-6 flex gap-3"
                     style={{
                       background: "oklch(0.08 0.01 264)",
                       borderLeft: "3px solid #00ABFF",
                     }}
                   >
-                    <p className="text-sm text-white mb-2">What happens:</p>
-                    <p className="text-sm" style={{ color: "oklch(0.50 0.015 264)" }}>
-                      We verify you're a real player to ensure fair access to the script
-                    </p>
+                    <Lock size={20} style={{ color: "#00ABFF", flexShrink: 0, marginTop: "2px" }} />
+                    <div>
+                      <p className="text-sm text-white mb-1 font-semibold">Security Check</p>
+                      <p className="text-sm" style={{ color: "oklch(0.50 0.015 264)" }}>
+                        We verify you're a real player to ensure fair access
+                      </p>
+                    </div>
                   </div>
 
                   {currentStep === 1 && !step1Complete && (
@@ -221,7 +249,11 @@ export default function GetKey() {
                         color: step2Complete ? "white" : currentStep === 2 ? "#00ABFF" : "oklch(0.35 0.01 264)",
                       }}
                     >
-                      2
+                      {step2Complete ? (
+                        <CheckCircle2 size={32} />
+                      ) : (
+                        "2"
+                      )}
                     </div>
                     <div className="flex-1">
                       <h3 className="text-2xl font-bold text-white mb-2">
@@ -232,7 +264,7 @@ export default function GetKey() {
                         style={{ color: "oklch(0.50 0.015 264)" }}
                       >
                         {step2Complete
-                          ? "✓ Your key has been generated!"
+                          ? "Your key has been generated!"
                           : currentStep === 2
                             ? "Generate your unique key now"
                             : "Complete step 1 first"}
@@ -241,16 +273,19 @@ export default function GetKey() {
                   </div>
 
                   <div
-                    className="p-4 rounded-lg mb-6"
+                    className="p-4 rounded-lg mb-6 flex gap-3"
                     style={{
                       background: "oklch(0.08 0.01 264)",
                       borderLeft: "3px solid #00ABFF",
                     }}
                   >
-                    <p className="text-sm text-white mb-2">What happens:</p>
-                    <p className="text-sm" style={{ color: "oklch(0.50 0.015 264)" }}>
-                      Your unique key will be generated and ready to use immediately
-                    </p>
+                    <Gift size={20} style={{ color: "#00ABFF", flexShrink: 0, marginTop: "2px" }} />
+                    <div>
+                      <p className="text-sm text-white mb-1 font-semibold">Key Generation</p>
+                      <p className="text-sm" style={{ color: "oklch(0.50 0.015 264)" }}>
+                        Your unique key will be ready to use immediately
+                      </p>
+                    </div>
                   </div>
 
                   {currentStep === 2 && !step2Complete && (
@@ -271,6 +306,9 @@ export default function GetKey() {
                         borderColor: "#00ABFF",
                       }}
                     >
+                      <div className="flex justify-center mb-3">
+                        <CheckCircle2 size={32} style={{ color: "#00ABFF" }} />
+                      </div>
                       <p
                         className="text-sm mb-3"
                         style={{ color: "oklch(0.50 0.015 264)" }}
