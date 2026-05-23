@@ -68,10 +68,11 @@ export default function GetKey() {
           {/* Main Card */}
           {!started ? (
             <div
-              className="p-12 rounded-xl border text-center mb-64"
+              className="p-20 rounded-xl border text-center mb-64 flex flex-col justify-center"
               style={{
                 background: "oklch(0.12 0.012 264 / 0.6)",
                 borderColor: "oklch(0.20 0.01 264)",
+                minHeight: '400px',
               }}
             >
               <p
@@ -89,20 +90,22 @@ export default function GetKey() {
             </div>
           ) : (
             <div
-              className="p-12 rounded-xl border mb-64"
+              className="p-20 rounded-xl border mb-64"
               style={{
                 background: "oklch(0.12 0.012 264 / 0.6)",
                 borderColor: "oklch(0.20 0.01 264)",
+                minHeight: '800px',
               }}
             >
               {/* Steps Display */}
               <div className="space-y-48">
                 {/* Step 1 */}
                 <div
-                  className="p-8 rounded-lg border transition-all"
+                  className="p-12 rounded-lg border transition-all"
                   style={{
                     background: step1Complete ? "oklch(0.15 0.015 264)" : "oklch(0.10 0.01 264)",
                     borderColor: step1Complete ? "#00ABFF" : "oklch(0.20 0.01 264)",
+                    minHeight: '300px',
                   }}
                 >
                   <div className="flex items-start gap-6 mb-8">
@@ -149,11 +152,12 @@ export default function GetKey() {
 
                 {/* Step 2 */}
                 <div
-                  className="p-8 rounded-lg border transition-all"
+                  className="p-12 rounded-lg border transition-all"
                   style={{
                     background: step2Complete ? "oklch(0.15 0.015 264)" : "oklch(0.10 0.01 264)",
                     borderColor: step2Complete ? "#00ABFF" : currentStep === 2 ? "oklch(0.25 0.01 264)" : "oklch(0.15 0.01 264)",
                     opacity: currentStep === 2 || step1Complete ? 1 : 0.6,
+                    minHeight: '300px',
                   }}
                 >
                   <div className="flex items-start gap-6 mb-8">
