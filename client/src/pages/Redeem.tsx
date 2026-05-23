@@ -91,7 +91,7 @@ export default function Redeem() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="verify-btn w-full h-11 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                className="verify-btn w-full flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>
