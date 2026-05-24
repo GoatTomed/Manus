@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Redeem from "./pages/Redeem";
 import GetKey from "./pages/GetKey";
 import Scripts from "./pages/Scripts";
+import VerificationError from "./pages/VerificationError";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/redeem" component={Redeem} />
       <Route path="/get-key" component={GetKey} />
       <Route path="/scripts" component={Scripts} />
+      <Route path="/verification-error" component={VerificationError} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

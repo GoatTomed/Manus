@@ -67,7 +67,7 @@ app.get("/api/v/:hash", async (req: any, res: any) => {
 
       if (step2Error || !step2Data) {
         console.error("Verification Error:", sbError || step2Error);
-        return res.status(400).send("Invalid or expired verification link");
+        return res.redirect(`${APP_URL}/verification-error`);
       }
 
       // Step 2 verification - generate new hash for next step
