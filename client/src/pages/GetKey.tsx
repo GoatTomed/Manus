@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import axios from "axios";
-import { Loader2, Copy, Check, ExternalLink, RotateCcw } from "lucide-react";
+import { Loader2, Copy, Check } from "lucide-react";
 import { createEarnPasteLink } from "../hooks/useEarnPaste";
-import { useKeyCounter } from "../hooks/useKeyCounter";
 import KeyCounter from "../components/KeyCounter";
 import Navbar from "../components/Navbar";
 
@@ -18,7 +17,6 @@ export default function GetKey() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const { getCount } = useKeyCounter();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -93,14 +91,6 @@ export default function GetKey() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleGetAnother = () => {
-    setCurrentStep(1);
-    setGeneratedKey("");
-    setError("");
-    setSessionId(null);
-    window.history.replaceState({}, "", "/get-key");
-  };
-
   const handleRedeemKey = () => {
     window.location.href = "/redeem";
   };
@@ -116,7 +106,6 @@ export default function GetKey() {
           </div>
 
           <div className="bg-[#0a0d14] border border-white/10 rounded-lg p-8 shadow-xl space-y-6">
-            {/* Key Counter */}
             <KeyCounter />
 
             <h1 className="text-2xl font-bold text-center tracking-tight">
@@ -167,20 +156,12 @@ export default function GetKey() {
                     {copied ? <Check size={18} /> : <Copy size={18} />}
                   </button>
                 </div>
-                <div className="space-y-3">
-                  <button
-                    onClick={handleRedeemKey}
-                    className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all"
-                  >
-                    Redeem Key <ExternalLink size={16} />
-                  </button>
-                  <button
-                    onClick={handleGetAnother}
-                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all"
-                  >
-                    Get Another Key <RotateCcw size={16} />
-                  </button>
-                </div>
+                <button
+                  onClick={handleRedeemKey}
+                  className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold text-sm flex items-center justify-center transition-all"
+                >
+                  Redeem Key
+                </button>
               </div>
             )}
           </div>

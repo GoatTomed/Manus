@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import axios from "axios";
 import { useKeyCounter } from "../hooks/useKeyCounter";
 import KeyCounter from "../components/KeyCounter";
-import { ExternalLink, RotateCcw } from "lucide-react";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
@@ -77,7 +76,6 @@ export default function Redeem() {
           </p>
 
           <div className="redeem-card p-5 animate-fade-in-up-delay-3 space-y-6">
-            {/* Key Counter */}
             <KeyCounter />
 
             {!redeemed ? (
@@ -123,15 +121,15 @@ export default function Redeem() {
                 <div className="space-y-3">
                   <button
                     onClick={handleGoToScripts}
-                    className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                    className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold text-sm flex items-center justify-center transition-all"
                   >
-                    Go to Scripts <ExternalLink size={16} />
+                    Go to Scripts
                   </button>
                   <button
                     onClick={handleGetAnother}
-                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded font-bold text-sm flex items-center justify-center transition-all"
                   >
-                    Get Another Key <RotateCcw size={16} />
+                    Get Another Key
                   </button>
                 </div>
               </div>
