@@ -1,8 +1,5 @@
 /**
- * Design: Cyberpunk Minimal Dark — Page Home
- * - Logo standalone en haut (sans cercle noir)
- * - Titre "YouSuck" en dessous
- * - CTA buttons
+ * Design: Cyberpunk Minimal Dark — Page Home (Restored from Image)
  */
 import { Link } from "wouter";
 
@@ -12,42 +9,35 @@ export default function Home() {
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col">
       <main className="flex-1 flex items-center justify-center relative z-10">
-        <div className="text-center px-4 max-w-4xl">
-          {/* Logo Standalone - Retrait de rounded-full pour éviter le cercle noir */}
-          <div className="flex justify-center mb-8 animate-fade-in-up relative">
-            <div className="absolute inset-0 bg-[#00ABFF]/10 blur-3xl rounded-full"></div>
+        <div className="text-center px-4">
+          {/* Logo - Standalone without rounded-full circle */}
+          <div className="flex justify-center mb-6">
             <img
               src={LOGO_URL}
               alt="YouSuck mascot"
-              className="w-32 h-32 md:w-40 md:h-40 object-contain relative z-10 drop-shadow-[0_0_20px_rgba(0,171,255,0.3)]"
+              className="w-24 h-24 object-contain"
             />
           </div>
 
           {/* Title */}
-          <h1
-            className="text-6xl md:text-8xl font-black tracking-tighter mb-12 animate-fade-in-up-delay-1"
-          >
-            <span className="text-white">YOU</span>
-            <span style={{ color: "#00ABFF" }}>SUCK</span>
+          <h1 className="text-5xl font-bold tracking-tight mb-8">
+            <span className="text-white">You</span>
+            <span style={{ color: "#00ABFF" }}>Suck</span>
           </h1>
 
-          {/* CTA */}
-          <div className="flex flex-col md:flex-row items-center justify-center gap-8 animate-fade-in-up-delay-2">
+          {/* CTA Buttons - Matching the blue in the image */}
+          <div className="flex items-center justify-center gap-4">
             <Link href="/redeem">
-              <button className="verify-btn px-10 py-4 text-lg">
+              <button className="bg-[#00ABFF] text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-[#0099EE] transition-all shadow-[0_0_15px_rgba(0,171,255,0.3)]">
                 Redeem Key
               </button>
             </Link>
             <Link href="/get-key">
-              <button className="get-key-btn px-10 py-4 text-lg">
+              <button className="bg-[#00ABFF] text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-[#0099EE] transition-all shadow-[0_0_15px_rgba(0,171,255,0.3)]">
                 Get Key
               </button>
             </Link>
           </div>
-          
-          <p className="mt-16 text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em] opacity-50">
-            Premium Digital Security
-          </p>
         </div>
       </main>
     </div>
