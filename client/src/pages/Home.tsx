@@ -1,6 +1,5 @@
 /**
  * Design: Cyberpunk Minimal Dark — Page Home
- * Améliorations : description, différenciation des boutons, animations, badge version
  */
 import { Link } from "wouter";
 
@@ -22,18 +21,13 @@ export default function Home() {
           </div>
 
           {/* Title */}
-          <h1 className="text-5xl font-bold tracking-tight mb-3 animate-fade-in-up-delay-1">
+          <h1 className="text-5xl font-bold tracking-tight mb-8 animate-fade-in-up-delay-1">
             <span className="text-white">You</span>
             <span style={{ color: "#00ABFF" }}>Suck</span>
           </h1>
 
-          {/* Subtitle */}
-          <p className="text-gray-500 text-sm mb-8 animate-fade-in-up-delay-2 leading-relaxed">
-            Get your unique access key or redeem<br />an existing one to unlock your script.
-          </p>
-
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-in-up-delay-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-in-up-delay-2">
             <Link href="/get-key">
               <button className="w-full sm:w-auto bg-[#00ABFF] text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-[#0099EE] transition-all shadow-[0_0_20px_rgba(0,171,255,0.35)] hover:shadow-[0_0_28px_rgba(0,171,255,0.5)] hover:-translate-y-0.5">
                 Get Key
@@ -45,11 +39,6 @@ export default function Home() {
               </button>
             </Link>
           </div>
-
-          {/* Footer hint */}
-          <p className="mt-10 text-gray-700 text-[10px] font-bold uppercase tracking-[0.2em] animate-fade-in-up-delay-3">
-            YouSuck Security
-          </p>
         </div>
       </main>
     </div>

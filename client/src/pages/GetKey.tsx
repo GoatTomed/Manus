@@ -1,7 +1,8 @@
 /**
  * Design: Cyberpunk Minimal Dark — Page Get Key
  * Améliorations UI :
- * - Indicateur de chargement avec message contextuel (EarnPaste prend ~5s)
+ * - Appel EarnPaste côté client (élimine les timeouts Vercel)
+ * - Indicateur de chargement avec message contextuel
  * - Barre de progression animée pendant le chargement
  * - Messages d'erreur plus clairs avec bouton "Retry"
  * - Stepper visuel (Step 1 / Step 2)
@@ -11,6 +12,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import axios from "axios";
 import { Loader2, Copy, Check, ExternalLink, RefreshCw, ShieldCheck, Key } from "lucide-react";
+import { createEarnPasteLink } from "../hooks/useEarnPaste";
 import Navbar from "../components/Navbar";
 
 const LOGO_URL =
@@ -54,12 +56,15 @@ export default function GetKey() {
     setLoadingMsg("Connecting to verification service...");
     const msgTimer = setTimeout(() => setLoadingMsg("Almost there, generating your link..."), 3000);
     try {
-      const res = await axios.post("/api/get-key/start", {}, { timeout: 28000 });
+      const res = await axios.post("/api/get-key/start");
+      const earnPasteUrl = await createEarnPasteLink(
+        `${window.location.origin}/api/get-key/verify-step1?token=${res.data.sessionId.split("-")[0]}&session=${res.data.sessionId}`
+      );
       clearTimeout(msgTimer);
-      window.location.href = res.data.earnPasteUrl;
+      window.location.href = earnPasteUrl;
     } catch (err: any) {
       clearTimeout(msgTimer);
-      const msg = err.response?.data?.error || "Error starting process. Please try again.";
+      const msg = err.response?.data?.error || err.message || "Error starting process. Please try again.";
       setError(msg);
       setIsLoading(false);
       setLoadingMsg("");
@@ -74,12 +79,15 @@ export default function GetKey() {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session");
     try {
-      const res = await axios.post("/api/get-key/step2", { sessionId }, { timeout: 28000 });
+      const res = await axios.post("/api/get-key/step2", { sessionId });
+      const earnPasteUrl = await createEarnPasteLink(
+        `${window.location.origin}/api/get-key/verify-step2?token=${res.data.sessionId || sessionId}&session=${sessionId}`
+      );
       clearTimeout(msgTimer);
-      window.location.href = res.data.earnPasteUrl;
+      window.location.href = earnPasteUrl;
     } catch (err: any) {
       clearTimeout(msgTimer);
-      const msg = err.response?.data?.error || "Error starting final step. Please try again.";
+      const msg = err.response?.data?.error || err.message || "Error starting final step. Please try again.";
       setError(msg);
       setIsLoading(false);
       setLoadingMsg("");
@@ -242,10 +250,6 @@ export default function GetKey() {
               </div>
             )}
           </div>
-
-          <p className="text-center mt-6 text-gray-700 text-[10px] font-bold uppercase tracking-[0.2em]">
-            YouSuck Security
-          </p>
         </div>
       </main>
     </div>
