@@ -175,14 +175,20 @@
   .verify-btn {
     background: #00ABFF;
     border: 1px solid #0099DD;
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
     color: white;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
     letter-spacing: 0.02em;
-    padding: 0.7rem 1.6rem;
+    padding: 0.85rem 2rem;
     transition: all 150ms ease;
     cursor: pointer;
+    width: 100%;
+  }
+  @media (min-width: 768px) {
+    .verify-btn {
+      width: auto;
+    }
   }
   .verify-btn:hover {
     background: #0099DD;
@@ -204,14 +210,20 @@
     background: #00ABFF;
     color: white;
     font-weight: 600;
-    border-radius: 0.5rem;
-    padding: 0.7rem 1.6rem;
-    font-size: 0.95rem;
+    border-radius: 0.6rem;
+    padding: 0.85rem 2rem;
+    font-size: 1.1rem;
     letter-spacing: 0.02em;
     transition: all 150ms ease;
     border: 1px solid #0099DD;
     cursor: pointer;
     position: relative;
+    width: 100%;
+  }
+  @media (min-width: 768px) {
+    .get-key-btn {
+      width: auto;
+    }
   }
   .get-key-btn:hover {
     background: #0099DD;
