@@ -74,13 +74,13 @@ app.get("/api/v/:hash", async (req: any, res: any) => {
       const newHash = generateVerificationHash();
       const finalKey = `YS-${nanoid(8).toUpperCase()}-${nanoid(8).toUpperCase()}`;
 
-      // Invalidate the hash immediately by clearing it
+      // Invalidate the hash by changing status. 
+      // We don't nullify to avoid potential DB constraints errors if NOT NULL is set.
       const { error: updateError } = await supabase
         .from("key_sessions")
         .update({
           status: "completed",
           generated_key: finalKey,
-          step2_token: null, // Invalidate hash immediately
           completed_at: new Date().toISOString(),
         })
         .match({ id: step2Data.id, step2_token: hash, status: "step1_completed" });
@@ -103,12 +103,11 @@ app.get("/api/v/:hash", async (req: any, res: any) => {
     // However, keeping the old hash for a moment or using a dedicated 'used' flag is safer
     // Let's just update the status and step2_token. The match on status: 'step1_pending' 
     // already ensures it can only be used once.
-    // Invalidate the old hash immediately
+    // Invalidate the old hash by changing status.
     const { error: updateError } = await supabase
       .from("key_sessions")
       .update({
         status: "step1_completed",
-        step1_token: null, // Invalidate hash immediately
         step2_token: newHash, 
       })
       .match({ id: data.id, step1_token: hash, status: "step1_pending" });
