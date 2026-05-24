@@ -44,7 +44,7 @@ Files in `client/public` are available at the root of your site—reference them
 
 --- 
 
-## 🎯 Development Workflow
+## 🎯 Development Workflow 
 
 1. **Choose a design style** before you write any frontend code according to Design Guide (color, font, shadow, art style). Tell user what you chose. Remember to edit `client/src/index.css` for global theming and add needed font using google font cdn in `client/index.html`.
 2. **Compose pages** in `client/src/pages/`. Keep sections modular so they can be reused across routes.
