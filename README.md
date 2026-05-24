@@ -32,7 +32,7 @@ shared/         ← Placeholder for imported template compatibility
 ### ⚠️ Handling Images & Media
  
 **DO NOT** store images, videos, or large assets in `client/public/` or `client/src/assets/`. Local media files will cause deployment timeouts.
-
+ 
 **Required workflow:**
 1. Upload assets using the CLI: `manus-upload-file --webdev path/to/image.png`
 2. Use the returned storage path directly in your code: `<img src="/manus-storage/image_a1b2c3d4.png" />`
