@@ -79,10 +79,9 @@ app.get("/api/v/:hash", async (req: any, res: any) => {
         .update({
           status: "completed",
           generated_key: finalKey,
-          step2_token: null, // Invalidate this hash
           completed_at: new Date().toISOString(),
         })
-        .match({ id: step2Data.id, step2_token: hash });
+        .match({ id: step2Data.id, step2_token: hash, status: "step1_completed" });
 
       if (updateError) {
         console.error("Update Error:", updateError);
@@ -98,12 +97,15 @@ app.get("/api/v/:hash", async (req: any, res: any) => {
     // Step 1 verification - generate new hash for step 2
     const newHash = generateVerificationHash();
 
+    // First update the status and set the new hash, then we can clear the old one if needed
+    // However, keeping the old hash for a moment or using a dedicated 'used' flag is safer
+    // Let's just update the status and step2_token. The match on status: 'step1_pending' 
+    // already ensures it can only be used once.
     const { error: updateError } = await supabase
       .from("key_sessions")
       .update({
         status: "step1_completed",
-        step1_token: null, // Invalidate this hash
-        step2_token: newHash, // Set new hash for step 2
+        step2_token: newHash, 
       })
       .match({ id: data.id, step1_token: hash, status: "step1_pending" });
 
