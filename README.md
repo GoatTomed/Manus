@@ -38,7 +38,7 @@ server/         ← Placeholder for imported template compatibilitybv
 3. Store the original local file in `/home/ubuntu/webdev-static-assets/` (outside the project directory)
 
 Only small configuration files like `favicon.ico`, `robots.txt`, and `manifest.json` belong in `client/public/`.
- 
+  
 Files in `client/public` are available at the root of your site—reference them with absolute paths (`/robots.txt`, etc.) from HTML templates, JSX, or meta tags.   
 
 ---  
