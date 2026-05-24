@@ -49,7 +49,7 @@ export default function GetKey() {
       // Step 1: Create session in Supabase via API
       const res = await axios.post("/api/get-key/start");
       const newSessionId = res.data.sessionId;
-      const step1Token = res.data.sessionId; // Token is embedded in response
+      const step1Token = res.data.step1Token; // CORRECT: Use step1Token from response
       
       // Step 2: Generate EarnPaste link for Step 1 verification
       const verifyUrl = `${window.location.origin}/api/get-key/verify-step1?token=${step1Token}&session=${newSessionId}`;
@@ -75,7 +75,7 @@ export default function GetKey() {
     try {
       // Step 1: Get step2_token from Supabase
       const res = await axios.post("/api/get-key/step2", { sessionId });
-      const step2Token = res.data.step2Token || sessionId;
+      const step2Token = res.data.step2Token; // CORRECT: Use step2Token from response
       
       // Step 2: Generate EarnPaste link for Step 2 verification
       const verifyUrl = `${window.location.origin}/api/get-key/verify-step2?token=${step2Token}&session=${sessionId}`;
