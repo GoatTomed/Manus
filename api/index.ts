@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import { Router } from "express";
 import { createClient } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
@@ -19,7 +19,7 @@ const EARNPASTE_API_URL = "https://us-central1-earnpaste-3cd5a.cloudfunctions.ne
 const APP_URL = process.env.APP_URL || "https://yoursuck.vercel.app";
 
 // Step 1: Create a session and get the first EarnPaste link
-router.post("/get-key/start", async (req, res) => {
+router.post("/get-key/start", async (req: Request, res: Response) => {
   try {
     const sessionId = nanoid();
     const step1Token = nanoid();
@@ -33,7 +33,7 @@ router.post("/get-key/start", async (req, res) => {
 });
 
 // Step 2: Verify Step 1
-router.get("/get-key/verify-step1", async (req, res) => {
+router.get("/get-key/verify-step1", async (req: Request, res: Response) => {
   const { token, session } = req.query;
   try {
     const { data, error } = await supabase.from("key_sessions").update({ status: "step1_completed", step2_token: nanoid() }).match({ id: session, step1_token: token, status: "step1_pending" }).select().single();
@@ -43,7 +43,7 @@ router.get("/get-key/verify-step1", async (req, res) => {
 });
 
 // Step 3: Get Step 2 link
-router.post("/get-key/step2", async (req, res) => {
+router.post("/get-key/step2", async (req: Request, res: Response) => {
   const { sessionId } = req.body;
   try {
     const { data, error } = await supabase.from("key_sessions").select("step2_token").match({ id: sessionId, status: "step1_completed" }).single();
@@ -56,7 +56,7 @@ router.post("/get-key/step2", async (req, res) => {
 });
 
 // Step 4: Verify Step 2
-router.get("/get-key/verify-step2", async (req, res) => {
+router.get("/get-key/verify-step2", async (req: Request, res: Response) => {
   const { token, session } = req.query;
   try {
     const finalKey = `YS-${nanoid(8).toUpperCase()}-${nanoid(8).toUpperCase()}`;
@@ -68,7 +68,7 @@ router.get("/get-key/verify-step2", async (req, res) => {
 });
 
 // Result
-router.get("/get-key/result/:sessionId", async (req, res) => {
+router.get("/get-key/result/:sessionId", async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabase.from("key_sessions").select("generated_key, status").match({ id: req.params.sessionId, status: "completed" }).single();
     if (error || !data) return res.status(404).json({ error: "Key not found" });
@@ -77,7 +77,7 @@ router.get("/get-key/result/:sessionId", async (req, res) => {
 });
 
 // Redeem
-router.post("/redeem", async (req, res) => {
+router.post("/redeem", async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabase.from("keys").select("*").match({ key_value: req.body.key, is_used: false }).single();
     if (error || !data) return res.status(400).json({ error: "Invalid or already used key" });
