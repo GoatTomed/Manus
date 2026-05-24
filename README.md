@@ -28,9 +28,9 @@ server/         ← Placeholder for imported template compatibility
 shared/         ← Placeholder for imported template compatibility
   const.ts      ← Shared constants
 ```
-
+  
 ### ⚠️ Handling Images & Media
-
+ 
 **DO NOT** store images, videos, or large assets in `client/public/` or `client/src/assets/`. Local media files will cause deployment timeouts.
 
 **Required workflow:**
