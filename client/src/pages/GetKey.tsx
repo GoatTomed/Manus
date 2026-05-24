@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import axios from "axios";
 import { Loader2, Copy, Check, ExternalLink } from "lucide-react";
+import { createEarnPasteLink } from "../hooks/useEarnPaste";
 import Navbar from "../components/Navbar";
 
 const LOGO_URL =
@@ -14,6 +15,7 @@ export default function GetKey() {
   const [generatedKey, setGeneratedKey] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -23,15 +25,17 @@ export default function GetKey() {
 
     if (completed === "true" && session) {
       setCurrentStep(3);
+      setSessionId(session);
       fetchResult(session);
-    } else if (step === "2") {
+    } else if (step === "2" && session) {
       setCurrentStep(2);
+      setSessionId(session);
     }
   }, [location]);
 
-  const fetchResult = async (sessionId: string) => {
+  const fetchResult = async (sid: string) => {
     try {
-      const res = await axios.get(`/api/get-key/result/${sessionId}`);
+      const res = await axios.get(`/api/get-key/result/${sid}`);
       setGeneratedKey(res.data.key);
     } catch {
       setError("Failed to retrieve your key. Please refresh the page.");
@@ -42,24 +46,46 @@ export default function GetKey() {
     setIsLoading(true);
     setError("");
     try {
+      // Step 1: Create session in Supabase via API
       const res = await axios.post("/api/get-key/start");
-      window.location.href = res.data.earnPasteUrl;
+      const newSessionId = res.data.sessionId;
+      const step1Token = res.data.sessionId; // Token is embedded in response
+      
+      // Step 2: Generate EarnPaste link for Step 1 verification
+      const verifyUrl = `${window.location.origin}/api/get-key/verify-step1?token=${step1Token}&session=${newSessionId}`;
+      const earnPasteUrl = await createEarnPasteLink(verifyUrl, 15);
+      
+      // Redirect to EarnPaste
+      window.location.href = earnPasteUrl;
     } catch (err: any) {
-      setError(err.response?.data?.error || "Error starting process.");
+      const msg = err.response?.data?.error || err.message || "Error starting process.";
+      setError(msg);
       setIsLoading(false);
     }
   };
 
   const handleStep2 = async () => {
+    if (!sessionId) {
+      setError("Session not found. Please start over.");
+      return;
+    }
+
     setIsLoading(true);
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get("session");
     try {
+      // Step 1: Get step2_token from Supabase
       const res = await axios.post("/api/get-key/step2", { sessionId });
-      window.location.href = res.data.earnPasteUrl;
+      const step2Token = res.data.step2Token || sessionId;
+      
+      // Step 2: Generate EarnPaste link for Step 2 verification
+      const verifyUrl = `${window.location.origin}/api/get-key/verify-step2?token=${step2Token}&session=${sessionId}`;
+      const earnPasteUrl = await createEarnPasteLink(verifyUrl, 15);
+      
+      // Redirect to EarnPaste
+      window.location.href = earnPasteUrl;
     } catch (err: any) {
-      setError(err.response?.data?.error || "Error starting final step.");
+      const msg = err.response?.data?.error || err.message || "Error starting final step.";
+      setError(msg);
       setIsLoading(false);
     }
   };
@@ -98,7 +124,7 @@ export default function GetKey() {
                   disabled={isLoading}
                   className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Start Verification"}
+                  {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Get Key"}
                 </button>
               </div>
             ) : currentStep === 2 ? (
@@ -115,7 +141,7 @@ export default function GetKey() {
                   disabled={isLoading}
                   className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Generate Final Key"}
+                  {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Continue"}
                 </button>
               </div>
             ) : (

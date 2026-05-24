@@ -33,7 +33,6 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
     
     console.log(`Starting session: ${sessionId}`);
     
-    // Test Supabase connection/insert
     const { error: sbError } = await supabase.from("key_sessions").insert({ 
       id: sessionId, 
       step1_token: step1Token, 
@@ -45,21 +44,8 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
       return res.status(500).json({ error: `Database error: ${sbError.message}` });
     }
 
-    const targetUrl = `${APP_URL}/api/get-key/verify-step1?token=${step1Token}&session=${sessionId}`;
-    console.log(`Target URL for EarnPaste: ${targetUrl}`);
-
-    try {
-      const response = await earnPasteClient.post(EARNPASTE_API_URL, { targetUrl, timer: 15 });
-      res.json({ sessionId, earnPasteUrl: response.data.url });
-    } catch (axiosError: any) {
-      const errData = axiosError.response?.data || axiosError.message;
-      const isTimeout = axiosError.code === "ECONNABORTED" || axiosError.message?.includes("timeout");
-      console.error("EarnPaste API Error (start):", errData);
-      if (isTimeout) {
-        return res.status(504).json({ error: "EarnPaste API timed out. Please try again." });
-      }
-      res.status(502).json({ error: "External API error (EarnPaste)", detail: String(errData) });
-    }
+    // Return sessionId and step1Token for client-side EarnPaste link generation
+    res.json({ sessionId, step1Token });
   } catch (error: any) { 
     console.error("Global API Error:", error);
     res.status(500).json({ error: error.message }); 
@@ -98,20 +84,8 @@ app.post("/api/get-key/step2", async (req: any, res: any) => {
       return res.status(400).json({ error: "Session not found or incomplete" });
     }
 
-    const targetUrl = `${APP_URL}/api/get-key/verify-step2?token=${data.step2_token}&session=${sessionId}`;
-    
-    try {
-      const response = await earnPasteClient.post(EARNPASTE_API_URL, { targetUrl, timer: 15 });
-      res.json({ earnPasteUrl: response.data.url });
-    } catch (axiosError: any) {
-      const errData = axiosError.response?.data || axiosError.message;
-      const isTimeout = axiosError.code === "ECONNABORTED" || axiosError.message?.includes("timeout");
-      console.error("EarnPaste API Error (Step 2):", errData);
-      if (isTimeout) {
-        return res.status(504).json({ error: "EarnPaste API timed out. Please try again." });
-      }
-      res.status(502).json({ error: "External API error (EarnPaste)", detail: String(errData) });
-    }
+    // Return step2_token for client-side EarnPaste link generation
+    res.json({ step2Token: data.step2_token });
   } catch (error: any) { 
     console.error("Step 2 Global Error:", error);
     res.status(500).json({ error: error.message }); 
