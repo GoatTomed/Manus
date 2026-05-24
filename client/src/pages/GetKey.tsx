@@ -4,6 +4,7 @@ import axios from "axios";
 import { Loader2, Copy, Check, ExternalLink, RotateCcw } from "lucide-react";
 import { createEarnPasteLink } from "../hooks/useEarnPaste";
 import { useKeyCounter } from "../hooks/useKeyCounter";
+import KeyCounter from "../components/KeyCounter";
 import Navbar from "../components/Navbar";
 
 const LOGO_URL =
@@ -100,8 +101,8 @@ export default function GetKey() {
     window.history.replaceState({}, "", "/get-key");
   };
 
-  const handleGoToScripts = () => {
-    window.location.href = "/scripts";
+  const handleRedeemKey = () => {
+    window.location.href = "/redeem";
   };
 
   return (
@@ -114,13 +115,16 @@ export default function GetKey() {
             <img src={LOGO_URL} alt="Logo" className="w-20 h-20 object-contain" />
           </div>
 
-          <div className="bg-[#0a0d14] border border-white/10 rounded-lg p-8 shadow-xl">
-            <h1 className="text-2xl font-bold mb-6 text-center tracking-tight">
+          <div className="bg-[#0a0d14] border border-white/10 rounded-lg p-8 shadow-xl space-y-6">
+            {/* Key Counter */}
+            <KeyCounter />
+
+            <h1 className="text-2xl font-bold text-center tracking-tight">
               Get Your <span className="text-[#00ABFF]">Key</span>
             </h1>
 
             {error && (
-              <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs text-center">
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs text-center">
                 {error}
               </div>
             )}
@@ -165,10 +169,10 @@ export default function GetKey() {
                 </div>
                 <div className="space-y-3">
                   <button
-                    onClick={handleGoToScripts}
+                    onClick={handleRedeemKey}
                     className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all"
                   >
-                    Go to Scripts <ExternalLink size={16} />
+                    Redeem Key <ExternalLink size={16} />
                   </button>
                   <button
                     onClick={handleGetAnother}

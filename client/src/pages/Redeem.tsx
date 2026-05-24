@@ -1,18 +1,9 @@
-/**
- * Design: Cyberpunk Minimal Dark — Page Redeem Key
- * - Fond : noir profond (#0a0d14) avec grille de points CSS
- * - Lueur ambiante bleue en haut à gauche
- * - Carte centrale : glassmorphism sombre, bordure subtile
- * - Logo mascotte centré au-dessus du titre
- * - Titre : "Redeem" blanc bold + "Key" bleu électrique
- * - Input avec icône clé, placeholder "XXX-XXX-XXX"
- * - Bouton "Verify Key" bleu plein avec lueur
- */
-
 import { useState } from "react";
 import { toast } from "sonner";
 import axios from "axios";
 import { useKeyCounter } from "../hooks/useKeyCounter";
+import KeyCounter from "../components/KeyCounter";
+import { ExternalLink, RotateCcw } from "lucide-react";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
@@ -20,6 +11,7 @@ const LOGO_URL =
 export default function Redeem() {
   const [key, setKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [redeemed, setRedeemed] = useState(false);
   const { addKey } = useKeyCounter();
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -35,6 +27,7 @@ export default function Redeem() {
       const response = await axios.post("/api/redeem", { key });
       if (response.data.success) {
         addKey(1);
+        setRedeemed(true);
         toast.success("Success!", {
           description: "Key redeemed successfully! You can now copy scripts.",
         });
@@ -49,12 +42,18 @@ export default function Redeem() {
     }
   };
 
+  const handleGoToScripts = () => {
+    window.location.href = "/scripts";
+  };
+
+  const handleGetAnother = () => {
+    window.location.href = "/get-key";
+  };
+
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col">
-      {/* Main content */}
       <main className="flex-1 flex items-center justify-center pt-14 relative z-10">
         <div className="w-full max-w-md px-4">
-          {/* Logo Standalone */}
           <div className="flex justify-center mb-6 animate-fade-in-up">
             <img
               src={LOGO_URL}
@@ -63,59 +62,80 @@ export default function Redeem() {
             />
           </div>
 
-          {/* Title */}
           <div className="text-center mb-2 animate-fade-in-up-delay-1">
-            <h1
-              className="text-4xl font-bold tracking-tight"
-            >
+            <h1 className="text-4xl font-bold tracking-tight">
               <span className="text-white">Redeem </span>
               <span style={{ color: "#00ABFF" }}>Key</span>
             </h1>
           </div>
 
-          {/* Subtitle */}
           <p
             className="text-center text-sm mb-8 animate-fade-in-up-delay-2"
             style={{ color: "oklch(0.60 0.015 264)" }}
           >
-            Enter your key to get access to your script
+            Enter your key to get access to your scripts
           </p>
 
-          {/* Card */}
-          <div className="redeem-card p-5 animate-fade-in-up-delay-3">
-            <form onSubmit={handleVerify} className="flex flex-col gap-3">
-              {/* Key input */}
-              <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <KeyIcon />
-                </div>
-                <input
-                  type="text"
-                  value={key}
-                  onChange={(e) => setKey(e.target.value)}
-                  placeholder="Your Key Here"
-                  className="key-input w-full h-11 pl-10 pr-4 text-sm"
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-              </div>
+          <div className="redeem-card p-5 animate-fade-in-up-delay-3 space-y-6">
+            {/* Key Counter */}
+            <KeyCounter />
 
-              {/* Verify button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="verify-btn w-full flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <SpinnerIcon />
-                    Verifying...
-                  </>
-                ) : (
-                  "Verify Key"
-                )}
-              </button>
-            </form>
+            {!redeemed ? (
+              <form onSubmit={handleVerify} className="flex flex-col gap-3">
+                <div className="relative">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <KeyIcon />
+                  </div>
+                  <input
+                    type="text"
+                    value={key}
+                    onChange={(e) => setKey(e.target.value)}
+                    placeholder="Your Key Here"
+                    className="key-input w-full h-11 pl-10 pr-4 text-sm"
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="verify-btn w-full flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <SpinnerIcon />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify Key"
+                  )}
+                </button>
+              </form>
+            ) : (
+              <div className="space-y-4 text-center">
+                <div className="text-green-500 text-sm font-bold uppercase tracking-widest">
+                  ✓ Key Redeemed
+                </div>
+                <p className="text-gray-400 text-sm">
+                  Your key has been added to your balance. You can now copy scripts!
+                </p>
+                <div className="space-y-3">
+                  <button
+                    onClick={handleGoToScripts}
+                    className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                  >
+                    Go to Scripts <ExternalLink size={16} />
+                  </button>
+                  <button
+                    onClick={handleGetAnother}
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                  >
+                    Get Another Key <RotateCcw size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
