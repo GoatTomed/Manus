@@ -43,7 +43,7 @@ Only small configuration files like `favicon.ico`, `robots.txt`, and `manifest.j
 Files in `client/public` are available at the root of your site—reference them with absolute paths (`/robots.txt`, etc.) from HTML templates, JSX, or meta tags.   
 
 --- 
-
+ 
 ## 🎯 Development Workflow 
 
 1. **Choose a design style** before you write any frontend code according to Design Guide (color, font, shadow, art style). Tell user what you chose. Remember to edit `client/src/index.css` for global theming and add needed font using google font cdn in `client/index.html`.
