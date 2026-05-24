@@ -23,7 +23,7 @@ client/
     lib/        ← Utility helpers
     App.tsx     ← Routes & top-level layout
     main.tsx    ← React entry point
-    index.css   ← global style
+    index.css   ← global style 
 server/         ← Placeholder for imported template compatibility
 shared/         ← Placeholder for imported template compatibility
   const.ts      ← Shared constants
