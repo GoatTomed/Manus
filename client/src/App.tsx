@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Redeem from "./pages/Redeem";
 import GetKey from "./pages/GetKey";
+import Scripts from "./pages/Scripts";
 
 function Router() {
   return (
@@ -14,6 +15,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/redeem" component={Redeem} />
       <Route path="/get-key" component={GetKey} />
+      <Route path="/scripts" component={Scripts} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
