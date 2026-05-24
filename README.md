@@ -24,8 +24,7 @@ client/
     App.tsx     ← Routes & top-level layout
     main.tsx    ← React entry point
     index.css   ← global style 
-server/         ← Placeholder for imported template compatibility
-shared/         ← Placeholder for imported template compatibility
+server/         ← Placeholder for imported template compatibilitybv
   const.ts      ← Shared constants
 ```
   
