@@ -11,6 +11,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import axios from "axios";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
@@ -28,12 +29,21 @@ export default function Redeem() {
       return;
     }
     setIsLoading(true);
-    // Simulate verification
-    await new Promise((r) => setTimeout(r, 1200));
-    setIsLoading(false);
-    toast.error("Invalid key", {
-      description: "The key you entered is not valid. Please try again.",
-    });
+    try {
+      const response = await axios.post("/api/redeem", { key });
+      if (response.data.success) {
+        toast.success("Success!", {
+          description: "Key redeemed successfully!",
+        });
+        setKey("");
+      }
+    } catch (error: any) {
+      toast.error("Invalid key", {
+        description: error.response?.data?.error || "The key you entered is not valid or already used.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
