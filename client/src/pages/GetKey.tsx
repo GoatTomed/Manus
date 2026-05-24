@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import axios from "axios";
-import { Loader2, Copy, Check, ExternalLink } from "lucide-react";
+import { Loader2, Copy, Check, ExternalLink, RotateCcw } from "lucide-react";
 import { createEarnPasteLink } from "../hooks/useEarnPaste";
+import { useKeyCounter } from "../hooks/useKeyCounter";
 import Navbar from "../components/Navbar";
 
 const LOGO_URL =
@@ -16,6 +17,7 @@ export default function GetKey() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const { getCount } = useKeyCounter();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -46,16 +48,13 @@ export default function GetKey() {
     setIsLoading(true);
     setError("");
     try {
-      // Step 1: Create session in Supabase via API
       const res = await axios.post("/api/get-key/start");
       const newSessionId = res.data.sessionId;
       const verificationHash = res.data.verificationHash;
 
-      // Step 2: Generate EarnPaste link with cryptographic hash
       const verifyUrl = `${window.location.origin}/api/v/${verificationHash}`;
       const earnPasteUrl = await createEarnPasteLink(verifyUrl, 15);
 
-      // Redirect to EarnPaste
       window.location.href = earnPasteUrl;
     } catch (err: any) {
       const msg = err.response?.data?.error || err.message || "Error starting process.";
@@ -73,15 +72,12 @@ export default function GetKey() {
     setIsLoading(true);
     setError("");
     try {
-      // Get step2 verification hash from API
       const res = await axios.post("/api/get-key/step2", { sessionId });
       const verificationHash = res.data.verificationHash;
 
-      // Generate EarnPaste link with cryptographic hash
       const verifyUrl = `${window.location.origin}/api/v/${verificationHash}`;
       const earnPasteUrl = await createEarnPasteLink(verifyUrl, 15);
 
-      // Redirect to EarnPaste
       window.location.href = earnPasteUrl;
     } catch (err: any) {
       const msg = err.response?.data?.error || err.message || "Error starting final step.";
@@ -94,6 +90,18 @@ export default function GetKey() {
     navigator.clipboard.writeText(generatedKey);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleGetAnother = () => {
+    setCurrentStep(1);
+    setGeneratedKey("");
+    setError("");
+    setSessionId(null);
+    window.history.replaceState({}, "", "/get-key");
+  };
+
+  const handleGoToScripts = () => {
+    window.location.href = "/scripts";
   };
 
   return (
@@ -155,12 +163,20 @@ export default function GetKey() {
                     {copied ? <Check size={18} /> : <Copy size={18} />}
                   </button>
                 </div>
-                <button
-                  onClick={() => (window.location.href = "/redeem")}
-                  className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2"
-                >
-                  Go to Redeem <ExternalLink size={16} />
-                </button>
+                <div className="space-y-3">
+                  <button
+                    onClick={handleGoToScripts}
+                    className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                  >
+                    Go to Scripts <ExternalLink size={16} />
+                  </button>
+                  <button
+                    onClick={handleGetAnother}
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                  >
+                    Get Another Key <RotateCcw size={16} />
+                  </button>
+                </div>
               </div>
             )}
           </div>

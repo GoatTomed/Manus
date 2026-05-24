@@ -12,6 +12,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import axios from "axios";
+import { useKeyCounter } from "../hooks/useKeyCounter";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
@@ -19,6 +20,7 @@ const LOGO_URL =
 export default function Redeem() {
   const [key, setKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { addKey } = useKeyCounter();
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +34,9 @@ export default function Redeem() {
     try {
       const response = await axios.post("/api/redeem", { key });
       if (response.data.success) {
+        addKey(1);
         toast.success("Success!", {
-          description: "Key redeemed successfully!",
+          description: "Key redeemed successfully! You can now copy scripts.",
         });
         setKey("");
       }
