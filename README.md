@@ -19,7 +19,7 @@ client/
     pages/      ← Page-level components
     components/ ← Reusable UI & shadcn/ui
     contexts/   ← React contexts
-    hooks/      ← Custom React hooks
+    hooks/      ← Custom React hooks 
     lib/        ← Utility helpers
     App.tsx     ← Routes & top-level layout
     main.tsx    ← React entry point
