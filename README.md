@@ -30,7 +30,7 @@ server/         ← Placeholder for imported template compatibilitybv
   
 ### ⚠️ Handling Images & Media
  
-**DO NOT** store images, videos, or large assets in `client/public/` or `client/src/assets/`. Local media files will cause deployment timeouts. 
+**DO NOT** store images, videos, or large assets in `client/public/` or `client/src/assets/`. Local media files will cause deployment timeouts.  
  
 **Required workflow:**
 1. Upload assets using the CLI: `manus-upload-file --webdev path/to/image.png`
