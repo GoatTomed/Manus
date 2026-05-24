@@ -1,5 +1,5 @@
 import Navbar from "../components/Navbar";
-import { AlertCircle, RotateCcw } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
@@ -38,15 +38,10 @@ export default function VerificationError() {
 
             <button
               onClick={handleRestart}
-              className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all"
+              className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded font-bold text-sm flex items-center justify-center transition-all"
             >
-              <RotateCcw size={16} />
               Start New Verification
             </button>
-
-            <p className="text-[10px] text-gray-600 uppercase tracking-widest">
-              YouSuck Security System
-            </p>
           </div>
         </div>
       </main>
