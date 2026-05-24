@@ -28,6 +28,8 @@ export default function GetKey() {
       setCurrentStep(3);
       setSessionId(session);
       fetchResult(session);
+      // Clean up the URL parameters immediately so the key disappears on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
     } else if (step === "2" && session) {
       setCurrentStep(2);
       setSessionId(session);
@@ -39,7 +41,8 @@ export default function GetKey() {
       const res = await axios.get(`/api/get-key/result/${sid}`);
       setGeneratedKey(res.data.key);
     } catch {
-      setError("Failed to retrieve your key. Please refresh the page.");
+      // If refresh happened, we might lose the session, but that's what we want (key disappearance)
+      setError("Verification expired or page refreshed. Please start again.");
     }
   };
 
