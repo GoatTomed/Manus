@@ -10,7 +10,7 @@ const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
 
 export default function GetKey() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [generatedKey, setGeneratedKey] = useState("");
@@ -99,7 +99,8 @@ export default function GetKey() {
     setGeneratedKey("");
     setSessionId(null);
     setCurrentStep(1);
-    window.location.href = "/redeem";
+    // Use setLocation for instant internal navigation instead of window.location.href
+    setLocation("/redeem");
   };
 
   return (
