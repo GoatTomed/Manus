@@ -42,7 +42,7 @@ Only small configuration files like `favicon.ico`, `robots.txt`, and `manifest.j
 
 Files in `client/public` are available at the root of your site—reference them with absolute paths (`/robots.txt`, etc.) from HTML templates, JSX, or meta tags. 
 
----
+--- 
 
 ## 🎯 Development Workflow
 
