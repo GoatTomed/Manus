@@ -92,6 +92,10 @@ export default function GetKey() {
   };
 
   const handleRedeemKey = () => {
+    // Clear state before redirecting to ensure the key disappears
+    setGeneratedKey("");
+    setSessionId(null);
+    setCurrentStep(1);
     window.location.href = "/redeem";
   };
 
