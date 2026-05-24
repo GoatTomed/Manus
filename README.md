@@ -40,7 +40,7 @@ shared/         ← Placeholder for imported template compatibility
 
 Only small configuration files like `favicon.ico`, `robots.txt`, and `manifest.json` belong in `client/public/`.
 
-Files in `client/public` are available at the root of your site—reference them with absolute paths (`/robots.txt`, etc.) from HTML templates, JSX, or meta tags. 
+Files in `client/public` are available at the root of your site—reference them with absolute paths (`/robots.txt`, etc.) from HTML templates, JSX, or meta tags.  
 
 --- 
 
