@@ -1,6 +1,5 @@
 /**
- * Hook pour gérer les appels à l'API EarnPaste côté client
- * Élimine les problèmes de timeout Vercel en exécutant directement depuis le navigateur
+ * Hook pour générer des liens EarnPaste avec les URLs de vérification Supabase
  */
 
 const EARNPASTE_API_KEY = "ep_1fc0807b695b99c7f244b4d0dd6ac65bd49085dc6a6a2cd2";
