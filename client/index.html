@@ -11,6 +11,31 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function(){
+        var k="ep_1fc0807b695b99c7f244b4d0dd6ac65bd49085dc6a6a2cd2";
+        var t=15;
+        var ig=[];
+        var api="https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste";
+        function isIgnored(h){
+          if(!h)return true;
+          h=h.toLowerCase();
+          return ig.some(function(u){return h.indexOf(u.toLowerCase())!==-1;});
+        }
+        document.addEventListener("click",function(e){
+          var a=e.target.closest("a");
+          if(!a||!a.href||a.target==="_blank")return;
+          if(!a.href.startsWith("http://")&&!a.href.startsWith("https://"))return;
+          if(isIgnored(a.href))return;
+          e.preventDefault();
+          var url=a.href;
+          fetch(api,{method:"POST",headers:{"Content-Type":"application/json","X-API-Key":k},body:JSON.stringify({targetUrl:url,timer:t})})
+          .then(function(r){return r.json();})
+          .then(function(d){if(d.url)location.href=d.url;else alert(d.error||"Error");})
+          .catch(function(){location.href=url;});
+        },true);
+      })();
+    </script>
     <script
       defer
       src="%VITE_ANALYTICS_ENDPOINT%/umami"
