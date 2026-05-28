@@ -138,13 +138,7 @@ export default function Redeem() {
                 <ShoppingCart size={18} />
                 Show Scripts
               </button>
-              <button
-                onClick={() => setLocation("/scripts")}
-                className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2"
-              >
-                <Eye size={18} />
-                Preview Scripts
-              </button>
+
             </div>
           </div>
         </div>
