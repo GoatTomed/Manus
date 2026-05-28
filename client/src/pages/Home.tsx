@@ -12,22 +12,22 @@ export default function Home() {
     {
       number: "01",
       title: "Get Key",
-      description: "Complete verification to generate your unique access key."
+      description: "Verify to generate a key."
     },
     {
       number: "02",
-      title: "Redeem Key",
-      description: "Enter your key to add it to your script balance."
+      title: "Redeem",
+      description: "Add it to your balance."
     },
     {
       number: "03",
-      title: "Choose Script",
-      description: "Browse our library of premium game scripts."
+      title: "Browse",
+      description: "Pick your script."
     },
     {
       number: "04",
-      title: "Copy & Use",
-      description: "Consume a key to copy your script instantly."
+      title: "Unlock",
+      description: "Copy and use instantly."
     }
   ];
 
