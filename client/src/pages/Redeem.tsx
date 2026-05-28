@@ -123,7 +123,7 @@ export default function Redeem() {
             </div>
           </div>
 
-          {/* Scripts Shop Section under the GUI */}
+          {/* Buttons Section strictly UNDER the GUI */}
           <div className="text-center pt-4 space-y-4 animate-fade-in-up-delay-3">
             <p className="text-white font-semibold text-sm">
               Wanna spend your <span className="text-[#00ABFF] font-bold">{keyCount}</span> keys at the scripts shop?
@@ -136,7 +136,7 @@ export default function Redeem() {
                 className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded-lg font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,171,255,0.3)] flex items-center justify-center gap-2"
               >
                 <ShoppingCart size={18} />
-                Show Scripts Shop
+                Show Scripts
               </button>
               <button
                 onClick={() => setLocation("/scripts")}
