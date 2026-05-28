@@ -123,10 +123,29 @@ export default function Redeem() {
           </div>
 
           {/* Blue text under the GUI */}
-          <div className="text-center pt-4 animate-fade-in-up-delay-3">
+          <div className="text-center pt-4 space-y-4 animate-fade-in-up-delay-3">
             <p className="text-white font-semibold text-sm">
               Wanna spend your <span className="text-[#00ABFF] font-bold">{keyCount}</span> keys at the scripts shop?
             </p>
+            
+            {/* Yes and Close Buttons */}
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setLocation("/scripts")}
+                className="bg-[#00ABFF] hover:bg-[#0099EE] text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-[0_0_15px_rgba(0,171,255,0.2)]"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => {
+                  setKey("");
+                  setSuccess(false);
+                }}
+                className="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </main>
