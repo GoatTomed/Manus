@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import axios from "axios";
-import { Loader2, Copy, Check } from "lucide-react";
+import { Loader2, Copy, Check, Eye } from "lucide-react";
 import { createEarnPasteLink } from "../hooks/useEarnPaste";
 import KeyCounter from "../components/KeyCounter";
 import Navbar from "../components/Navbar";
@@ -172,6 +172,17 @@ export default function GetKey() {
                 </button>
               </div>
             )}
+          </div>
+          
+          {/* Preview Scripts Button under the GUI */}
+          <div className="mt-6 animate-fade-in-up-delay-1">
+            <button
+              onClick={() => setLocation("/scripts")}
+              className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2"
+            >
+              <Eye size={18} />
+              Preview Scripts
+            </button>
           </div>
         </div>
       </main>
