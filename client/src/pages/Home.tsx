@@ -56,7 +56,7 @@ export default function Home() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/get-key">
-              <button className="w-full sm:w-auto bg-[#00ABFF] text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-[#0099EE] transition-all shadow-[0_0_20px_rgba(0,171,255,0.3)] hover:shadow-[0_0_28px_rgba(0,171,255,0.4)]">
+              <button className="w-full sm:w-auto bg-[#00ABFF] text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-[#0099EE] transition-all shadow-[0_0_20px_rgba(0,171,255,0.3)]">
                 Get Key
               </button>
             </Link>
@@ -68,31 +68,34 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Tutorial Section (Premium Look) */}
+        {/* Tutorial Section (Exact User Specifications) */}
         <div className="w-full max-w-6xl animate-fade-in-up-delay-1 pb-16 px-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {STEPS.map((step, index) => (
               <div 
                 key={index} 
-                className="relative p-8 bg-[#0a0d14]/40 border border-white/[0.05] rounded-2xl space-y-4 hover:border-white/[0.1] transition-all duration-500 group overflow-hidden"
+                className="relative p-[18px_16px] bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.07)] rounded-[14px] overflow-hidden group flex flex-col"
+                style={{ padding: '18px 16px' }}
               >
-                {/* Background Number (Subtle) */}
-                <div className="text-6xl font-bold text-white/[0.03] absolute top-4 left-6 group-hover:text-white/[0.05] transition-colors duration-500 pointer-events-none">
+                {/* Top shine effect (decorative line) */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.08)] to-transparent"></div>
+                
+                {/* Step number (large muted label) */}
+                <div 
+                  className="text-[1.4rem] font-extrabold text-[rgba(255,255,255,0.06)] tracking-[-0.04em] mb-[10px]"
+                >
                   {step.number}
                 </div>
                 
-                {/* Content */}
-                <div className="relative z-10 space-y-2">
-                  <h3 className="text-xl font-bold text-white tracking-tight pt-4">
-                    {step.title}
-                  </h3>
-                  <p className="text-gray-500 text-sm leading-relaxed font-medium">
-                    {step.description}
-                  </p>
-                </div>
-
-                {/* Subtle Glow Effect on Hover */}
-                <div className="absolute -inset-px bg-gradient-to-br from-[#00ABFF]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"></div>
+                {/* Title */}
+                <h3 className="text-[0.76rem] font-bold text-white mb-[6px] tracking-tight">
+                  {step.title}
+                </h3>
+                
+                {/* Subtitle/description */}
+                <p className="text-[0.65rem] text-[rgba(255,255,255,0.3)] leading-[1.6] font-medium">
+                  {step.description}
+                </p>
               </div>
             ))}
           </div>
