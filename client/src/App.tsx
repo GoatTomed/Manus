@@ -9,6 +9,7 @@ import Redeem from "./pages/Redeem";
 import GetKey from "./pages/GetKey";
 import Scripts from "./pages/Scripts";
 import VerificationError from "./pages/VerificationError";
+import { useEffect } from "react";
 
 function Router() {
   return (
@@ -25,6 +26,10 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    document.title = "YouSuck";
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
