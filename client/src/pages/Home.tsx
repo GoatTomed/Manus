@@ -30,7 +30,7 @@ export default function Home() {
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
       <Navbar />
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 pt-24 space-y-20">
+      <main className="flex-1 flex flex-col items-center justify-center p-6 pt-24 space-y-24">
         {/* Hero Section */}
         <div className="text-center px-4 max-w-sm w-full animate-fade-in-up">
           {/* Logo */}
@@ -38,7 +38,7 @@ export default function Home() {
             <img
               src={LOGO_URL}
               alt="YouSuck mascot"
-              className="w-24 h-24 object-contain drop-shadow-[0_0_20px_rgba(0,171,255,0.3)]"
+              className="w-24 h-24 object-contain drop-shadow-[0_0_20px_rgba(0,171,255,0.2)]"
             />
           </div>
 
@@ -51,35 +51,43 @@ export default function Home() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/get-key">
-              <button className="w-full sm:w-auto bg-[#00ABFF] text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-[#0099EE] transition-all shadow-[0_0_20px_rgba(0,171,255,0.35)] hover:shadow-[0_0_28px_rgba(0,171,255,0.5)] hover:-translate-y-0.5">
+              <button className="w-full sm:w-auto bg-[#00ABFF] text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-[#0099EE] transition-all shadow-[0_0_20px_rgba(0,171,255,0.3)] hover:shadow-[0_0_28px_rgba(0,171,255,0.4)]">
                 Get Key
               </button>
             </Link>
             <Link href="/redeem">
-              <button className="w-full sm:w-auto bg-transparent text-white px-8 py-2.5 rounded-lg font-bold text-sm border border-white/20 hover:border-[#00ABFF]/50 hover:bg-white/5 transition-all">
+              <button className="w-full sm:w-auto bg-transparent text-white px-8 py-2.5 rounded-lg font-bold text-sm border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all">
                 Redeem Key
               </button>
             </Link>
           </div>
         </div>
 
-        {/* Tutorial Section */}
-        <div className="w-full max-w-4xl space-y-10 animate-fade-in-up-delay-1 pb-10">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold tracking-tight">How it <span className="text-[#00ABFF]">works</span></h2>
-            <p className="text-gray-500 text-sm">Follow these simple steps to unlock your favorite scripts</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Tutorial Section (Premium Look) */}
+        <div className="w-full max-w-5xl space-y-12 animate-fade-in-up-delay-1 pb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {STEPS.map((step, index) => (
-              <div key={index} className="relative p-6 bg-[#0a0d14] border border-white/10 rounded-xl space-y-4 hover:border-[#00ABFF]/30 transition-all group">
-                <div className="text-4xl font-black text-white/5 absolute top-2 right-4 group-hover:text-[#00ABFF]/10 transition-colors">
+              <div 
+                key={index} 
+                className="relative p-8 bg-[#0a0d14]/40 border border-white/[0.05] rounded-2xl space-y-4 hover:border-white/[0.1] transition-all duration-500 group overflow-hidden"
+              >
+                {/* Background Number (Subtle) */}
+                <div className="text-6xl font-bold text-white/[0.03] absolute top-4 left-6 group-hover:text-white/[0.05] transition-colors duration-500 pointer-events-none">
                   {step.number}
                 </div>
-                <h3 className="text-lg font-bold text-[#00ABFF]">{step.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">
-                  {step.description}
-                </p>
+                
+                {/* Content */}
+                <div className="relative z-10 space-y-2">
+                  <h3 className="text-xl font-bold text-white tracking-tight pt-4">
+                    {step.title}
+                  </h3>
+                  <p className="text-gray-500 text-sm leading-relaxed font-medium">
+                    {step.description}
+                  </p>
+                </div>
+
+                {/* Subtle Glow Effect on Hover */}
+                <div className="absolute -inset-px bg-gradient-to-br from-[#00ABFF]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"></div>
               </div>
             ))}
           </div>
