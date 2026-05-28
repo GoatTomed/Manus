@@ -120,6 +120,13 @@ export default function Scripts() {
             <span className="text-2xl font-bold text-[#00ABFF]">{keyCount}</span>
           </div>
 
+          {/* Blue text under the GUI */}
+          <div className="mb-8 text-center">
+            <p className="text-[#00ABFF] font-semibold text-sm">
+              Wanna spend your <span className="font-bold">{keyCount}</span> keys at the scripts shop?
+            </p>
+          </div>
+
           {/* Scripts Grid 3x3 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {SCRIPTS.map((script) => (

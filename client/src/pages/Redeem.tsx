@@ -61,11 +61,11 @@ export default function Redeem() {
             </div>
 
             {!success ? (
-              <form onSubmit={handleRedeem} className="space-y-4">
+              <form onSubmit={handleRedeem} className="space-y-6">
                 <div className="space-y-2">
                   <input
                     type="text"
-                    placeholder="YS-XXXX-XXXX"
+                    placeholder="Place Your Key Here!"
                     value={key}
                     onChange={(e) => setKey(e.target.value.toUpperCase())}
                     className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#00ABFF]/50 transition-all font-mono text-sm"
@@ -83,6 +83,13 @@ export default function Redeem() {
                 >
                   {isLoading ? "Verifying..." : "Redeem Key"}
                 </button>
+
+                {/* Blue text under the GUI */}
+                <div className="text-center pt-2">
+                  <p className="text-[#00ABFF] font-semibold text-sm">
+                    Wanna spend your <span className="font-bold">{getCount()}</span> keys at the scripts shop?
+                  </p>
+                </div>
               </form>
             ) : (
               <div className="space-y-6 animate-fade-in">
