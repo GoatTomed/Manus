@@ -11,23 +11,23 @@ export default function Home() {
   const STEPS = [
     {
       number: "01",
-      title: "Create your account",
-      description: "Sign up in 30 seconds."
+      title: "Get Key",
+      description: "Complete verification to generate your unique access key."
     },
     {
       number: "02",
-      title: "Add your GamePass",
-      description: "Paste your GamePass ID and set your price."
+      title: "Redeem Key",
+      description: "Enter your key to add it to your script balance."
     },
     {
       number: "03",
-      title: "Share your link",
-      description: "Send buyers to your personal buy page."
+      title: "Choose Script",
+      description: "Browse our library of premium game scripts."
     },
     {
       number: "04",
-      title: "Keys delivered instantly",
-      description: "We verify ownership and deliver the key."
+      title: "Copy & Use",
+      description: "Consume a key to copy your script instantly."
     }
   ];
 
