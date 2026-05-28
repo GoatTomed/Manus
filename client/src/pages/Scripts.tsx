@@ -13,50 +13,10 @@ interface Script {
 
 const SCRIPTS: Script[] = [
   {
-    id: "bite-by-night",
-    name: "Bite By Night",
-    image: "https://i.imgur.com/3FVIFVO.png",
-    description: "A thrilling vampire game",
-  },
-  {
-    id: "script-2",
-    name: "Script 2",
-    image: "https://via.placeholder.com/400x300?text=Script+2",
-  },
-  {
-    id: "script-3",
-    name: "Script 3",
-    image: "https://via.placeholder.com/400x300?text=Script+3",
-  },
-  {
-    id: "script-4",
-    name: "Script 4",
-    image: "https://via.placeholder.com/400x300?text=Script+4",
-  },
-  {
-    id: "script-5",
-    name: "Script 5",
-    image: "https://via.placeholder.com/400x300?text=Script+5",
-  },
-  {
-    id: "script-6",
-    name: "Script 6",
-    image: "https://via.placeholder.com/400x300?text=Script+6",
-  },
-  {
-    id: "script-7",
-    name: "Script 7",
-    image: "https://via.placeholder.com/400x300?text=Script+7",
-  },
-  {
-    id: "script-8",
-    name: "Script 8",
-    image: "https://via.placeholder.com/400x300?text=Script+8",
-  },
-  {
-    id: "script-9",
-    name: "Script 9",
-    image: "https://via.placeholder.com/400x300?text=Script+9",
+    id: "push-rock-for-brainrots",
+    name: "Push Rock for Brainrots",
+    image: "https://tr.rbxcdn.com/180DAY-545885b2289cb5fae86a063c7238b743/768/432/Image/Webp/noFilter",
+    description: "The ultimate script for Push Rock for Brainrots",
   },
 ];
 
@@ -83,7 +43,7 @@ export default function Scripts() {
     }
 
     if (consumeKey()) {
-      const scriptContent = `// ${selectedScript.name} Script\n// Generated on ${new Date().toLocaleString()}\nconsole.log("Script loaded: ${selectedScript.name}");`;
+      const scriptContent = `loadstring(game:HttpGet("https://yoursuck.vercel.app/PushRockforBrainrots.lua", true))()`;
       navigator.clipboard.writeText(scriptContent);
       toast.success("Script copied!", {
         description: `${selectedScript.name} has been copied to your clipboard. Keys remaining: ${getCount()}`,
