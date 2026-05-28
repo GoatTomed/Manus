@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import Navbar from "../components/Navbar";
 import { useKeyCounter } from "../hooks/useKeyCounter";
 import axios from "axios";
+import { ShoppingCart, Eye } from "lucide-react";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
@@ -122,28 +123,27 @@ export default function Redeem() {
             </div>
           </div>
 
-          {/* Blue text under the GUI */}
+          {/* Scripts Shop Section under the GUI */}
           <div className="text-center pt-4 space-y-4 animate-fade-in-up-delay-3">
             <p className="text-white font-semibold text-sm">
               Wanna spend your <span className="text-[#00ABFF] font-bold">{keyCount}</span> keys at the scripts shop?
             </p>
             
-            {/* Yes and Close Buttons */}
-            <div className="flex gap-3 justify-center">
+            {/* Shop and Preview Buttons */}
+            <div className="flex flex-col gap-3 items-center">
               <button
                 onClick={() => setLocation("/scripts")}
-                className="bg-[#00ABFF] hover:bg-[#0099EE] text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-[0_0_15px_rgba(0,171,255,0.2)]"
+                className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded-lg font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,171,255,0.3)] flex items-center justify-center gap-2"
               >
-                Yes
+                <ShoppingCart size={18} />
+                Show Scripts Shop
               </button>
               <button
-                onClick={() => {
-                  setKey("");
-                  setSuccess(false);
-                }}
-                className="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all"
+                onClick={() => setLocation("/scripts")}
+                className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2"
               >
-                Close
+                <Eye size={18} />
+                Preview Scripts
               </button>
             </div>
           </div>
