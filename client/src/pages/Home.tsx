@@ -64,7 +64,7 @@ export default function Home() {
         </div>
 
         {/* Tutorial Section (Premium Look) */}
-        <div className="w-full max-w-5xl space-y-12 animate-fade-in-up-delay-1 pb-16">
+        <div className="w-full max-w-5xl animate-fade-in-up-delay-1 pb-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {STEPS.map((step, index) => (
               <div 
