@@ -11,18 +11,23 @@ export default function Home() {
   const STEPS = [
     {
       number: "01",
-      title: "Get Key",
-      description: "Complete a quick verification to generate your unique access key."
+      title: "Create your account",
+      description: "Sign up in 30 seconds."
     },
     {
       number: "02",
-      title: "Redeem",
-      description: "Enter your key in the redeem section to add it to your balance."
+      title: "Add your GamePass",
+      description: "Paste your GamePass ID and set your price."
     },
     {
       number: "03",
-      title: "Copy Script",
-      description: "Browse our library and use your keys to unlock any script instantly."
+      title: "Share your link",
+      description: "Send buyers to your personal buy page."
+    },
+    {
+      number: "04",
+      title: "Keys delivered instantly",
+      description: "We verify ownership and deliver the key."
     }
   ];
 
@@ -64,8 +69,8 @@ export default function Home() {
         </div>
 
         {/* Tutorial Section (Premium Look) */}
-        <div className="w-full max-w-5xl animate-fade-in-up-delay-1 pb-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="w-full max-w-6xl animate-fade-in-up-delay-1 pb-16 px-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {STEPS.map((step, index) => (
               <div 
                 key={index} 
