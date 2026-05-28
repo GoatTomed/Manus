@@ -10,7 +10,7 @@ const LOGO_URL =
 
 export default function Redeem() {
   const [, setLocation] = useLocation();
-  const { addKey } = useKeyCounter();
+  const { addKey, getCount } = useKeyCounter();
   const [key, setKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
