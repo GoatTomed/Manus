@@ -21,13 +21,15 @@ const getClientIp = (req: any) => {
 // Dedicated route for tracking page views from frontend
 app.post("/api/track-visit", async (req: any, res: any) => {
   try {
-    const { path } = req.body;
+    const { path, visitorId } = req.body;
     const cleanIp = getClientIp(req);
-    // Store IP directly in ip_hash column to avoid schema issues if ip_address doesn't exist
+    
+    // We use ip_hash to store the most reliable ID: visitorId if provided, otherwise cleanIp
+    const trackerId = visitorId || cleanIp;
     
     await supabase.from('page_views').insert({
       path: path || '/',
-      ip_hash: cleanIp, // Using ip_hash column to store the actual IP for tracking
+      ip_hash: trackerId, 
       user_agent: req.headers['user-agent'] || 'unknown'
     });
     
@@ -215,7 +217,7 @@ app.post("/api/analytics/modify", authorizeAnalytics, async (req: any, res: any)
     if (type === 'add') {
       const dummyRecords = Array.from({ length: count }, () => ({
         path: '/manual/added',
-        ip_hash: 'manual',
+        ip_hash: `manual-${nanoid(5)}`,
         user_agent: 'manual-bot'
       }));
       
@@ -266,7 +268,6 @@ app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
       .select('ip_hash, created_at')
       .gte('created_at', sevenDaysAgo.toISOString());
 
-    // Count unique IPs using ip_hash column
     const { data: allIps } = await supabase.from('page_views').select('ip_hash');
     const uniqueVisitors = new Set(allIps?.map(v => v.ip_hash || 'unknown')).size;
 

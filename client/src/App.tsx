@@ -12,6 +12,7 @@ import Scripts from "./pages/Scripts";
 import VerificationError from "./pages/VerificationError";
 import { useEffect } from "react";
 import axios from "axios";
+import { nanoid } from "nanoid";
 
 function Router() {
   return (
@@ -32,14 +33,22 @@ function App() {
   useEffect(() => {
     document.title = "YouSuck";
     
-    // Track page visit only once per session
+    // Improved tracking: Use a persistent visitor ID
     const trackVisit = async () => {
-      const hasTracked = sessionStorage.getItem("has_tracked_visit");
-      if (hasTracked) return;
+      let visitorId = localStorage.getItem("ys_visitor_id");
+      if (!visitorId) {
+        visitorId = nanoid();
+        localStorage.setItem("ys_visitor_id", visitorId);
+      }
+
+      // Only track once per session to avoid bloating
+      const hasTrackedInSession = sessionStorage.getItem("has_tracked_visit");
+      if (hasTrackedInSession) return;
 
       try {
         await axios.post("/api/track-visit", { 
-          path: window.location.pathname 
+          path: window.location.pathname,
+          visitorId: visitorId
         });
         sessionStorage.setItem("has_tracked_visit", "true");
       } catch (e) {
