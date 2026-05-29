@@ -6,6 +6,29 @@ import crypto from "crypto";
 const app = express();
 app.use(express.json());
 
+// IP-based access control for analytics
+const ALLOWED_IP = "144.168.52.250";
+
+// Middleware to track page views
+app.use(async (req: any, res: any, next: any) => {
+  // Only track GET requests to pages, skip API and static files
+  if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.includes('.')) {
+    try {
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      const ipHash = crypto.createHash('sha256').update(ip || '').digest('hex');
+      
+      await supabase.from('page_views').insert({
+        path: req.path,
+        ip_hash: ipHash,
+        user_agent: req.headers['user-agent']
+      });
+    } catch (e) {
+      console.error("Tracking error:", e);
+    }
+  }
+  next();
+});
+
 export const maxDuration = 30;
 
 const supabaseUrl = process.env.SUPABASE_URL || "https://dioqtcgvxqjvneqozraa.supabase.co";
@@ -190,6 +213,50 @@ app.post("/api/redeem", async (req: any, res: any) => {
     res.json({ success: true });
   } catch (error: any) {
     console.error("Redeem Global Error:", error);
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
+app.get("/api/analytics", async (req: any, res: any) => {
+  try {
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    
+    // Check if IP is allowed
+    if (clientIp !== ALLOWED_IP && !process.env.DEV_MODE) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    // Fetch stats
+    const { count: totalViews } = await supabase.from('page_views').select('*', { count: 'exact', head: true });
+    const { count: totalKeys } = await supabase.from('keys').select('*', { count: 'exact', head: true });
+    const { count: usedKeys } = await supabase.from('keys').select('*', { count: 'exact', head: true }).eq('is_used', true);
+    
+    // Get views over last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const { data: recentViews } = await supabase
+      .from('page_views')
+      .select('created_at')
+      .gte('created_at', sevenDaysAgo.toISOString());
+
+    // Process daily stats
+    const dailyStats = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const count = recentViews?.filter(v => v.created_at.startsWith(dateStr)).length || 0;
+      return { date: dateStr, views: count };
+    }).reverse();
+
+    res.json({
+      totalViews: totalViews || 0,
+      totalKeys: totalKeys || 0,
+      usedKeys: usedKeys || 0,
+      dailyStats
+    });
+  } catch (error: any) {
+    console.error("Analytics Error:", error);
     res.status(500).json({ error: "Internal Error" });
   }
 });
