@@ -11,6 +11,7 @@ import Analytics from "./pages/Analytics";
 import Scripts from "./pages/Scripts";
 import VerificationError from "./pages/VerificationError";
 import { useEffect } from "react";
+import axios from "axios";
 
 function Router() {
   return (
@@ -30,6 +31,19 @@ function Router() {
 function App() {
   useEffect(() => {
     document.title = "YouSuck";
+    
+    // Track page visit
+    const trackVisit = async () => {
+      try {
+        await axios.post("/api/track-visit", { 
+          path: window.location.pathname 
+        });
+      } catch (e) {
+        console.error("Analytics tracking failed");
+      }
+    };
+    
+    trackVisit();
   }, []);
 
   return (
