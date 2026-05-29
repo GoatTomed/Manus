@@ -3,14 +3,16 @@ import axios from "axios";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
-import { Users, Key, MousePointer2, AlertCircle, Loader2 } from "lucide-react";
+import { Users, Key, MousePointer2, AlertCircle, Loader2, Globe, Clock } from "lucide-react";
 import Navbar from "../components/Navbar";
 
 interface AnalyticsData {
   totalViews: number;
+  uniqueVisitors: number;
   totalKeys: number;
   usedKeys: number;
   dailyStats: { date: string; views: number }[];
+  recentVisits: { ip: string; path: string; time: string }[];
 }
 
 export default function Analytics() {
@@ -63,53 +65,63 @@ export default function Analytics() {
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
       <Navbar />
       
-      <main className="flex-1 p-6 pt-24 max-w-6xl mx-auto w-full space-y-8">
+      <main className="flex-1 p-6 pt-24 max-w-6xl mx-auto w-full space-y-8 pb-20">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Project <span className="text-[#00ABFF]">Analytics</span></h1>
           <p className="text-gray-500 text-sm">Real-time statistics for your script platform.</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-[#0a0d14] border border-white/10 rounded-xl p-6 space-y-4 shadow-xl">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-[#0a0d14] border border-white/10 rounded-xl p-5 space-y-3 shadow-xl">
             <div className="flex items-center justify-between">
-              <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">Total Visits</span>
+              <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Unique Visitors</span>
               <div className="p-2 bg-[#00ABFF]/10 rounded-lg text-[#00ABFF]">
-                <Users size={20} />
+                <Globe size={18} />
               </div>
             </div>
-            <div className="text-4xl font-bold">{data?.totalViews.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{data?.uniqueVisitors.toLocaleString()}</div>
           </div>
 
-          <div className="bg-[#0a0d14] border border-white/10 rounded-xl p-6 space-y-4 shadow-xl">
+          <div className="bg-[#0a0d14] border border-white/10 rounded-xl p-5 space-y-3 shadow-xl">
             <div className="flex items-center justify-between">
-              <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">Keys Generated</span>
+              <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Total Page Views</span>
+              <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                <Users size={18} />
+              </div>
+            </div>
+            <div className="text-3xl font-bold">{data?.totalViews.toLocaleString()}</div>
+          </div>
+
+          <div className="bg-[#0a0d14] border border-white/10 rounded-xl p-5 space-y-3 shadow-xl">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Keys Generated</span>
               <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
-                <Key size={20} />
+                <Key size={18} />
               </div>
             </div>
-            <div className="text-4xl font-bold">{data?.totalKeys.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{data?.totalKeys.toLocaleString()}</div>
           </div>
 
-          <div className="bg-[#0a0d14] border border-white/10 rounded-xl p-6 space-y-4 shadow-xl">
+          <div className="bg-[#0a0d14] border border-white/10 rounded-xl p-5 space-y-3 shadow-xl">
             <div className="flex items-center justify-between">
-              <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">Keys Redeemed</span>
+              <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Keys Redeemed</span>
               <div className="p-2 bg-green-500/10 rounded-lg text-green-500">
-                <MousePointer2 size={20} />
+                <MousePointer2 size={18} />
               </div>
             </div>
-            <div className="text-4xl font-bold">{data?.usedKeys.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{data?.usedKeys.toLocaleString()}</div>
           </div>
         </div>
 
         {/* Graph Section */}
         <div className="bg-[#0a0d14] border border-white/10 rounded-xl p-8 shadow-xl space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">Traffic <span className="text-[#00ABFF]">Overview</span></h2>
+            <h2 className="text-xl font-bold">Unique Visitors <span className="text-[#00ABFF]">Trend</span></h2>
             <span className="text-xs text-gray-500 font-medium">Last 7 Days</span>
           </div>
           
-          <div className="h-[350px] w-full">
+          <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data?.dailyStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
@@ -157,6 +169,39 @@ export default function Analytics() {
                 />
               </AreaChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Recent Visits Table */}
+        <div className="bg-[#0a0d14] border border-white/10 rounded-xl shadow-xl overflow-hidden">
+          <div className="p-6 border-b border-white/10 flex items-center justify-between">
+            <h2 className="text-xl font-bold">Recent <span className="text-[#00ABFF]">Activity</span></h2>
+            <div className="flex items-center gap-2 text-gray-500 text-xs">
+              <Clock size={14} />
+              <span>Real-time updates</span>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-white/5 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
+                <tr>
+                  <th className="px-6 py-4">IP Address</th>
+                  <th className="px-6 py-4">Page Path</th>
+                  <th className="px-6 py-4">Time</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {data?.recentVisits.map((visit, i) => (
+                  <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="px-6 py-4 font-mono text-[#00ABFF]">{visit.ip}</td>
+                    <td className="px-6 py-4 text-gray-300">{visit.path}</td>
+                    <td className="px-6 py-4 text-gray-500 text-xs">
+                      {new Date(visit.time).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </main>
