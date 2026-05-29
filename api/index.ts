@@ -9,35 +9,23 @@ app.use(express.json());
 // IP-based access control for analytics
 const ALLOWED_IP = "144.168.52.250";
 
-// Middleware to track page views
-app.use(async (req: any, res: any, next: any) => {
-  // Track all page visits (non-API, non-file requests)
-  const isPageRequest = req.method === 'GET' && 
-                        !req.path.startsWith('/api') && 
-                        !req.path.includes('.') &&
-                        req.path !== '/favicon.ico';
-
-  if (isPageRequest) {
-    try {
-      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-      const ipHash = crypto.createHash('sha256').update(ip).digest('hex');
-      
-      console.log(`Tracking visit to: ${req.path} from IP: ${ip.split(',')[0]}`);
-      
-      const { error } = await supabase.from('page_views').insert({
-        path: req.path,
-        ip_hash: ipHash,
-        user_agent: req.headers['user-agent'] || 'unknown'
-      });
-      
-      if (error) {
-        console.error("Supabase Tracking Error:", error.message);
-      }
-    } catch (e) {
-      console.error("Tracking catch error:", e);
-    }
+// Dedicated route for tracking page views from frontend
+app.post("/api/track-visit", async (req: any, res: any) => {
+  try {
+    const { path } = req.body;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+    const ipHash = crypto.createHash('sha256').update(ip).digest('hex');
+    
+    await supabase.from('page_views').insert({
+      path: path || '/',
+      ip_hash: ipHash,
+      user_agent: req.headers['user-agent'] || 'unknown'
+    });
+    
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: "Tracking failed" });
   }
-  next();
 });
 
 export const maxDuration = 30;
