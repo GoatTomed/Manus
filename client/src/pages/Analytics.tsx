@@ -88,7 +88,7 @@ export default function Analytics() {
   if (error) {
     return (
       <div className="dot-grid-bg min-h-screen flex flex-col items-center justify-center text-white p-6">
-        <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-10 max-w-md w-full text-center space-y-6 backdrop-blur-xl">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-10 max-w-md w-full text-center space-y-6 backdrop-blur-xl">
           <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto border border-red-500/20">
             <AlertCircle className="text-red-500" size={40} />
           </div>
@@ -202,7 +202,7 @@ export default function Analytics() {
             { label: "Keys Generated", value: data?.totalKeys, icon: Key, color: "#a855f7" },
             { label: "Keys Redeemed", value: data?.usedKeys, icon: MousePointer2, color: "#22c55e" }
           ].map((stat, i) => (
-            <div key={i} className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 space-y-3 hover:border-white/20 transition-all group">
+            <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-3 hover:border-white/20 transition-all group">
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{stat.label}</span>
                 <div className="p-2 bg-white/5 rounded-lg border border-white/5">
@@ -215,7 +215,7 @@ export default function Analytics() {
         </div>
 
         {/* Graph Section */}
-        <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 space-y-6">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-[#00ABFF]/10 rounded-lg border border-[#00ABFF]/20">
@@ -265,7 +265,7 @@ export default function Analytics() {
         </div>
 
         {/* Live Board Table */}
-        <div className="bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden">
+        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
           <div className="p-6 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/5 rounded-lg border border-white/10">
@@ -304,7 +304,7 @@ export default function Analytics() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-white/[0.02] text-gray-500 font-bold uppercase text-[9px] tracking-widest">
+                <tr className="bg-white/5 text-gray-500 font-bold uppercase text-[9px] tracking-widest">
                   <th className="px-6 py-4">IP Address</th>
                   <th className="px-6 py-4">Path</th>
                   <th className="px-6 py-4">Time</th>
@@ -312,7 +312,7 @@ export default function Analytics() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {data?.recentVisits.map((visit, i) => (
-                  <tr key={i} className="hover:bg-white/[0.01] transition-all">
+                  <tr key={i} className="hover:bg-white/[0.02] transition-all">
                     <td className="px-6 py-4 font-mono text-[#00ABFF] text-xs">
                       {visit.ip_address}
                     </td>

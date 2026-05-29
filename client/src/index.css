@@ -3,7 +3,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
+@theme {
+  --font-sans: 'Space Grotesk', sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -27,271 +28,52 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
 }
 
 :root {
   --radius: 0.65rem;
-  --background: oklch(0.09 0.012 264);
-  --foreground: oklch(0.95 0.005 264);
-  --card: oklch(0.13 0.015 264);
-  --card-foreground: oklch(0.95 0.005 264);
-  --popover: oklch(0.13 0.015 264);
-  --popover-foreground: oklch(0.95 0.005 264);
+  --background: #0a0d14;
+  --foreground: #f2f2f2;
+  --card: #121620;
+  --card-foreground: #f2f2f2;
+  --popover: #121620;
+  --popover-foreground: #f2f2f2;
   --primary: #00ABFF;
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.18 0.015 264);
-  --secondary-foreground: oklch(0.85 0.005 264);
-  --muted: oklch(0.16 0.012 264);
-  --muted-foreground: oklch(0.60 0.015 264);
-  --accent: oklch(0.18 0.015 264);
-  --accent-foreground: oklch(0.95 0.005 264);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 10%);
+  --primary-foreground: #ffffff;
+  --secondary: #1a1f2e;
+  --secondary-foreground: #d1d5db;
+  --muted: #1a1f2e;
+  --muted-foreground: #9ca3af;
+  --accent: #1a1f2e;
+  --accent-foreground: #f2f2f2;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.1);
   --ring: #00ABFF;
-  --chart-1: #00ABFF;
-  --chart-2: #0099DD;
-  --chart-3: #0087BB;
-  --chart-4: #007599;
-  --chart-5: #006377;
-  --sidebar: oklch(0.11 0.012 264);
-  --sidebar-foreground: oklch(0.95 0.005 264);
-  --sidebar-primary: #00ABFF;
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.18 0.015 264);
-  --sidebar-accent-foreground: oklch(0.95 0.005 264);
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: #00ABFF;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-    font-family: 'Space Grotesk', sans-serif;
+    @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Space Grotesk', sans-serif;
-  }
-  button:not(:disabled),
-  [role="button"]:not([aria-disabled="true"]),
-  [type="button"]:not(:disabled),
-  [type="submit"]:not(:disabled),
-  [type="reset"]:not(:disabled),
-  a[href],
-  select:not(:disabled),
-  input[type="checkbox"]:not(:disabled),
-  input[type="radio"]:not(:disabled) {
-    @apply cursor-pointer;
+    @apply bg-background text-foreground font-sans;
   }
 }
 
 @layer components {
-  .container {
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .flex {
-    min-height: 0;
-    min-width: 0;
-  }
-
-  @media (min-width: 640px) {
-    .container {
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .container {
-      padding-left: 2rem;
-      padding-right: 2rem;
-      max-width: 1280px;
-    }
-  }
-
-  /* Grid background pattern - quadrilled squares */
   .dot-grid-bg {
-    background-color: oklch(0.08 0.01 264);
+    background-color: #0a0d14;
     background-image:
-      linear-gradient(oklch(0.18 0.015 264 / 0.5) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(0.18 0.015 264 / 0.5) 1px, transparent 1px);
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     background-size: 40px 40px;
   }
 
-
-
-  /* Redeem card */
-  .redeem-card {
-    background: oklch(0.13 0.015 264 / 0.85);
-    border: 1px solid oklch(1 0 0 / 0.1);
-    border-radius: 1rem;
-    backdrop-filter: blur(12px);
-    box-shadow:
-      0 0 0 1px oklch(1 0 0 / 0.05),
-      0 20px 60px oklch(0 0 0 / 0.5),
-      0 0 40px oklch(0.60 0.22 264 / 0.05);
-  }
-
-  /* Input key field */
-  .key-input {
-    background: oklch(0.11 0.012 264 / 0.8);
-    border: 1px solid oklch(1 0 0 / 0.12);
-    border-radius: 0.6rem;
-    color: oklch(0.75 0.01 264);
-    transition: border-color 200ms ease, box-shadow 200ms ease;
-  }
-  .key-input:focus {
-    outline: none;
-    border-color: #00ABFF;
-    box-shadow: 0 0 0 3px #00ABFF40;
-    color: oklch(0.92 0.005 264);
-  }
-  .key-input::placeholder {
-    color: oklch(0.45 0.01 264);
-    letter-spacing: 0.12em;
-  }
-
-  /* Verify button */
-  .verify-btn {
-    background: #00ABFF;
-    border: 1px solid #0099DD;
-    border-radius: 0.6rem;
-    color: white;
-    font-weight: 600;
-    font-size: 1.1rem;
-    letter-spacing: 0.02em;
-    padding: 0.85rem 2rem;
-    transition: all 150ms ease;
-    cursor: pointer;
-    width: 100%;
-  }
-  @media (min-width: 768px) {
-    .verify-btn {
-      width: auto;
-    }
-  }
-  .verify-btn:hover {
-    background: #0099DD;
-    transform: translateY(-1px);
-  }
-  .verify-btn:active {
-    transform: scale(0.98) translateY(0);
-  }
-
-  /* Navbar */
   .navbar {
-    background: oklch(0.09 0.012 264 / 0.85);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid oklch(1 0 0 / 0.06);
-  }
-
-  /* Get Key button - Premium style */
-  .get-key-btn {
-    background: #00ABFF;
-    color: white;
-    font-weight: 600;
-    border-radius: 0.6rem;
-    padding: 0.85rem 2rem;
-    font-size: 1.1rem;
-    letter-spacing: 0.02em;
-    transition: all 150ms ease;
-    border: 1px solid #0099DD;
-    cursor: pointer;
-    position: relative;
-    width: 100%;
-  }
-  @media (min-width: 768px) {
-    .get-key-btn {
-      width: auto;
-    }
-  }
-  .get-key-btn:hover {
-    background: #0099DD;
-    transform: translateY(-1px);
-  }
-  .get-key-btn:active {
-    transform: scale(0.98) translateY(0);
-  }
-  .get-key-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* Fade in up animation */
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-fade-in-up {
-    animation: fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-  }
-
-  .animate-fade-in-up-delay-1 {
-    opacity: 0;
-    animation: fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) 0.1s forwards;
-  }
-
-  .animate-fade-in-up-delay-2 {
-    opacity: 0;
-    animation: fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) 0.2s forwards;
-  }
-
-  .animate-fade-in-up-delay-3 {
-    opacity: 0;
-    animation: fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) 0.3s forwards;
-  }
-
-  /* Progress bar indeterminate animation */
-  @keyframes progressBar {
-    0% { transform: translateX(-100%); width: 60%; }
-    50% { transform: translateX(60%); width: 60%; }
-    100% { transform: translateX(200%); width: 60%; }
-  }
-  .animate-progress-bar {
-    animation: progressBar 1.4s ease-in-out infinite;
-    width: 60% !important;
-    background: #00ABFF;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .animate-fade-in-up,
-    .animate-fade-in-up-delay-1,
-    .animate-fade-in-up-delay-2,
-    .animate-fade-in-up-delay-3 {
-      animation: none;
-      opacity: 1;
-    }
-    .animate-progress-bar {
-      animation: none;
-      width: 50% !important;
-    }
+    background: rgba(10, 13, 20, 0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 }
