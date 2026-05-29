@@ -223,6 +223,49 @@ app.post("/api/redeem", async (req: any, res: any) => {
   }
 });
 
+app.post("/api/analytics/modify", async (req: any, res: any) => {
+  try {
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    if (clientIp !== ALLOWED_IP && !process.env.DEV_MODE) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const { amount, type } = req.body; // type: 'add' or 'remove'
+    const count = Math.abs(parseInt(amount));
+
+    if (type === 'add') {
+      // Create dummy records to increase count
+      const dummyRecords = Array.from({ length: count }, () => ({
+        path: '/manual/added',
+        ip_hash: 'manual',
+        ip_address: '0.0.0.0',
+        user_agent: 'manual-bot'
+      }));
+      
+      // Insert in batches of 100 to avoid Supabase limits
+      for (let i = 0; i < dummyRecords.length; i += 100) {
+        await supabase.from('page_views').insert(dummyRecords.slice(i, i + 100));
+      }
+    } else if (type === 'remove') {
+      // Delete the most recent records
+      const { data: recordsToDelete } = await supabase
+        .from('page_views')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(count);
+
+      if (recordsToDelete && recordsToDelete.length > 0) {
+        const ids = recordsToDelete.map(r => r.id);
+        await supabase.from('page_views').delete().in('id', ids);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: "Modification failed" });
+  }
+});
+
 app.get("/api/analytics", async (req: any, res: any) => {
   try {
     const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
