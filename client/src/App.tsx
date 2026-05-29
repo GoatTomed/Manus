@@ -32,12 +32,16 @@ function App() {
   useEffect(() => {
     document.title = "YouSuck";
     
-    // Track page visit
+    // Track page visit only once per session
     const trackVisit = async () => {
+      const hasTracked = sessionStorage.getItem("has_tracked_visit");
+      if (hasTracked) return;
+
       try {
         await axios.post("/api/track-visit", { 
           path: window.location.pathname 
         });
+        sessionStorage.setItem("has_tracked_visit", "true");
       } catch (e) {
         console.error("Analytics tracking failed");
       }
