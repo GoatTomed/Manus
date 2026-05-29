@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Redeem from "./pages/Redeem";
 import GetKey from "./pages/GetKey";
+import Analytics from "./pages/Analytics";
 import Scripts from "./pages/Scripts";
 import VerificationError from "./pages/VerificationError";
 import { useEffect } from "react";
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/redeem" component={Redeem} />
       <Route path="/get-key" component={GetKey} />
+      <Route path="/analytics" component={Analytics} />
       <Route path="/scripts" component={Scripts} />
       <Route path="/verification-error" component={VerificationError} />
       <Route path="/404" component={NotFound} />
