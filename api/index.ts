@@ -23,13 +23,12 @@ app.post("/api/track-visit", async (req: any, res: any) => {
   try {
     const { path } = req.body;
     const cleanIp = getClientIp(req);
-    const ipHash = crypto.createHash('sha256').update(cleanIp).digest('hex');
+    // Store IP directly in ip_hash column to avoid schema issues if ip_address doesn't exist
     
     await supabase.from('page_views').insert({
       path: path || '/',
-      ip_hash: ipHash,
-      user_agent: req.headers['user-agent'] || 'unknown',
-      ip_address: cleanIp 
+      ip_hash: cleanIp, // Using ip_hash column to store the actual IP for tracking
+      user_agent: req.headers['user-agent'] || 'unknown'
     });
     
     res.json({ success: true });
@@ -217,7 +216,6 @@ app.post("/api/analytics/modify", authorizeAnalytics, async (req: any, res: any)
       const dummyRecords = Array.from({ length: count }, () => ({
         path: '/manual/added',
         ip_hash: 'manual',
-        ip_address: '0.0.0.0',
         user_agent: 'manual-bot'
       }));
       
@@ -256,7 +254,7 @@ app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
     
     const { data: paginatedVisits } = await supabase
       .from('page_views')
-      .select('ip_address, path, created_at')
+      .select('ip_hash, path, created_at')
       .order('created_at', { ascending: false })
       .range(start, end);
 
@@ -265,27 +263,19 @@ app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
     
     const { data: graphData } = await supabase
       .from('page_views')
-      .select('ip_address, created_at')
+      .select('ip_hash, created_at')
       .gte('created_at', sevenDaysAgo.toISOString());
 
-    // Corrected unique visitors logic: use distinct ip_address count
-    const { data: uniqueIpsData } = await supabase.rpc('get_unique_visitors_count');
-    let uniqueVisitors = 0;
-    
-    if (uniqueIpsData !== null) {
-      uniqueVisitors = uniqueIpsData;
-    } else {
-      // Fallback if RPC is not available
-      const { data: allIps } = await supabase.from('page_views').select('ip_address');
-      uniqueVisitors = new Set(allIps?.map(v => v.ip_address || 'unknown')).size;
-    }
+    // Count unique IPs using ip_hash column
+    const { data: allIps } = await supabase.from('page_views').select('ip_hash');
+    const uniqueVisitors = new Set(allIps?.map(v => v.ip_hash || 'unknown')).size;
 
     const dailyStats = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
       const dayViews = graphData?.filter(v => v.created_at.startsWith(dateStr)) || [];
-      const dayUniqueIps = new Set(dayViews.map(v => v.ip_address || 'unknown'));
+      const dayUniqueIps = new Set(dayViews.map(v => v.ip_hash || 'unknown'));
       return { date: dateStr, views: dayUniqueIps.size };
     }).reverse();
 
