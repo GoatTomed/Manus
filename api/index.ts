@@ -268,8 +268,17 @@ app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
       .select('ip_address, created_at')
       .gte('created_at', sevenDaysAgo.toISOString());
 
-    const { data: allIps } = await supabase.from('page_views').select('ip_address');
-    const uniqueVisitors = new Set(allIps?.map(v => v.ip_address || 'unknown')).size;
+    // Corrected unique visitors logic: use distinct ip_address count
+    const { data: uniqueIpsData } = await supabase.rpc('get_unique_visitors_count');
+    let uniqueVisitors = 0;
+    
+    if (uniqueIpsData !== null) {
+      uniqueVisitors = uniqueIpsData;
+    } else {
+      // Fallback if RPC is not available
+      const { data: allIps } = await supabase.from('page_views').select('ip_address');
+      uniqueVisitors = new Set(allIps?.map(v => v.ip_address || 'unknown')).size;
+    }
 
     const dailyStats = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
