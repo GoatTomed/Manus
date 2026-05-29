@@ -7,25 +7,28 @@ const app = express();
 app.use(express.json());
 
 // IP-based access control for analytics
-const ALLOWED_IP = "144.168.52.250";
+const ALLOWED_IP = process.env.ALLOWED_IP || "144.168.52.250";
+
+// Helper to get client IP
+const getClientIp = (req: any) => {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    return (typeof forwarded === 'string' ? forwarded : forwarded[0]).split(',')[0].trim();
+  }
+  return req.socket.remoteAddress || 'unknown';
+};
 
 // Dedicated route for tracking page views from frontend
 app.post("/api/track-visit", async (req: any, res: any) => {
   try {
     const { path } = req.body;
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    const cleanIp = ip.split(',')[0].trim(); // Get actual client IP
+    const cleanIp = getClientIp(req);
     const ipHash = crypto.createHash('sha256').update(cleanIp).digest('hex');
     
     await supabase.from('page_views').insert({
       path: path || '/',
       ip_hash: ipHash,
       user_agent: req.headers['user-agent'] || 'unknown',
-      // We'll store the IP in a new column 'ip_address' if you added it, 
-      // or just use ip_hash for now. To display actual IPs, we need the real IP.
-      // Let's use the 'ip_hash' column but store the actual IP there for your internal use.
-      // Note: In a production app, you'd keep them separate for privacy, 
-      // but here we want to see WHO is visiting.
       ip_address: cleanIp 
     });
     
@@ -66,7 +69,6 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
       return res.status(500).json({ error: `Database error: ${sbError.message}` });
     }
 
-    // Return sessionId and verification hash for client-side link generation
     res.json({ sessionId, verificationHash });
   } catch (error: any) {
     console.error("Global API Error:", error);
@@ -74,12 +76,10 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
   }
 });
 
-// Generic verification endpoint - handles any verification hash
 app.get("/api/v/:hash", async (req: any, res: any) => {
   try {
     const { hash } = req.params;
 
-    // Find the session with this verification hash
     const { data, error: sbError } = await supabase
       .from("key_sessions")
       .select("*")
@@ -87,7 +87,6 @@ app.get("/api/v/:hash", async (req: any, res: any) => {
       .single();
 
     if (sbError || !data) {
-      // Check if it's a step2 verification
       const { data: step2Data, error: step2Error } = await supabase
         .from("key_sessions")
         .select("*")
@@ -95,16 +94,11 @@ app.get("/api/v/:hash", async (req: any, res: any) => {
         .single();
 
       if (step2Error || !step2Data) {
-        console.error("Verification Error:", sbError || step2Error);
         return res.redirect(`${APP_URL}/verification-error`);
       }
 
-      // Step 2 verification - generate new hash for next step
-      const newHash = generateVerificationHash();
       const finalKey = `YS-${nanoid(8).toUpperCase()}-${nanoid(8).toUpperCase()}`;
 
-      // Invalidate the hash by changing status. 
-      // We don't nullify to avoid potential DB constraints errors if NOT NULL is set.
       const { error: updateError } = await supabase
         .from("key_sessions")
         .update({
@@ -115,24 +109,15 @@ app.get("/api/v/:hash", async (req: any, res: any) => {
         .match({ id: step2Data.id, step2_token: hash, status: "step1_completed" });
 
       if (updateError) {
-        console.error("Update Error:", updateError);
         return res.status(500).send("Internal Error");
       }
 
       await supabase.from("keys").insert({ key_value: finalKey, is_used: false });
-
-      // Redirect to result page
       return res.redirect(`${APP_URL}/get-key?session=${step2Data.id}&completed=true`);
     }
 
-    // Step 1 verification - generate new hash for step 2
     const newHash = generateVerificationHash();
 
-    // First update the status and set the new hash, then we can clear the old one if needed
-    // However, keeping the old hash for a moment or using a dedicated 'used' flag is safer
-    // Let's just update the status and step2_token. The match on status: 'step1_pending' 
-    // already ensures it can only be used once.
-    // Invalidate the old hash by changing status.
     const { error: updateError } = await supabase
       .from("key_sessions")
       .update({
@@ -142,14 +127,11 @@ app.get("/api/v/:hash", async (req: any, res: any) => {
       .match({ id: data.id, step1_token: hash, status: "step1_pending" });
 
     if (updateError) {
-      console.error("Update Error:", updateError);
       return res.status(500).send("Internal Error");
     }
 
-    // Redirect to step 2 with session ID
     res.redirect(`${APP_URL}/get-key?session=${data.id}&step=2`);
   } catch (error: any) {
-    console.error("Verification Global Error:", error);
     res.status(500).send("Internal Error");
   }
 });
@@ -165,14 +147,11 @@ app.post("/api/get-key/step2", async (req: any, res: any) => {
       .single();
 
     if (sbError || !data) {
-      console.error("Step 2 Fetch Error:", sbError);
       return res.status(400).json({ error: "Session not found or incomplete" });
     }
 
-    // Return the verification hash for step 2
     res.json({ verificationHash: data.step2_token });
   } catch (error: any) {
-    console.error("Step 2 Global Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -186,12 +165,10 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
       .single();
 
     if (error) {
-      console.error("Fetch Result Error:", error);
       return res.status(404).json({ error: "Key not found" });
     }
     res.json({ key: data?.generated_key });
   } catch (error: any) {
-    console.error("Fetch Result Global Error:", error);
     res.status(500).json({ error: "Internal Error" });
   }
 });
@@ -218,23 +195,25 @@ app.post("/api/redeem", async (req: any, res: any) => {
 
     res.json({ success: true });
   } catch (error: any) {
-    console.error("Redeem Global Error:", error);
     res.status(500).json({ error: "Internal Error" });
   }
 });
 
-app.post("/api/analytics/modify", async (req: any, res: any) => {
-  try {
-    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    if (clientIp !== ALLOWED_IP && !process.env.DEV_MODE) {
-      return res.status(403).json({ error: "Access denied" });
-    }
+// Middleware for analytics authorization
+const authorizeAnalytics = (req: any, res: any, next: any) => {
+  const clientIp = getClientIp(req);
+  if (ALLOWED_IP !== "OFF" && clientIp !== ALLOWED_IP && !process.env.DEV_MODE) {
+    return res.status(403).json({ error: "Access denied" });
+  }
+  next();
+};
 
-    const { amount, type } = req.body; // type: 'add' or 'remove'
+app.post("/api/analytics/modify", authorizeAnalytics, async (req: any, res: any) => {
+  try {
+    const { amount, type } = req.body;
     const count = Math.abs(parseInt(amount));
 
     if (type === 'add') {
-      // Create dummy records to increase count
       const dummyRecords = Array.from({ length: count }, () => ({
         path: '/manual/added',
         ip_hash: 'manual',
@@ -242,12 +221,10 @@ app.post("/api/analytics/modify", async (req: any, res: any) => {
         user_agent: 'manual-bot'
       }));
       
-      // Insert in batches of 100 to avoid Supabase limits
       for (let i = 0; i < dummyRecords.length; i += 100) {
         await supabase.from('page_views').insert(dummyRecords.slice(i, i + 100));
       }
     } else if (type === 'remove') {
-      // Delete the most recent records
       const { data: recordsToDelete } = await supabase
         .from('page_views')
         .select('id')
@@ -266,31 +243,23 @@ app.post("/api/analytics/modify", async (req: any, res: any) => {
   }
 });
 
-app.get("/api/analytics", async (req: any, res: any) => {
+app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
   try {
-    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    if (clientIp !== ALLOWED_IP && !process.env.DEV_MODE) {
-      return res.status(403).json({ error: "Access denied" });
-    }
-
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = 20;
     const start = (page - 1) * pageSize;
     const end = start + pageSize - 1;
 
-    // 1. Basic counts
     const { count: totalViews } = await supabase.from('page_views').select('*', { count: 'exact', head: true });
     const { count: totalKeys } = await supabase.from('keys').select('*', { count: 'exact', head: true });
     const { count: usedKeys } = await supabase.from('keys').select('*', { count: 'exact', head: true }).eq('is_used', true);
     
-    // 2. Get paginated recent visits
     const { data: paginatedVisits } = await supabase
       .from('page_views')
       .select('ip_address, path, created_at')
       .order('created_at', { ascending: false })
       .range(start, end);
 
-    // 3. Get last 7 days for unique visitors graph
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
@@ -299,11 +268,9 @@ app.get("/api/analytics", async (req: any, res: any) => {
       .select('ip_address, created_at')
       .gte('created_at', sevenDaysAgo.toISOString());
 
-    // Calculate Unique Visitors (Total)
     const { data: allIps } = await supabase.from('page_views').select('ip_address');
     const uniqueVisitors = new Set(allIps?.map(v => v.ip_address || 'unknown')).size;
 
-    // Process daily stats for graph
     const dailyStats = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -327,7 +294,6 @@ app.get("/api/analytics", async (req: any, res: any) => {
       }
     });
   } catch (error: any) {
-    console.error("Analytics Error:", error);
     res.status(500).json({ error: "Internal Error" });
   }
 });
