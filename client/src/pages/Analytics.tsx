@@ -165,7 +165,7 @@ export default function Analytics() {
         </div>
       )}
 
-      <main className="flex-1 p-8 pt-32 max-w-[1500px] mx-auto w-full space-y-12 pb-32">
+      <main className="flex-1 p-8 pt-32 max-w-[1400px] mx-auto w-full space-y-12 pb-32">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
@@ -228,7 +228,7 @@ export default function Analytics() {
             </div>
           </div>
           
-          <div className="h-[480px] w-full pt-6">
+          <div className="h-[450px] w-full pt-6">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data?.dailyStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
