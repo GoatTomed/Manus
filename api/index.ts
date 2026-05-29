@@ -269,47 +269,49 @@ app.post("/api/analytics/modify", async (req: any, res: any) => {
 app.get("/api/analytics", async (req: any, res: any) => {
   try {
     const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    
-    // Check if IP is allowed
     if (clientIp !== ALLOWED_IP && !process.env.DEV_MODE) {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    // Fetch stats
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = 20;
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize - 1;
+
+    // 1. Basic counts
     const { count: totalViews } = await supabase.from('page_views').select('*', { count: 'exact', head: true });
     const { count: totalKeys } = await supabase.from('keys').select('*', { count: 'exact', head: true });
     const { count: usedKeys } = await supabase.from('keys').select('*', { count: 'exact', head: true }).eq('is_used', true);
     
-    // Get all views to calculate unique visitors and details
-    const { data: allViews } = await supabase
+    // 2. Get paginated recent visits
+    const { data: paginatedVisits } = await supabase
       .from('page_views')
       .select('ip_address, path, created_at')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(start, end);
 
-    // Calculate Unique Visitors (by IP)
-    const uniqueIps = new Set(allViews?.map(v => v.ip_address || 'unknown'));
-    const uniqueVisitors = uniqueIps.size;
-
-    // Get views over last 7 days for the graph
+    // 3. Get last 7 days for unique visitors graph
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
+    const { data: graphData } = await supabase
+      .from('page_views')
+      .select('ip_address, created_at')
+      .gte('created_at', sevenDaysAgo.toISOString());
+
+    // Calculate Unique Visitors (Total)
+    const { data: allIps } = await supabase.from('page_views').select('ip_address');
+    const uniqueVisitors = new Set(allIps?.map(v => v.ip_address || 'unknown')).size;
+
+    // Process daily stats for graph
     const dailyStats = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
-      // Count unique visitors per day
-      const dayViews = allViews?.filter(v => v.created_at.startsWith(dateStr)) || [];
+      const dayViews = graphData?.filter(v => v.created_at.startsWith(dateStr)) || [];
       const dayUniqueIps = new Set(dayViews.map(v => v.ip_address || 'unknown'));
       return { date: dateStr, views: dayUniqueIps.size };
     }).reverse();
-
-    // Get recent detailed visits (last 20)
-    const recentVisits = allViews?.slice(0, 20).map(v => ({
-      ip: v.ip_address || 'unknown',
-      path: v.path,
-      time: v.created_at
-    })) || [];
 
     res.json({
       totalViews: totalViews || 0,
@@ -317,7 +319,12 @@ app.get("/api/analytics", async (req: any, res: any) => {
       totalKeys: totalKeys || 0,
       usedKeys: usedKeys || 0,
       dailyStats,
-      recentVisits
+      recentVisits: paginatedVisits || [],
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil((totalViews || 0) / pageSize),
+        totalItems: totalViews || 0
+      }
     });
   } catch (error: any) {
     console.error("Analytics Error:", error);
