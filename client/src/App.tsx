@@ -33,15 +33,45 @@ function App() {
   useEffect(() => {
     document.title = "YouSuck";
     
-    // Improved tracking: Use a persistent visitor ID
+    // Advanced Fingerprinting: Identify who is who
+    const getFingerprint = () => {
+      // Create a signature based on browser/hardware characteristics
+      const screenRes = `${window.screen.width}x${window.screen.height}`;
+      const userAgent = navigator.userAgent;
+      const language = navigator.language;
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const hardwareConcurrency = navigator.hardwareConcurrency || "unknown";
+      
+      // Combine features into a single string
+      const rawSignature = `${screenRes}|${userAgent}|${language}|${timezone}|${hardwareConcurrency}`;
+      
+      // Simple hash function for the signature
+      let hash = 0;
+      for (let i = 0; i < rawSignature.length; i++) {
+        const char = rawSignature.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+      }
+      
+      return `FP-${Math.abs(hash).toString(16)}`;
+    };
+
     const trackVisit = async () => {
-      let visitorId = localStorage.getItem("ys_visitor_id");
+      // 1. Check for existing ID in multiple storages
+      let visitorId = localStorage.getItem("ys_visitor_id") || 
+                      document.cookie.split('; ').find(row => row.startsWith('ys_visitor_id='))?.split('=')[1];
+      
+      // 2. If no ID, combine with browser fingerprint for uniqueness
       if (!visitorId) {
-        visitorId = nanoid();
+        const fingerprint = getFingerprint();
+        visitorId = `${fingerprint}-${nanoid(8)}`;
+        
+        // 3. Persist ID everywhere
         localStorage.setItem("ys_visitor_id", visitorId);
+        document.cookie = `ys_visitor_id=${visitorId}; path=/; max-age=31536000; SameSite=Lax`;
       }
 
-      // Only track once per session to avoid bloating
+      // 4. Only track once per session to avoid duplicate hits
       const hasTrackedInSession = sessionStorage.getItem("has_tracked_visit");
       if (hasTrackedInSession) return;
 
