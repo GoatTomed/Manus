@@ -14,12 +14,19 @@ app.post("/api/track-visit", async (req: any, res: any) => {
   try {
     const { path } = req.body;
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    const ipHash = crypto.createHash('sha256').update(ip).digest('hex');
+    const cleanIp = ip.split(',')[0].trim(); // Get actual client IP
+    const ipHash = crypto.createHash('sha256').update(cleanIp).digest('hex');
     
     await supabase.from('page_views').insert({
       path: path || '/',
       ip_hash: ipHash,
-      user_agent: req.headers['user-agent'] || 'unknown'
+      user_agent: req.headers['user-agent'] || 'unknown',
+      // We'll store the IP in a new column 'ip_address' if you added it, 
+      // or just use ip_hash for now. To display actual IPs, we need the real IP.
+      // Let's use the 'ip_hash' column but store the actual IP there for your internal use.
+      // Note: In a production app, you'd keep them separate for privacy, 
+      // but here we want to see WHO is visiting.
+      ip_address: cleanIp 
     });
     
     res.json({ success: true });
@@ -230,29 +237,44 @@ app.get("/api/analytics", async (req: any, res: any) => {
     const { count: totalKeys } = await supabase.from('keys').select('*', { count: 'exact', head: true });
     const { count: usedKeys } = await supabase.from('keys').select('*', { count: 'exact', head: true }).eq('is_used', true);
     
-    // Get views over last 7 days
+    // Get all views to calculate unique visitors and details
+    const { data: allViews } = await supabase
+      .from('page_views')
+      .select('ip_address, path, created_at')
+      .order('created_at', { ascending: false });
+
+    // Calculate Unique Visitors (by IP)
+    const uniqueIps = new Set(allViews?.map(v => v.ip_address || 'unknown'));
+    const uniqueVisitors = uniqueIps.size;
+
+    // Get views over last 7 days for the graph
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
-    const { data: recentViews } = await supabase
-      .from('page_views')
-      .select('created_at')
-      .gte('created_at', sevenDaysAgo.toISOString());
-
-    // Process daily stats
     const dailyStats = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
-      const count = recentViews?.filter(v => v.created_at.startsWith(dateStr)).length || 0;
-      return { date: dateStr, views: count };
+      // Count unique visitors per day
+      const dayViews = allViews?.filter(v => v.created_at.startsWith(dateStr)) || [];
+      const dayUniqueIps = new Set(dayViews.map(v => v.ip_address || 'unknown'));
+      return { date: dateStr, views: dayUniqueIps.size };
     }).reverse();
+
+    // Get recent detailed visits (last 20)
+    const recentVisits = allViews?.slice(0, 20).map(v => ({
+      ip: v.ip_address || 'unknown',
+      path: v.path,
+      time: v.created_at
+    })) || [];
 
     res.json({
       totalViews: totalViews || 0,
+      uniqueVisitors,
       totalKeys: totalKeys || 0,
       usedKeys: usedKeys || 0,
-      dailyStats
+      dailyStats,
+      recentVisits
     });
   } catch (error: any) {
     console.error("Analytics Error:", error);
