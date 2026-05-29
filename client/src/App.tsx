@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Redeem from "./pages/Redeem";
 import GetKey from "./pages/GetKey";
 import Analytics from "./pages/Analytics";
+import UsersPage from "./pages/UsersPage";
 import Scripts from "./pages/Scripts";
 import VerificationError from "./pages/VerificationError";
 import { useEffect, useState } from "react";
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/redeem" component={Redeem} />
       <Route path="/get-key" component={GetKey} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/users" component={UsersPage} />
       <Route path="/scripts" component={Scripts} />
       <Route path="/verification-error" component={VerificationError} />
       <Route path="/404" component={NotFound} />
