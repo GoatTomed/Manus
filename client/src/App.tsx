@@ -102,7 +102,7 @@ function App() {
             sessionStorage.setItem("has_tracked_visit", "true");
           }
         } catch (e) {
-          console.error("Tracking failed");
+          console.error("Tracking failed:", e instanceof Error ? e.message : String(e));
         }
       }
     };
@@ -136,6 +136,7 @@ function App() {
         }
       } catch (e) {
         // Silent fail - don't interrupt user experience
+        console.error("Ban check failed:", e instanceof Error ? e.message : String(e));
       }
     };
 
