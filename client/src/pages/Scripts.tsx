@@ -23,7 +23,7 @@ const SCRIPTS: Script[] = [
   {
     id: "bite-by-night",
     name: "Bite By Night",
-    image: "https://i.imgur.com/2b7c546.png", // Corrected imgur URL from blob/id
+    image: "https://i.imgur.com/LLI5B2E.png",
     description: "Dominating Bite By Night with this powerful script",
     loadstring: 'loadstring(game:HttpGet("https://yoursuck.vercel.app/BiteByNight.lua", true))()',
   },
