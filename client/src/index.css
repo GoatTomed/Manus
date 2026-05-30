@@ -62,7 +62,7 @@
     background-image: 
       linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-    background-size: 32px 32px;
+    background-size: 48px 48px;
     min-height: 100vh;
     @apply text-foreground font-sans;
   }
@@ -75,7 +75,7 @@
     background-image:
       linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-    background-size: 32px 32px;
+    background-size: 48px 48px;
   }
 
   .navbar {
