@@ -1,7 +1,7 @@
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
 import cors from "cors";
-import dotenv from "dotenv";
+import * as dotenv from "dotenv";
 import crypto from "crypto";
 
 dotenv.config();
@@ -22,7 +22,10 @@ const DEV_MODE = process.env.NODE_ENV === "development";
 
 const authorizeAnalytics = (req: any, res: any, next: any) => {
   const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-  if (!DEV_MODE && clientIp !== ALLOWED_IP) {
+  // If multiple IPs in x-forwarded-for, take the first one
+  const actualIp = typeof clientIp === 'string' ? clientIp.split(',')[0].trim() : clientIp;
+  
+  if (!DEV_MODE && actualIp !== ALLOWED_IP) {
     return res.status(403).json({ error: "Access Denied" });
   }
   next();
@@ -223,7 +226,7 @@ app.get("/api/analytics/users", authorizeAnalytics, async (req: any, res: any) =
         }
         const u = userMap.get(v.ip_hash);
         u.totalVisits++;
-        u.firstSeen = v.created_at; // because we order by desc, the last one processed is the first seen
+        u.firstSeen = v.created_at; 
         if (u.paths.length < 5) u.paths.push(v.path);
       }
     }
