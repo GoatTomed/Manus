@@ -73,7 +73,7 @@ function App() {
         id = newId;
         
         // Brief delay for the effect (reduced to 1100ms to match the overlay animation)
-        setTimeout(() => setIsInitializing(false), 1100);
+        setTimeout(() => setIsInitializing(false), 3000);
       }
       
       setVisitorId(id);
