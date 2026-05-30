@@ -26,6 +26,7 @@ interface KeyRecord {
   is_used: boolean;
   used_at: string | null;
   created_at: string;
+  script_id?: string;
 }
 
 interface VisitRecord {
@@ -161,6 +162,14 @@ function UserDetailPanel({
       setIsLoading(false);
     }
   }, [userId]);
+
+  const getScriptName = (scriptId?: string) => {
+    if (!scriptId) return "Unknown Script";
+    if (scriptId === "push-rock-for-brainrots") return "Push Rock for Brainrots";
+    if (scriptId === "bite-by-night") return "Bite By Night";
+    if (scriptId === "violence-district") return "Violence District";
+    return scriptId;
+  };
 
   useEffect(() => { fetchDetail(); }, [fetchDetail]);
 
@@ -313,7 +322,7 @@ function UserDetailPanel({
                 onClick={() => setActiveSection(s.id)}
                 className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all ${
                   activeSection === s.id
-                    ? "bg-[#00ABFF] text-white shadow-xl shadow-[#00ABFF]/20"
+                    ? "bg-[#00ABFF] text-white"
                     : "text-gray-500 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -408,7 +417,10 @@ function UserDetailPanel({
                   {detail.redeemedKeys.map(k => (
                     <div key={k.key_value} className="bg-white/5 border border-white/10 rounded-[2rem] p-6 space-y-4 hover:border-white/20 transition-all">
                       <div className="flex items-center justify-between">
-                        <code className="text-green-400 text-sm font-mono break-all">{k.key_value}</code>
+                        <div className="space-y-1">
+                          <p className="text-white font-bold text-base">{getScriptName(k.script_id)}</p>
+                          <code className="text-green-400/60 text-[10px] font-mono break-all">{k.key_value}</code>
+                        </div>
                         <button
                           onClick={() => handleDeleteKey(k.key_value)}
                           disabled={!!actionLoading[`del-${k.key_value}`]}
@@ -418,7 +430,6 @@ function UserDetailPanel({
                         </button>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-gray-500 font-mono">
-                        <Clock size={14} />
                         Redeemed {k.used_at ? timeAgo(k.used_at) : "—"}
                       </div>
                     </div>
@@ -493,7 +504,7 @@ export default function UsersPage() {
             <h1 className="text-4xl font-bold tracking-tight uppercase">Access Denied</h1>
             <p className="text-gray-400 text-base font-medium px-8 leading-relaxed">{error}</p>
           </div>
-          <button onClick={() => setLocation("/")} className="w-full bg-[#00ABFF] text-white font-bold py-5 rounded-2xl hover:bg-[#0099EE] transition-all uppercase tracking-widest text-sm shadow-2xl shadow-[#00ABFF]/30">Return to Home</button>
+          <button onClick={() => setLocation("/")} className="w-full bg-[#00ABFF] text-white font-bold py-5 rounded-2xl hover:bg-[#0099EE] transition-all uppercase tracking-widest text-sm">Return to Home</button>
         </div>
       </div>
     );
@@ -543,7 +554,7 @@ export default function UsersPage() {
             </div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl flex-1">
+          <div className="bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden flex-1">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
@@ -610,7 +621,7 @@ export default function UsersPage() {
         {/* Detail Section */}
         {selectedUserId && (
           <div className="w-[800px] animate-in fade-in slide-in-from-right-8 duration-500">
-            <div className="bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl h-full sticky top-32 max-h-[calc(100vh-160px)]">
+            <div className="bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden h-full sticky top-32 max-h-[calc(100vh-160px)]">
               <UserDetailPanel 
                 userId={selectedUserId} 
                 onClose={() => setSelectedUserId(null)}

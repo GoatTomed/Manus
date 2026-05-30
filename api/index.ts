@@ -1,185 +1,115 @@
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
-import { nanoid } from "nanoid";
+import cors from "cors";
+import dotenv from "dotenv";
 import crypto from "crypto";
 
+dotenv.config();
+
 const app = express();
+app.use(cors());
 app.use(express.json());
 
-// IP-based access control for analytics
-const ALLOWED_IP = process.env.ALLOWED_IP || "144.168.52.250";
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-// Helper to get client IP
-const getClientIp = (req: any) => {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (forwarded) {
-    return (typeof forwarded === 'string' ? forwarded : forwarded[0]).split(',')[0].trim();
+const ALLOWED_IP = "144.168.52.250";
+const DEV_MODE = process.env.NODE_ENV === "development";
+
+// ─── Middleware ───────────────────────────────────────────────────────────────
+
+const authorizeAnalytics = (req: any, res: any, next: any) => {
+  const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+  if (!DEV_MODE && clientIp !== ALLOWED_IP) {
+    return res.status(403).json({ error: "Access Denied" });
   }
-  return req.socket.remoteAddress || 'unknown';
+  next();
 };
 
-// Dedicated route for tracking page views from frontend
+// ─── Endpoints ────────────────────────────────────────────────────────────────
+
 app.post("/api/track-visit", async (req: any, res: any) => {
   try {
     const { path, visitorId } = req.body;
-    const cleanIp = getClientIp(req);
-    
-    // We use ip_hash to store the most reliable ID: visitorId if provided, otherwise cleanIp
-    const trackerId = visitorId || cleanIp;
-    
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    const userAgent = req.headers["user-agent"] || "unknown";
+
+    // Use visitorId if provided, fallback to IP hash
+    const ipHash = visitorId || crypto.createHash("sha256").update(ip as string).digest("hex");
+
     // Check if banned
     const { data: banRecord } = await supabase
-      .from('banned_users')
-      .select('*')
-      .eq('visitor_id', trackerId)
+      .from("banned_users")
+      .select("*")
+      .eq("visitor_id", ipHash)
       .single();
 
     if (banRecord) {
-      return res.json({ success: true, isBanned: true, banRecord });
+      return res.json({ 
+        isBanned: true, 
+        banRecord: {
+          reason: banRecord.reason,
+          banned_at: banRecord.banned_at
+        } 
+      });
     }
 
-    await supabase.from('page_views').insert({
-      path: path || '/',
-      ip_hash: trackerId, 
-      user_agent: req.headers['user-agent'] || 'unknown'
-    });
-    
-    res.json({ success: true, isBanned: false });
-  } catch (e) {
-    res.status(500).json({ error: "Tracking failed" });
-  }
-});
-
-export const maxDuration = 30;
-
-const supabaseUrl = process.env.SUPABASE_URL || "https://dioqtcgvxqjvneqozraa.supabase.co";
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const APP_URL = process.env.APP_URL || "https://yoursuck.vercel.app";
-
-// Generate cryptographic hash for one-time use
-function generateVerificationHash(): string {
-  return crypto.randomBytes(32).toString("hex");
-}
-
-app.post("/api/get-key/start", async (req: any, res: any) => {
-  try {
-    const sessionId = nanoid();
-    const verificationHash = generateVerificationHash();
-
-    console.log(`Starting session: ${sessionId}`);
-
-    const { error: sbError } = await supabase.from("key_sessions").insert({
-      id: sessionId,
-      step1_token: verificationHash,
-      status: "step1_pending",
+    // Record visit
+    await supabase.from("page_views").insert({
+      ip_hash: ipHash,
+      path: path || "/",
+      user_agent: userAgent,
     });
 
-    if (sbError) {
-      console.error("Supabase Error:", sbError);
-      return res.status(500).json({ error: `Database error: ${sbError.message}` });
-    }
-
-    res.json({ sessionId, verificationHash });
+    res.json({ isBanned: false });
   } catch (error: any) {
-    console.error("Global API Error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Internal Error" });
   }
 });
 
-app.get("/api/v/:hash", async (req: any, res: any) => {
+app.get("/api/check-ban", async (req: any, res: any) => {
   try {
-    const { hash } = req.params;
+    const { visitorId } = req.query;
+    if (!visitorId) return res.json({ isBanned: false });
 
-    const { data, error: sbError } = await supabase
-      .from("key_sessions")
+    const { data: banRecord } = await supabase
+      .from("banned_users")
       .select("*")
-      .match({ step1_token: hash, status: "step1_pending" })
+      .eq("visitor_id", visitorId)
       .single();
 
-    if (sbError || !data) {
-      const { data: step2Data, error: step2Error } = await supabase
-        .from("key_sessions")
-        .select("*")
-        .match({ step2_token: hash, status: "step1_completed" })
-        .single();
-
-      if (step2Error || !step2Data) {
-        return res.redirect(`${APP_URL}/verification-error`);
-      }
-
-      const finalKey = `YS-${nanoid(8).toUpperCase()}-${nanoid(8).toUpperCase()}`;
-
-      const { error: updateError } = await supabase
-        .from("key_sessions")
-        .update({
-          status: "completed",
-          generated_key: finalKey,
-          completed_at: new Date().toISOString(),
-        })
-        .match({ id: step2Data.id, step2_token: hash, status: "step1_completed" });
-
-      if (updateError) {
-        return res.status(500).send("Internal Error");
-      }
-
-      await supabase.from("keys").insert({ key_value: finalKey, is_used: false });
-      return res.redirect(`${APP_URL}/get-key?session=${step2Data.id}&completed=true`);
-    }
-
-    const newHash = generateVerificationHash();
-
-    const { error: updateError } = await supabase
-      .from("key_sessions")
-      .update({
-        status: "step1_completed",
-        step2_token: newHash, 
-      })
-      .match({ id: data.id, step1_token: hash, status: "step1_pending" });
-
-    if (updateError) {
-      return res.status(500).send("Internal Error");
-    }
-
-    res.redirect(`${APP_URL}/get-key?session=${data.id}&step=2`);
+    res.json({ 
+      isBanned: !!banRecord,
+      banRecord: banRecord ? {
+        reason: banRecord.reason,
+        banned_at: banRecord.banned_at
+      } : null
+    });
   } catch (error: any) {
-    res.status(500).send("Internal Error");
+    res.status(500).json({ error: "Internal Error" });
   }
 });
 
-app.post("/api/get-key/step2", async (req: any, res: any) => {
+app.post("/api/generate-key", async (req: any, res: any) => {
   try {
-    const { sessionId } = req.body;
+    const { visitorId } = req.body;
+    const newKey = `YS-${crypto.randomBytes(4).toString("hex").toUpperCase()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
 
-    const { data, error: sbError } = await supabase
-      .from("key_sessions")
-      .select("step2_token")
-      .match({ id: sessionId, status: "step1_completed" })
-      .single();
-
-    if (sbError || !data) {
-      return res.status(400).json({ error: "Session not found or incomplete" });
-    }
-
-    res.json({ verificationHash: data.step2_token });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
-  try {
     const { data, error } = await supabase
-      .from("key_sessions")
-      .select("generated_key")
-      .match({ id: req.params.sessionId, status: "completed" })
+      .from("keys")
+      .insert({
+        key_value: newKey,
+        is_used: false,
+      })
+      .select()
       .single();
 
     if (error) {
-      return res.status(404).json({ error: "Key not found" });
+      return res.status(500).json({ error: error.message });
     }
-    res.json({ key: data?.generated_key });
+    res.json({ key: data?.key_value });
   } catch (error: any) {
     res.status(500).json({ error: "Internal Error" });
   }
@@ -187,7 +117,7 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
 
 app.post("/api/redeem", async (req: any, res: any) => {
   try {
-    const { key, visitorId } = req.body;
+    const { key, visitorId, scriptId } = req.body;
 
     const { data, error: sbError } = await supabase
       .from("keys")
@@ -205,55 +135,13 @@ app.post("/api/redeem", async (req: any, res: any) => {
         is_used: true,
         used_at: new Date().toISOString(),
         redeemed_by: visitorId || null,
+        script_id: scriptId || null,
       })
       .match({ key_value: key });
 
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: "Internal Error" });
-  }
-});
-
-// Middleware for analytics authorization
-const authorizeAnalytics = (req: any, res: any, next: any) => {
-  const clientIp = getClientIp(req);
-  if (ALLOWED_IP !== "OFF" && clientIp !== ALLOWED_IP && !process.env.DEV_MODE) {
-    return res.status(403).json({ error: "Access denied" });
-  }
-  next();
-};
-
-app.post("/api/analytics/modify", authorizeAnalytics, async (req: any, res: any) => {
-  try {
-    const { amount, type } = req.body;
-    const count = Math.abs(parseInt(amount));
-
-    if (type === 'add') {
-      const dummyRecords = Array.from({ length: count }, () => ({
-        path: '/manual/added',
-        ip_hash: `manual-${nanoid(5)}`,
-        user_agent: 'manual-bot'
-      }));
-      
-      for (let i = 0; i < dummyRecords.length; i += 100) {
-        await supabase.from('page_views').insert(dummyRecords.slice(i, i + 100));
-      }
-    } else if (type === 'remove') {
-      const { data: recordsToDelete } = await supabase
-        .from('page_views')
-        .select('id')
-        .order('created_at', { ascending: false })
-        .limit(count);
-
-      if (recordsToDelete && recordsToDelete.length > 0) {
-        const ids = recordsToDelete.map(r => r.id);
-        await supabase.from('page_views').delete().in('id', ids);
-      }
-    }
-
-    res.json({ success: true });
-  } catch (e) {
-    res.status(500).json({ error: "Modification failed" });
   }
 });
 
@@ -314,42 +202,35 @@ app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
 
 // ─── Users Management Endpoints ───────────────────────────────────────────────
 
-// GET /api/analytics/users — list all unique users with stats
 app.get("/api/analytics/users", authorizeAnalytics, async (req: any, res: any) => {
   try {
-    // Get all unique visitor IDs from page_views
     const { data: allViews } = await supabase
       .from('page_views')
       .select('ip_hash, created_at, path')
       .order('created_at', { ascending: false });
 
-    if (!allViews) return res.json({ users: [] });
-
-    // Group by visitor ID
-    const userMap = new Map<string, { id: string; totalVisits: number; lastSeen: string; firstSeen: string; paths: string[] }>();
-
-    for (const view of allViews) {
-      const id = view.ip_hash || 'unknown';
-      if (!userMap.has(id)) {
-        userMap.set(id, {
-          id,
-          totalVisits: 0,
-          lastSeen: view.created_at,
-          firstSeen: view.created_at,
-          paths: []
-        });
+    const userMap = new Map<string, any>();
+    if (allViews) {
+      for (const v of allViews) {
+        if (!userMap.has(v.ip_hash)) {
+          userMap.set(v.ip_hash, {
+            id: v.ip_hash,
+            totalVisits: 0,
+            lastSeen: v.created_at,
+            firstSeen: v.created_at,
+            paths: []
+          });
+        }
+        const u = userMap.get(v.ip_hash);
+        u.totalVisits++;
+        u.firstSeen = v.created_at; // because we order by desc, the last one processed is the first seen
+        if (u.paths.length < 5) u.paths.push(v.path);
       }
-      const user = userMap.get(id)!;
-      user.totalVisits++;
-      if (view.created_at > user.lastSeen) user.lastSeen = view.created_at;
-      if (view.created_at < user.firstSeen) user.firstSeen = view.created_at;
-      if (!user.paths.includes(view.path)) user.paths.push(view.path);
     }
 
-    // Get keys redeemed per user
     const { data: redeemedKeys } = await supabase
       .from('keys')
-      .select('key_value, redeemed_by, used_at, is_used')
+      .select('redeemed_by')
       .eq('is_used', true);
 
     const keysByUser = new Map<string, number>();
@@ -361,7 +242,6 @@ app.get("/api/analytics/users", authorizeAnalytics, async (req: any, res: any) =
       }
     }
 
-    // Get banned users
     const { data: bannedUsers } = await supabase
       .from('banned_users')
       .select('visitor_id');
@@ -373,21 +253,17 @@ app.get("/api/analytics/users", authorizeAnalytics, async (req: any, res: any) =
       isBanned: bannedSet.has(u.id),
     }));
 
-    // Sort by lastSeen desc
     users.sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime());
-
     res.json({ users });
   } catch (error: any) {
     res.status(500).json({ error: "Internal Error" });
   }
 });
 
-// GET /api/analytics/users/:userId — detailed info for one user
 app.get("/api/analytics/users/:userId", authorizeAnalytics, async (req: any, res: any) => {
   try {
     const userId = decodeURIComponent(req.params.userId);
 
-    // Visit history
     const { data: visits } = await supabase
       .from('page_views')
       .select('path, created_at, user_agent')
@@ -395,20 +271,17 @@ app.get("/api/analytics/users/:userId", authorizeAnalytics, async (req: any, res
       .order('created_at', { ascending: false })
       .limit(50);
 
-    // Keys generated by this user (from key_sessions)
     const { data: generatedKeys } = await supabase
       .from('keys')
       .select('id, key_value, is_used, used_at, created_at')
       .order('created_at', { ascending: false });
 
-    // Keys redeemed by this user
     const { data: redeemedKeys } = await supabase
       .from('keys')
-      .select('id, key_value, used_at, created_at')
+      .select('id, key_value, used_at, created_at, script_id')
       .eq('redeemed_by', userId)
       .order('used_at', { ascending: false });
 
-    // Check if banned
     const { data: banRecord } = await supabase
       .from('banned_users')
       .select('*')
@@ -428,15 +301,10 @@ app.get("/api/analytics/users/:userId", authorizeAnalytics, async (req: any, res
   }
 });
 
-// DELETE /api/analytics/keys/:keyId — delete a key
 app.delete("/api/analytics/keys/:keyId", authorizeAnalytics, async (req: any, res: any) => {
   try {
     const keyValue = decodeURIComponent(req.params.keyId);
-    const { error } = await supabase
-      .from('keys')
-      .delete()
-      .eq('key_value', keyValue);
-
+    const { error } = await supabase.from('keys').delete().eq('key_value', keyValue);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
   } catch (error: any) {
@@ -444,7 +312,6 @@ app.delete("/api/analytics/keys/:keyId", authorizeAnalytics, async (req: any, re
   }
 });
 
-// POST /api/analytics/keys/:keyId/revoke — mark a key as used/revoked
 app.post("/api/analytics/keys/:keyId/revoke", authorizeAnalytics, async (req: any, res: any) => {
   try {
     const keyValue = decodeURIComponent(req.params.keyId);
@@ -452,7 +319,6 @@ app.post("/api/analytics/keys/:keyId/revoke", authorizeAnalytics, async (req: an
       .from('keys')
       .update({ is_used: true, used_at: new Date().toISOString() })
       .eq('key_value', keyValue);
-
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
   } catch (error: any) {
@@ -460,12 +326,10 @@ app.post("/api/analytics/keys/:keyId/revoke", authorizeAnalytics, async (req: an
   }
 });
 
-// POST /api/analytics/users/:userId/ban — ban a user
 app.post("/api/analytics/users/:userId/ban", authorizeAnalytics, async (req: any, res: any) => {
   try {
     const userId = decodeURIComponent(req.params.userId);
     const { reason } = req.body;
-
     const { error } = await supabase
       .from('banned_users')
       .upsert({
@@ -473,7 +337,6 @@ app.post("/api/analytics/users/:userId/ban", authorizeAnalytics, async (req: any
         reason: reason || 'Banned by admin',
         banned_at: new Date().toISOString(),
       });
-
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
   } catch (error: any) {
@@ -481,15 +344,10 @@ app.post("/api/analytics/users/:userId/ban", authorizeAnalytics, async (req: any
   }
 });
 
-// DELETE /api/analytics/users/:userId/ban — unban a user
 app.delete("/api/analytics/users/:userId/ban", authorizeAnalytics, async (req: any, res: any) => {
   try {
     const userId = decodeURIComponent(req.params.userId);
-    const { error } = await supabase
-      .from('banned_users')
-      .delete()
-      .eq('visitor_id', userId);
-
+    const { error } = await supabase.from('banned_users').delete().eq('visitor_id', userId);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
   } catch (error: any) {

@@ -80,7 +80,7 @@ export default function Home() {
             <img
               src={LOGO_URL}
               alt="YouSuck mascot"
-              className="w-24 h-24 object-contain drop-shadow-[0_0_20px_rgba(0,171,255,0.2)]"
+              className="w-24 h-24 object-contain"
             />
           </div>
 
@@ -93,7 +93,7 @@ export default function Home() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/get-key">
-              <button className="w-full sm:w-auto bg-[#00ABFF] text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-[#0099EE] transition-all shadow-[0_0_20px_rgba(0,171,255,0.3)]">
+              <button className="w-full sm:w-auto bg-[#00ABFF] text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-[#0099EE] transition-all">
                 Get Key
               </button>
             </Link>

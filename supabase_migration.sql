@@ -15,3 +15,6 @@ CREATE TABLE IF NOT EXISTS banned_users (
 -- 3. Index for fast lookups
 CREATE INDEX IF NOT EXISTS idx_banned_users_visitor_id ON banned_users(visitor_id);
 CREATE INDEX IF NOT EXISTS idx_keys_redeemed_by ON keys(redeemed_by);
+
+-- 4. Add script_id to keys table to track which script was redeemed
+ALTER TABLE keys ADD COLUMN IF NOT EXISTS script_id TEXT DEFAULT NULL;
