@@ -44,7 +44,8 @@ export default function Analytics() {
       setLastUpdated(new Date());
       setError("");
     } catch (err: any) {
-      setError(err.response?.data?.error || "Access Denied or Server Error");
+      const errorMsg = err.response?.data?.error;
+      setError(typeof errorMsg === 'string' ? errorMsg : (errorMsg?.message || "Access Denied or Server Error"));
     } finally {
       if (showLoading) setIsLoading(false);
     }
