@@ -3,11 +3,22 @@
  */
 import { Link } from "wouter";
 import Navbar from "../components/Navbar";
+import { useEffect, useState } from "react";
+import { Fingerprint } from "lucide-react";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
 
 export default function Home() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const STEPS = [
     {
       number: "01",
@@ -33,6 +44,111 @@ export default function Home() {
 
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
+      {isLoading && (
+        <>
+          <style>{`
+            @keyframes spin {
+              to {
+                transform: rotate(360deg);
+              }
+            }
+          `}</style>
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 9999,
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(20px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{
+                background: "rgba(10,10,10,0.75)",
+                border: "1px solid rgba(0,171,255,0.2)",
+                borderRadius: 16,
+                padding: "40px 48px",
+                textAlign: "center",
+                backdropFilter: "blur(16px)",
+                boxShadow: "0 0 60px rgba(0,171,255,0.09)",
+              }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  margin: "0 auto 28px",
+                  width: 72,
+                  height: 72,
+                }}
+              >
+                <div
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 22,
+                    background: "rgba(0,171,255,0.08)",
+                    border: "1px solid rgba(0,171,255,0.27)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#00ABFF",
+                  }}
+                >
+                  <Fingerprint size={36} strokeWidth={1.6} />
+                </div>
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: -10,
+                    borderRadius: 34,
+                    border: "3px solid transparent",
+                    borderTopColor: "#00ABFF",
+                    animation: "spin 800ms linear infinite",
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#00ABFF",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  marginBottom: 10,
+                }}
+              >
+                Loading
+              </div>
+
+              <div
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: "#fafafa",
+                  letterSpacing: "-0.03em",
+                  marginBottom: 8,
+                }}
+              >
+                Securing Identity
+              </div>
+
+              <div
+                style={{
+                  fontSize: 13.5,
+                  color: "rgba(255,255,255,0.35)",
+                  minHeight: 40,
+                }}
+              >
+                Generating your unique system identifier...
+              </div>
+            </div>
+          </div>
+        </>
+      )}
       <Navbar />
 
       <main className="flex-1 flex flex-col items-center justify-center p-6 pt-24 space-y-24">
