@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useKeyCounter } from "../hooks/useKeyCounter";
 import { toast } from "sonner";
-import { Copy, AlertCircle, ShoppingCart, ChevronRight } from "lucide-react";
+import { Copy, AlertCircle, ShoppingCart } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { useLocation } from "wouter";
 import axios from "axios";
@@ -102,24 +102,23 @@ export default function Scripts() {
       <div className={`fixed top-0 left-0 right-0 z-[60] p-4 transition-all duration-700 ease-out transform ${
         showNotification ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
       }`}>
-        <div className="max-w-xl mx-auto bg-[#0a0d14] border border-amber-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.5),0_0_20px_rgba(245,158,11,0.1)] rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-center gap-4 md:gap-6">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-            <ShoppingCart className="text-amber-500" size={24} />
+        <div className="max-w-xl mx-auto bg-[#0a0d14] border border-[#00ABFF]/30 shadow-[0_10px_40px_rgba(0,0,0,0.5),0_0_20px_rgba(0,171,255,0.1)] rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-center gap-4 md:gap-6">
+          <div className="w-12 h-12 rounded-xl bg-[#00ABFF]/10 border border-[#00ABFF]/20 flex items-center justify-center shrink-0">
+            <ShoppingCart className="text-[#00ABFF]" size={24} />
           </div>
           
           <div className="flex-1 text-center md:text-left">
             <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-0.5">Empty Balance</h4>
             <p className="text-gray-400 text-xs leading-relaxed">
-              You currently have <span className="text-amber-500 font-bold">0 keys</span>. You need at least one key to unlock these scripts.
+              You currently have <span className="text-[#00ABFF] font-bold">0 keys</span>. You need at least one key to unlock these scripts.
             </p>
           </div>
 
           <button 
             onClick={() => setLocation("/redeem")}
-            className="group flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-[0.15em] transition-all shrink-0 shadow-lg shadow-amber-500/20"
+            className="group flex items-center gap-2 bg-[#00ABFF] hover:bg-[#0099EE] text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-[0.15em] transition-all shrink-0 shadow-lg shadow-[#00ABFF]/20"
           >
             Get a Key
-            <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>
       </div>
