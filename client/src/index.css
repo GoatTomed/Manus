@@ -32,7 +32,7 @@
 
 :root {
   --radius: 0.65rem;
-  --background: #0a0d14;
+  --background: #0c0c0c;
   --foreground: #f2f2f2;
   --card: #121620;
   --card-foreground: #f2f2f2;
@@ -58,21 +58,28 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    background-color: #0c0c0c;
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 32px 32px;
+    min-height: 100vh;
+    @apply text-foreground font-sans;
   }
 }
 
 @layer components {
+  /* Keep this for backward compatibility if needed, but body now handles it */
   .dot-grid-bg {
-    background-color: #0a0d14;
+    background-color: #0c0c0c;
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 32px 32px;
   }
 
   .navbar {
-    background: rgba(10, 13, 20, 0.8);
+    background: rgba(12, 12, 12, 0.8);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
