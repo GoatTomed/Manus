@@ -59,12 +59,24 @@ app.post("/api/track-visit", async (req: any, res: any) => {
       });
     }
 
-    // Record visit
-    await supabase.from("page_views").insert({
-      ip_hash: ipHash,
-      path: path || "/",
-      user_agent: userAgent,
-    });
+    // Record visit only if not tracked today for this path
+    const today = new Date().toISOString().split('T')[0];
+    const { data: existingVisit } = await supabase
+      .from("page_views")
+      .select("id")
+      .eq("ip_hash", ipHash)
+      .eq("path", path || "/")
+      .gte("created_at", today)
+      .limit(1)
+      .single();
+
+    if (!existingVisit) {
+      await supabase.from("page_views").insert({
+        ip_hash: ipHash,
+        path: path || "/",
+        user_agent: userAgent,
+      });
+    }
 
     res.json({ isBanned: false });
   } catch (error: any) {
