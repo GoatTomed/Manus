@@ -3,14 +3,20 @@
  */
 import { Link } from "wouter";
 import Navbar from "../components/Navbar";
-import { useState } from "react";
-import { VerifyOverlay } from "../components/VerifyOverlay";
+import { useEffect, useState } from "react";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const STEPS = [
     {
@@ -35,16 +41,35 @@ export default function Home() {
     }
   ];
 
+  if (isLoading) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        backgroundColor: "#0c0c0c",
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)`,
+        backgroundSize: "32px 32px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}>
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
+        <div style={{
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          border: "4px solid #d1d5db",
+          borderTopColor: "transparent",
+          animation: "spin 1s linear infinite",
+        }} />
+      </div>
+    );
+  }
+
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
-      {isLoading && (
-        <VerifyOverlay 
-          step={1} 
-          onDone={() => setIsLoading(false)} 
-          accent="#00ABFF" 
-          duration={3000} 
-        />
-      )}
       <Navbar />
 
       <main className="flex-1 flex flex-col items-center justify-center p-6 pt-24 space-y-24">
