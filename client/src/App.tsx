@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -9,6 +9,7 @@ import Redeem from "./pages/Redeem";
 import GetKey from "./pages/GetKey";
 import Analytics from "./pages/Analytics";
 import UsersPage from "./pages/UsersPage";
+import Banned from "./pages/Banned";
 import Scripts from "./pages/Scripts";
 import VerificationError from "./pages/VerificationError";
 import { useEffect, useState } from "react";
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/get-key" component={GetKey} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/users" component={UsersPage} />
+      <Route path="/banned" component={Banned} />
       <Route path="/scripts" component={Scripts} />
       <Route path="/verification-error" component={VerificationError} />
       <Route path="/404" component={NotFound} />
@@ -35,6 +37,7 @@ function Router() {
 function App() {
   const [isInitializing, setIsInitializing] = useState(false);
   const [visitorId, setVisitorId] = useState<string | null>(null);
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
     document.title = "YouSuck";
@@ -77,13 +80,27 @@ function App() {
 
       // 4. Track visit (once per session)
       const hasTrackedInSession = sessionStorage.getItem("has_tracked_visit");
-      if (!hasTrackedInSession && id) {
+      if (id) {
         try {
-          await axios.post("/api/track-visit", { 
+          const res = await axios.post("/api/track-visit", { 
             path: window.location.pathname,
             visitorId: id
           });
-          sessionStorage.setItem("has_tracked_visit", "true");
+          
+          if (res.data.isBanned) {
+            localStorage.setItem("ban_reason", res.data.banRecord.reason);
+            localStorage.setItem("ban_date", res.data.banRecord.banned_at);
+            if (window.location.pathname !== "/banned") {
+              setLocation("/banned");
+            }
+          } else {
+            localStorage.removeItem("ban_reason");
+            localStorage.removeItem("ban_date");
+            if (window.location.pathname === "/banned") {
+              setLocation("/");
+            }
+            sessionStorage.setItem("has_tracked_visit", "true");
+          }
         } catch (e) {
           console.error("Tracking failed");
         }

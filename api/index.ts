@@ -27,13 +27,24 @@ app.post("/api/track-visit", async (req: any, res: any) => {
     // We use ip_hash to store the most reliable ID: visitorId if provided, otherwise cleanIp
     const trackerId = visitorId || cleanIp;
     
+    // Check if banned
+    const { data: banRecord } = await supabase
+      .from('banned_users')
+      .select('*')
+      .eq('visitor_id', trackerId)
+      .single();
+
+    if (banRecord) {
+      return res.json({ success: true, isBanned: true, banRecord });
+    }
+
     await supabase.from('page_views').insert({
       path: path || '/',
       ip_hash: trackerId, 
       user_agent: req.headers['user-agent'] || 'unknown'
     });
     
-    res.json({ success: true });
+    res.json({ success: true, isBanned: false });
   } catch (e) {
     res.status(500).json({ error: "Tracking failed" });
   }

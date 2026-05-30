@@ -462,7 +462,12 @@ export default function UsersPage() {
     }
   };
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => {
+    fetchUsers();
+    // Auto refresh users list every 1 second to keep "Last Active" updated
+    const interval = setInterval(fetchUsers, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const filteredUsers = users.filter(u =>
     u.id.toLowerCase().includes(search.toLowerCase())
