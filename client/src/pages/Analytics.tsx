@@ -200,14 +200,21 @@ export default function Analytics() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { label: "Unique Visitors", value: data?.uniqueVisitors, icon: Globe, color: "#00ABFF" },
-            { label: "Total Views", value: data?.totalViews, icon: Users, color: "#3b82f6" },
+            { label: "Unique Visitors", value: data?.uniqueVisitors, icon: Globe, color: "#00ABFF", trend: data?.trends?.visitors },
+            { label: "Total Views", value: data?.totalViews, icon: Users, color: "#3b82f6", trend: data?.trends?.views },
             { label: "Keys Generated", value: data?.totalKeys, icon: Key, color: "#a855f7" },
             { label: "Keys Redeemed", value: data?.usedKeys, icon: MousePointer2, color: "#22c55e" }
           ].map((stat, i) => (
-            <div key={i} className="bg-white/5 border border-white/10 rounded-[2rem] p-8 space-y-5 hover:border-[#00ABFF]/30 transition-all group shadow-2xl">
+            <div key={i} className="bg-white/5 border border-white/10 rounded-[2rem] p-8 space-y-5 hover:border-[#00ABFF]/30 transition-all group">
               <div className="flex items-center justify-between">
-                <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">{stat.label}</span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">{stat.label}</span>
+                  {stat.trend !== undefined && (
+                    <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-tighter ${stat.trend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {stat.trend >= 0 ? '+' : ''}{stat.trend}% VS YESTERDAY
+                    </div>
+                  )}
+                </div>
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
                   <stat.icon size={28} style={{ color: stat.color }} />
                 </div>
@@ -218,7 +225,7 @@ export default function Analytics() {
         </div>
 
         {/* Graph Section */}
-        <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 space-y-8 shadow-2xl">
+        <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 space-y-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-5">
               <div className="p-3 bg-[#00ABFF]/10 rounded-2xl border border-[#00ABFF]/20">

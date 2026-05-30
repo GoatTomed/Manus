@@ -22,7 +22,6 @@ const DEV_MODE = process.env.NODE_ENV === "development";
 
 const authorizeAnalytics = (req: any, res: any, next: any) => {
   const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-  // If multiple IPs in x-forwarded-for, take the first one
   const actualIp = typeof clientIp === 'string' ? clientIp.split(',')[0].trim() : clientIp;
   
   if (!DEV_MODE && actualIp !== ALLOWED_IP) {
@@ -39,10 +38,8 @@ app.post("/api/track-visit", async (req: any, res: any) => {
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
     const userAgent = req.headers["user-agent"] || "unknown";
 
-    // Use visitorId if provided, fallback to IP hash
     const ipHash = visitorId || crypto.createHash("sha256").update(String(ip)).digest("hex");
 
-    // Check if banned
     const { data: banRecord } = await supabase
       .from("banned_users")
       .select("*")
@@ -59,7 +56,6 @@ app.post("/api/track-visit", async (req: any, res: any) => {
       });
     }
 
-    // Record visit only if not tracked today for this path
     const today = new Date().toISOString().split('T')[0];
     const { data: existingVisit } = await supabase
       .from("page_views")
@@ -196,6 +192,16 @@ app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
       return { date: dateStr, views: dayUniqueIps.size };
     }).reverse();
 
+    // Calculate trends (comparing today vs yesterday)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const todayViews = dailyStats.find(s => s.date === todayStr)?.views || 0;
+    const yesterdayViews = dailyStats.find(s => s.date === yesterdayStr)?.views || 0;
+    const viewsTrend = yesterdayViews === 0 ? 100 : Math.round(((todayViews - yesterdayViews) / yesterdayViews) * 100);
+
     res.json({
       totalViews: totalViews || 0,
       uniqueVisitors,
@@ -203,6 +209,10 @@ app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
       usedKeys: usedKeys || 0,
       dailyStats,
       recentVisits: paginatedVisits || [],
+      trends: {
+        views: viewsTrend,
+        visitors: viewsTrend // Simplified for now
+      },
       pagination: {
         currentPage: page,
         totalPages: Math.ceil((totalViews || 0) / pageSize),
@@ -213,6 +223,41 @@ app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
     res.status(500).json({ error: "Internal Error" });
   }
 });
+
+app.post("/api/analytics/modify", authorizeAnalytics, async (req: any, res: any) => {
+  try {
+    const { type, amount } = req.body;
+    const count = parseInt(amount);
+    if (isNaN(count) || count <= 0) return res.status(400).json({ error: "Invalid amount" });
+
+    if (type === 'add') {
+      const fakeVisits = Array.from({ length: count }, () => ({
+        ip_hash: `fake-${crypto.randomBytes(8).toString('hex')}`,
+        path: "/",
+        user_agent: "System Injector",
+        created_at: new Date().toISOString()
+      }));
+      await supabase.from('page_views').insert(fakeVisits);
+    } else if (type === 'remove') {
+      const { data: toDelete } = await supabase
+        .from('page_views')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(count);
+      
+      if (toDelete && toDelete.length > 0) {
+        const ids = toDelete.map(d => d.id);
+        await supabase.from('page_views').delete().in('id', ids);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
+// ─── Users Management Endpoints ───────────────────────────────────────────────
 
 app.get("/api/analytics/users", authorizeAnalytics, async (req: any, res: any) => {
   try {
