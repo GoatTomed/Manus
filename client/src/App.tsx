@@ -72,8 +72,8 @@ function App() {
         document.cookie = `ys_visitor_id=${newId}; path=/; max-age=31536000; SameSite=Lax`;
         id = newId;
         
-        // Brief delay for the effect
-        setTimeout(() => setIsInitializing(false), 2500);
+        // Brief delay for the effect (reduced to 1100ms to match the overlay animation)
+        setTimeout(() => setIsInitializing(false), 1100);
       }
       
       setVisitorId(id);
@@ -118,33 +118,109 @@ function App() {
           
           {/* Identity Initialization Overlay */}
           {isInitializing && (
-            <div className="fixed inset-0 z-[9999] bg-[#05070a] flex flex-col items-center justify-center text-white p-6">
-              <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in duration-700">
-                <div className="relative mx-auto w-24 h-24">
-                  <div className="absolute inset-0 bg-[#00ABFF]/20 blur-2xl rounded-full animate-pulse"></div>
-                  <div className="relative bg-white/5 border border-white/10 rounded-3xl w-full h-full flex items-center justify-center">
-                    <Fingerprint className="text-[#00ABFF] animate-pulse" size={48} />
+            <>
+              <style>{`
+                @keyframes spin {
+                  to {
+                    transform: rotate(360deg);
+                  }
+                }
+              `}</style>
+              <div
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 9999,
+                  background: "rgba(0,0,0,0.85)",
+                  backdropFilter: "blur(20px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <div
+                  style={{
+                    background: "rgba(10,10,10,0.75)",
+                    border: "1px solid rgba(0,171,255,0.2)",
+                    borderRadius: 16,
+                    padding: "40px 48px",
+                    textAlign: "center",
+                    backdropFilter: "blur(16px)",
+                    boxShadow: "0 0 60px rgba(0,171,255,0.09)",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "relative",
+                      margin: "0 auto 28px",
+                      width: 72,
+                      height: 72,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: 22,
+                        background: "rgba(0,171,255,0.08)",
+                        border: "1px solid rgba(0,171,255,0.27)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#00ABFF",
+                      }}
+                    >
+                      <Fingerprint size={36} strokeWidth={1.6} />
+                    </div>
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: -10,
+                        borderRadius: 34,
+                        border: "3px solid transparent",
+                        borderTopColor: "#00ABFF",
+                        animation: "spin 800ms linear infinite",
+                      }}
+                    />
                   </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <h2 className="text-2xl font-bold uppercase tracking-widest">Securing Identity</h2>
-                  <p className="text-gray-500 text-sm font-medium tracking-tight px-4">
-                    Generating your unique system identifier for secure access...
-                  </p>
-                </div>
 
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/5">
-                    <div className="bg-[#00ABFF] h-full animate-progress-loading"></div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#00ABFF",
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      marginBottom: 10,
+                    }}
+                  >
+                    Loading
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-[#00ABFF] uppercase tracking-[0.3em]">
-                    <Loader2 className="animate-spin" size={12} />
-                    Syncing Protocol
+
+                  <div
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 700,
+                      color: "#fafafa",
+                      letterSpacing: "-0.03em",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Securing Identity
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 13.5,
+                      color: "rgba(255,255,255,0.35)",
+                      minHeight: 40,
+                    }}
+                  >
+                    Generating your unique system identifier...
                   </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
 
           <Router />
