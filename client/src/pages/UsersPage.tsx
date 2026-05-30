@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import {
   Users, KeyRound, Eye, BookOpen, Fingerprint, Search, RotateCcw, X, Loader2,
-  ShieldBan, ShieldCheck, Trash2, Ban, Calendar, Monitor, ChevronLeft, AlertCircle
+  ShieldBan, ShieldCheck, Trash2, Ban, Calendar, Monitor, ChevronLeft, AlertCircle,
+  Star
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { toast } from "sonner";
@@ -459,7 +460,8 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [, setLocation] = useLocation();
-
+  const MY_ID = "g1wsNkhdjeal2PkK5-MlH";
+  
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
@@ -537,14 +539,23 @@ export default function UsersPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Search identities..."
-                  className="bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-sm w-full md:w-[300px] focus:outline-none focus:border-[#00ABFF] transition-all"
-                />
+              <div className="flex bg-white/5 border border-white/10 rounded-2xl overflow-hidden focus-within:border-[#00ABFF] transition-all">
+                <div className="relative flex-1 min-w-[300px]">
+                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search identities..."
+                    className="bg-transparent pl-12 pr-6 py-4 text-sm w-full focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={() => setSearch(MY_ID)}
+                  className="px-6 border-l border-white/10 bg-amber-500/5 hover:bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
+                >
+                  <Star size={14} fill="currentColor" />
+                  Find Me
+                </button>
               </div>
               <button 
                 onClick={fetchUsers}
@@ -580,14 +591,25 @@ export default function UsersPage() {
                     >
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                            selectedUserId === user.id ? "bg-[#00ABFF] border-[#00ABFF] text-white" : "bg-white/5 border-white/10 text-gray-500 group-hover:text-[#00ABFF] group-hover:border-[#00ABFF]/30"
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
+                            user.id === MY_ID
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                              : selectedUserId === user.id 
+                                ? "bg-[#00ABFF] border-[#00ABFF] text-white" 
+                                : "bg-white/5 border-white/10 text-gray-500 group-hover:text-[#00ABFF] group-hover:border-[#00ABFF]/30"
                           }`}>
-                            <Users size={20} />
+                            {user.id === MY_ID ? <Star size={20} fill="currentColor" /> : <Users size={20} />}
                           </div>
-                          <span className="font-mono text-sm font-medium text-white truncate max-w-[200px]">
-                            {user.id}
-                          </span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`font-mono text-sm font-medium truncate max-w-[200px] ${user.id === MY_ID ? "text-amber-500" : "text-white"}`}>
+                              {user.id}
+                            </span>
+                            {user.id === MY_ID && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-amber-500 text-black text-[8px] font-black uppercase tracking-tighter leading-none shrink-0">
+                                ME
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-8 py-6">
