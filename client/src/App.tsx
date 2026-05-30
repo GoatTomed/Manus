@@ -110,6 +110,39 @@ function App() {
     initializeIdentity();
   }, []);
 
+  // Background ban status check every 1 second
+  useEffect(() => {
+    if (!visitorId) return;
+
+    const checkBanStatus = async () => {
+      try {
+        const res = await axios.post("/api/track-visit", {
+          path: window.location.pathname,
+          visitorId: visitorId,
+        });
+
+        if (res.data.isBanned) {
+          localStorage.setItem("ban_reason", res.data.banRecord.reason);
+          localStorage.setItem("ban_date", res.data.banRecord.banned_at);
+          if (window.location.pathname !== "/banned") {
+            setLocation("/banned");
+          }
+        } else {
+          localStorage.removeItem("ban_reason");
+          localStorage.removeItem("ban_date");
+          if (window.location.pathname === "/banned") {
+            setLocation("/");
+          }
+        }
+      } catch (e) {
+        // Silent fail - don't interrupt user experience
+      }
+    };
+
+    // Check ban status every 1 second
+    const interval = setInterval(checkBanStatus, 1000);
+    return () => clearInterval(interval);
+  }, [visitorId, setLocation]);
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
