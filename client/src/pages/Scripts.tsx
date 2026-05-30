@@ -59,6 +59,16 @@ export default function Scripts() {
     }
 
     if (consumeKey()) {
+      // Get visitor ID from local storage or cookie
+      const visitorId = localStorage.getItem("ys_visitor_id");
+      
+      // Notify API that a script was redeemed
+      axios.post("/api/redeem", {
+        key: "CONSUMED_LOCAL", // Placeholder for local consumption tracking
+        visitorId,
+        scriptId: selectedScript.id
+      }).catch(() => {}); // Silent catch
+
       navigator.clipboard.writeText(selectedScript.loadstring);
       toast.success("Script copied!", {
         description: `${selectedScript.name} has been copied to your clipboard. Keys remaining: ${getCount()}`,

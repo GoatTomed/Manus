@@ -61,7 +61,7 @@ export default function Redeem() {
             </div>
 
             {/* Redeem GUI */}
-            <div className="bg-[#0a0d14] border border-white/10 border-t-0 rounded-b-xl p-8 shadow-2xl space-y-6 animate-fade-in-up-delay-2">
+            <div className="bg-[#0a0d14] border border-white/10 border-t-0 rounded-b-xl p-8 space-y-6 animate-fade-in-up-delay-2">
               <div className="text-center space-y-2">
                 <h1 className="text-2xl font-bold tracking-tight text-white">
                   Redeem <span className="text-[#00ABFF]">Key</span>
@@ -88,7 +88,7 @@ export default function Redeem() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-[#00ABFF] hover:bg-[#0099EE] disabled:opacity-50 text-white py-3 rounded-lg font-bold text-sm transition-all shadow-[0_0_15px_rgba(0,171,255,0.2)]"
+                    className="w-full bg-[#00ABFF] hover:bg-[#0099EE] disabled:opacity-50 text-white py-3 rounded-lg font-bold text-sm transition-all"
                   >
                     {isLoading ? "Verifying..." : "Redeem Key"}
                   </button>
@@ -133,7 +133,7 @@ export default function Redeem() {
             <div className="flex flex-col gap-3 items-center">
               <button
                 onClick={() => setLocation("/scripts")}
-                className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded-lg font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,171,255,0.3)] flex items-center justify-center gap-2"
+                className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2"
               >
                 <ShoppingCart size={18} />
                 Show Scripts
