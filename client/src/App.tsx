@@ -79,8 +79,8 @@ function App() {
       setVisitorId(id);
 
       // 4. Track visit (once per session)
-      const hasTrackedInSession = sessionStorage.getItem("has_tracked_visit");
-      if (id) {
+      const hasTracked = sessionStorage.getItem(`tracked_${window.location.pathname}`);
+      if (!hasTracked) {
         try {
           const res = await axios.post("/api/track-visit", { 
             path: window.location.pathname,
@@ -99,7 +99,7 @@ function App() {
             if (window.location.pathname === "/banned") {
               setLocation("/");
             }
-            sessionStorage.setItem("has_tracked_visit", "true");
+            sessionStorage.setItem(`tracked_${window.location.pathname}`, "true");
           }
         } catch (e) {
           console.error("Tracking failed:", e instanceof Error ? e.message : String(e));
