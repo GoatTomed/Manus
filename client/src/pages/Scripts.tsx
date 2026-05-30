@@ -9,6 +9,7 @@ interface Script {
   name: string;
   image: string;
   description?: string;
+  loadstring: string;
 }
 
 const SCRIPTS: Script[] = [
@@ -17,6 +18,21 @@ const SCRIPTS: Script[] = [
     name: "Push Rock for Brainrots",
     image: "https://tr.rbxcdn.com/180DAY-545885b2289cb5fae86a063c7238b743/768/432/Image/Webp/noFilter",
     description: "The ultimate script for Push Rock for Brainrots",
+    loadstring: 'loadstring(game:HttpGet("https://yoursuck.vercel.app/PushRockforBrainrots.lua", true))()',
+  },
+  {
+    id: "bite-by-night",
+    name: "Bite By Night",
+    image: "https://i.imgur.com/2b7c546.png", // Corrected imgur URL from blob/id
+    description: "Dominating Bite By Night with this powerful script",
+    loadstring: 'loadstring(game:HttpGet("https://yoursuck.vercel.app/BiteByNight.lua", true))()',
+  },
+  {
+    id: "violence-district",
+    name: "Violence District",
+    image: "https://i.imgur.com/1hwYNcw.png",
+    description: "Full control over Violence District",
+    loadstring: 'loadstring(game:HttpGet("https://yoursuck.vercel.app/ViolenceDistrict.lua", true))()',
   },
 ];
 
@@ -43,8 +59,7 @@ export default function Scripts() {
     }
 
     if (consumeKey()) {
-      const scriptContent = `loadstring(game:HttpGet("https://yoursuck.vercel.app/PushRockforBrainrots.lua", true))()`;
-      navigator.clipboard.writeText(scriptContent);
+      navigator.clipboard.writeText(selectedScript.loadstring);
       toast.success("Script copied!", {
         description: `${selectedScript.name} has been copied to your clipboard. Keys remaining: ${getCount()}`,
       });
@@ -87,7 +102,7 @@ export default function Scripts() {
             </p>
           </div>
 
-          {/* Scripts Grid 3x3 */}
+          {/* Scripts Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {SCRIPTS.map((script) => (
               <div
