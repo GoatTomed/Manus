@@ -1,7 +1,7 @@
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
 import cors from "cors";
-import * as dotenv from "dotenv";
+import dotenv from "dotenv";
 import crypto from "crypto";
 
 dotenv.config();
@@ -11,8 +11,8 @@ app.use(cors());
 app.use(express.json());
 
 const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
 const ALLOWED_IP = "144.168.52.250";
@@ -40,7 +40,7 @@ app.post("/api/track-visit", async (req: any, res: any) => {
     const userAgent = req.headers["user-agent"] || "unknown";
 
     // Use visitorId if provided, fallback to IP hash
-    const ipHash = visitorId || crypto.createHash("sha256").update(ip as string).digest("hex");
+    const ipHash = visitorId || crypto.createHash("sha256").update(String(ip)).digest("hex");
 
     // Check if banned
     const { data: banRecord } = await supabase
@@ -80,7 +80,7 @@ app.get("/api/check-ban", async (req: any, res: any) => {
     const { data: banRecord } = await supabase
       .from("banned_users")
       .select("*")
-      .eq("visitor_id", visitorId)
+      .eq("visitor_id", String(visitorId))
       .single();
 
     res.json({ 
@@ -97,7 +97,6 @@ app.get("/api/check-ban", async (req: any, res: any) => {
 
 app.post("/api/generate-key", async (req: any, res: any) => {
   try {
-    const { visitorId } = req.body;
     const newKey = `YS-${crypto.randomBytes(4).toString("hex").toUpperCase()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
 
     const { data, error } = await supabase
@@ -125,7 +124,7 @@ app.post("/api/redeem", async (req: any, res: any) => {
     const { data, error: sbError } = await supabase
       .from("keys")
       .select("*")
-      .match({ key_value: key, is_used: false })
+      .match({ key_value: String(key), is_used: false })
       .single();
 
     if (sbError || !data) {
@@ -140,7 +139,7 @@ app.post("/api/redeem", async (req: any, res: any) => {
         redeemed_by: visitorId || null,
         script_id: scriptId || null,
       })
-      .match({ key_value: key });
+      .match({ key_value: String(key) });
 
     res.json({ success: true });
   } catch (error: any) {
@@ -202,8 +201,6 @@ app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
     res.status(500).json({ error: "Internal Error" });
   }
 });
-
-// ─── Users Management Endpoints ───────────────────────────────────────────────
 
 app.get("/api/analytics/users", authorizeAnalytics, async (req: any, res: any) => {
   try {
