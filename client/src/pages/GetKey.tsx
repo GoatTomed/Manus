@@ -164,12 +164,7 @@ export default function GetKey() {
                     {copied ? <Check size={18} /> : <Copy size={18} />}
                   </button>
                 </div>
-                <button
-                  onClick={handleRedeemKey}
-                  className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold text-sm flex items-center justify-center transition-all"
-                >
-                  Redeem Key
-                </button>
+{/* Redeem Key button hidden */}
               </div>
             )}
           </div>
