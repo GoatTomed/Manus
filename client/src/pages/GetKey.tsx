@@ -174,16 +174,7 @@ export default function GetKey() {
             )}
           </div>
           
-          {/* Preview Scripts Button under the GUI */}
-          <div className="mt-6 animate-fade-in-up-delay-1">
-            <button
-              onClick={() => setLocation("/scripts")}
-              className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2"
-            >
-              <Eye size={18} />
-              Preview Scripts
-            </button>
-          </div>
+{/* Preview Scripts Button removed */}
         </div>
       </main>
     </div>

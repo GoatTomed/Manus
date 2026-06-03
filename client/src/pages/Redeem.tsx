@@ -102,10 +102,10 @@ export default function Redeem() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={() => setLocation("/scripts")}
+                      onClick={() => setLocation("/")}
                       className="bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded-lg font-bold text-xs transition-all"
                     >
-                      Go to Scripts
+                      Go Home
                     </button>
                     <button
                       onClick={() => {
@@ -123,24 +123,7 @@ export default function Redeem() {
             </div>
           </div>
 
-          {/* Buttons Section strictly UNDER the GUI */}
-          <div className="text-center pt-4 space-y-4 animate-fade-in-up-delay-3">
-            <p className="text-white font-semibold text-sm">
-              Wanna spend your <span className="text-[#00ABFF] font-bold">{keyCount}</span> keys at the scripts shop?
-            </p>
-            
-            {/* Shop and Preview Buttons */}
-            <div className="flex flex-col gap-3 items-center">
-              <button
-                onClick={() => setLocation("/scripts")}
-                className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2"
-              >
-                <ShoppingCart size={18} />
-                Show Scripts
-              </button>
-
-            </div>
-          </div>
+{/* Shop and Preview Buttons removed */}
         </div>
       </main>
     </div>
