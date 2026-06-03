@@ -10,7 +10,8 @@ import GetKey from "./pages/GetKey";
 import Analytics from "./pages/Analytics";
 import UsersPage from "./pages/UsersPage";
 import Banned from "./pages/Banned";
-import Scripts from "./pages/Scripts";
+// Scripts page removed
+import Key from "./pages/Key";
 import VerificationError from "./pages/VerificationError";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -26,7 +27,8 @@ function Router() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/users" component={UsersPage} />
       <Route path="/banned" component={Banned} />
-      <Route path="/scripts" component={Scripts} />
+      {/* /scripts route removed */}
+      <Route path="/key" component={Key} />
       <Route path="/verification-error" component={VerificationError} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

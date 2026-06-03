@@ -32,7 +32,7 @@ export default function Home() {
     {
       number: "03",
       title: "Browse",
-      description: "Pick your script."
+      description: "Pick your key."
     },
     {
       number: "04",
