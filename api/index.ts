@@ -7,7 +7,14 @@ import crypto from "crypto";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Enhanced CORS for Roblox and External Executors
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+}));
+
 app.use(express.json());
 
 const supabase = createClient(
