@@ -20,5 +20,11 @@ CREATE INDEX IF NOT EXISTS idx_keys_redeemed_by ON keys(redeemed_by);
 ALTER TABLE keys ADD COLUMN IF NOT EXISTS script_id TEXT DEFAULT NULL;
 
 -- 5. Add generated_by to keys table to track who generated the key for 24h limit
-ALTER TABLE keys ADD COLUMN IF NOT EXISTS generated_by TEXT DEFAULT NULL;
+-- Ensure the column exists and index is created
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='keys' AND column_name='generated_by') THEN
+    ALTER TABLE keys ADD COLUMN generated_by TEXT DEFAULT NULL;
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_keys_generated_by ON keys(generated_by);

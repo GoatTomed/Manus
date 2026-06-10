@@ -17,7 +17,7 @@ interface AnalyticsData {
   totalViews: number;
   uniqueVisitors: number;
   totalKeys: number;
-  usedKeys: number;
+    // usedKeys removed
   dailyStats: { date: string; views: number }[];
   recentVisits: { ip_hash: string; path: string; created_at: string }[];
   pagination: { currentPage: number; totalPages: number; totalItems: number };
@@ -198,12 +198,11 @@ export default function Analytics() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             { label: "Unique Visitors", value: data?.uniqueVisitors, icon: Globe, color: "#00ABFF", trend: data?.trends?.visitors },
             { label: "Total Views", value: data?.totalViews, icon: Users, color: "#3b82f6", trend: data?.trends?.views },
             { label: "Keys Generated", value: data?.totalKeys, icon: Key, color: "#a855f7" },
-            { label: "Keys Redeemed", value: data?.usedKeys, icon: MousePointer2, color: "#22c55e" }
           ].map((stat, i) => (
             <div key={i} className="bg-white/5 border border-white/10 rounded-[2rem] p-8 space-y-5 hover:border-[#00ABFF]/30 transition-all group">
               <div className="flex items-center justify-between">

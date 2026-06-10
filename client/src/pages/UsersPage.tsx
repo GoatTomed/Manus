@@ -17,7 +17,7 @@ interface UserSummary {
   lastSeen: string;
   firstSeen: string;
   paths: string[];
-  keysRedeemed: number;
+  keysGenerated: number;
   isBanned: boolean;
 }
 
@@ -40,7 +40,7 @@ interface UserDetail {
   userId: string;
   visits: VisitRecord[];
   generatedKeys: KeyRecord[];
-  redeemedKeys: KeyRecord[];
+  // redeemedKeys removed
   isBanned: boolean;
   banRecord: { reason: string; banned_at: string } | null;
 }
@@ -147,7 +147,7 @@ function UserDetailPanel({
 }) {
   const [detail, setDetail] = useState<UserDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState<"info" | "keys" | "redeemed">("info");
+  const [activeSection, setActiveSection] = useState<"info" | "keys">("info");
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [banReason, setBanReason] = useState("");
   const [showBanInput, setShowBanInput] = useState(false);
@@ -230,7 +230,6 @@ function UserDetailPanel({
   const sections = [
     { id: "info", label: "Info", icon: Eye },
     { id: "keys", label: "Keys", icon: KeyRound },
-    { id: "redeemed", label: "Redeemed", icon: BookOpen },
   ] as const;
 
   return (
@@ -339,7 +338,7 @@ function UserDetailPanel({
                 <div className="grid grid-cols-2 gap-6">
                   {[
                     { label: "Total Views", value: detail.visits.length, icon: Eye, color: "#00ABFF" },
-                    { label: "Keys Redeemed", value: detail.redeemedKeys.length, icon: KeyRound, color: "#a855f7" },
+                    { label: "Keys Generated", value: detail.generatedKeys.length, icon: KeyRound, color: "#a855f7" },
                   ].map((stat, i) => (
                     <div key={i} className="bg-white/5 border border-white/10 rounded-[2rem] p-8 space-y-4">
                       <div className="flex items-center gap-3">

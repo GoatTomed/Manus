@@ -74,11 +74,6 @@ export default function Home() {
                 Get Key
               </button>
             </Link>
-            <Link href="/redeem">
-              <button className="w-full sm:w-auto bg-white/5 border border-white/10 text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-white/10 transition-all">
-                Redeem Key
-              </button>
-            </Link>
           </div>
         </div>
       </main>

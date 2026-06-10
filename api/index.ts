@@ -105,6 +105,25 @@ app.get("/api/check-ban", async (req: any, res: any) => {
 
 const sessions = new Map<string, { step: number; expires: number }>();
 
+const EARNPASTE_API_KEY = "ep_1fc0807b695b99c7f244b4d0dd6ac65bd49085dc6a6a2cd2";
+const EARNPASTE_API_URL = "https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste";
+
+async function createEarnPasteLink(targetUrl: string, timer: number = 15): Promise<string> {
+  const response = await fetch(EARNPASTE_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": EARNPASTE_API_KEY,
+    },
+    body: JSON.stringify({ targetUrl, timer }),
+  });
+
+  if (!response.ok) throw new Error(`EarnPaste API error: ${response.status}`);
+  const data: any = await response.json();
+  if (!data.url) throw new Error("No URL returned from EarnPaste API");
+  return data.url;
+}
+
 app.post("/api/get-key/start", async (req: any, res: any) => {
   try {
     const { visitorId } = req.body;
@@ -128,7 +147,13 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
     
     sessions.set(sessionId, { step: 1, expires: Date.now() + 15 * 60 * 1000 });
     
-    res.json({ sessionId, verificationHash });
+    const protocol = req.headers["x-forwarded-proto"] || "http";
+    const host = req.headers["host"];
+    const nonce = crypto.randomBytes(4).toString("hex");
+    const verifyUrl = `${protocol}://${host}/api/v/${verificationHash}?session=${sessionId}&n=${nonce}`;
+    const earnPasteUrl = await createEarnPasteLink(verifyUrl, 15);
+    
+    res.json({ sessionId, verificationHash, earnPasteUrl });
   } catch (error: any) {
     res.status(500).json({ error: "Internal Error" });
   }
@@ -151,14 +176,25 @@ app.get("/api/v/:hash", (req: any, res: any) => {
 });
 
 app.post("/api/get-key/step2", async (req: any, res: any) => {
-  const { sessionId } = req.body;
-  const s = sessions.get(sessionId);
-  if (!s || s.step !== 2 || s.expires < Date.now()) {
-    return res.status(400).json({ error: "Invalid or expired session" });
+  try {
+    const { sessionId } = req.body;
+    const s = sessions.get(sessionId);
+    if (!s || s.step !== 2 || s.expires < Date.now()) {
+      return res.status(400).json({ error: "Invalid or expired session" });
+    }
+    
+    const verificationHash = crypto.randomBytes(16).toString("hex");
+    
+    const protocol = req.headers["x-forwarded-proto"] || "http";
+    const host = req.headers["host"];
+    const nonce = crypto.randomBytes(4).toString("hex");
+    const verifyUrl = `${protocol}://${host}/api/v/${verificationHash}?session=${sessionId}&n=${nonce}`;
+    const earnPasteUrl = await createEarnPasteLink(verifyUrl, 15);
+    
+    res.json({ verificationHash, earnPasteUrl });
+  } catch (error: any) {
+    res.status(500).json({ error: "Internal Error" });
   }
-  
-  const verificationHash = crypto.randomBytes(16).toString("hex");
-  res.json({ verificationHash });
 });
 
 app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
@@ -186,7 +222,8 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
       return res.status(403).json({ error: "You can only generate one key every 24 hours." });
     }
 
-    const newKey = `YS-${crypto.randomBytes(4).toString("hex").toUpperCase()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+    const generatePart = () => crypto.randomBytes(3).toString("hex").slice(0, 3).toUpperCase();
+    const newKey = `${generatePart()}-${generatePart()}-${generatePart()}`;
     const { data, error } = await supabase
       .from("keys")
       .insert({
@@ -206,35 +243,7 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
   }
 });
 
-app.post("/api/redeem", async (req: any, res: any) => {
-  try {
-    const { key, visitorId, scriptId } = req.body;
-
-    const { data, error: sbError } = await supabase
-      .from("keys")
-      .select("*")
-      .match({ key_value: String(key), is_used: false })
-      .single();
-
-    if (sbError || !data) {
-      return res.status(400).json({ error: "Invalid or already used key" });
-    }
-
-    await supabase
-      .from("keys")
-      .update({
-        is_used: true,
-        used_at: new Date().toISOString(),
-        redeemed_by: visitorId || null,
-        script_id: scriptId || null,
-      })
-      .match({ key_value: String(key) });
-
-    res.json({ success: true });
-  } catch (error: any) {
-    res.status(500).json({ error: "Internal Error" });
-  }
-});
+// /api/redeem endpoint removed
 
 app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
   try {
@@ -245,7 +254,7 @@ app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
 
     const { count: totalViews } = await supabase.from('page_views').select('*', { count: 'exact', head: true });
     const { count: totalKeys } = await supabase.from('keys').select('*', { count: 'exact', head: true });
-    const { count: usedKeys } = await supabase.from('keys').select('*', { count: 'exact', head: true }).eq('is_used', true);
+    // usedKeys calculation removed
     
     const { data: paginatedVisits } = await supabase
       .from('page_views')
@@ -287,7 +296,7 @@ app.get("/api/analytics", authorizeAnalytics, async (req: any, res: any) => {
       totalViews: totalViews || 0,
       uniqueVisitors,
       totalKeys: totalKeys || 0,
-      usedKeys: usedKeys || 0,
+      // usedKeys removed
       dailyStats,
       recentVisits: paginatedVisits || [],
       trends: {
@@ -366,19 +375,8 @@ app.get("/api/analytics/users", authorizeAnalytics, async (req: any, res: any) =
       }
     }
 
-    const { data: redeemedKeys } = await supabase
-      .from('keys')
-      .select('redeemed_by')
-      .eq('is_used', true);
-
+    // redeemedKeys logic removed
     const keysByUser = new Map<string, number>();
-    if (redeemedKeys) {
-      for (const k of redeemedKeys) {
-        if (k.redeemed_by) {
-          keysByUser.set(k.redeemed_by, (keysByUser.get(k.redeemed_by) || 0) + 1);
-        }
-      }
-    }
 
     const { data: bannedUsers } = await supabase
       .from('banned_users')
@@ -387,7 +385,7 @@ app.get("/api/analytics/users", authorizeAnalytics, async (req: any, res: any) =
 
     const users = Array.from(userMap.values()).map(u => ({
       ...u,
-      keysRedeemed: keysByUser.get(u.id) || 0,
+      keysGenerated: keysByUser.get(u.id) || 0,
       isBanned: bannedSet.has(u.id),
     }));
 
@@ -414,11 +412,7 @@ app.get("/api/analytics/users/:userId", authorizeAnalytics, async (req: any, res
       .select('id, key_value, is_used, used_at, created_at')
       .order('created_at', { ascending: false });
 
-    const { data: redeemedKeys } = await supabase
-      .from('keys')
-      .select('id, key_value, used_at, created_at, script_id')
-      .eq('redeemed_by', userId)
-      .order('used_at', { ascending: false });
+    // redeemedKeys query removed
 
     const { data: banRecord } = await supabase
       .from('banned_users')
@@ -430,7 +424,7 @@ app.get("/api/analytics/users/:userId", authorizeAnalytics, async (req: any, res
       userId,
       visits: visits || [],
       generatedKeys: generatedKeys || [],
-      redeemedKeys: redeemedKeys || [],
+      // redeemedKeys removed
       isBanned: !!banRecord,
       banRecord: banRecord || null,
     });

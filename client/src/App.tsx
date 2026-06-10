@@ -5,7 +5,7 @@ import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
-import Redeem from "./pages/Redeem";
+
 import GetKey from "./pages/GetKey";
 import Analytics from "./pages/Analytics";
 import UsersPage from "./pages/UsersPage";
@@ -22,7 +22,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/redeem" component={Redeem} />
+
       <Route path="/get-key" component={GetKey} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/users" component={UsersPage} />
