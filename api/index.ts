@@ -549,6 +549,9 @@ app.post("/api/verify-key", async (req: any, res: any) => {
       return res.json({ valid: false });
     }
 
+    // Calculate expiration (24h after creation)
+    const expiresAt = new Date(new Date(keyRecord.created_at).getTime() + 24 * 60 * 60 * 1000).toISOString();
+
     // Check if key has a roblox_id already
     if (keyRecord.roblox_id) {
       // Key is already locked to a Roblox account
@@ -557,7 +560,7 @@ app.post("/api/verify-key", async (req: any, res: any) => {
         return res.json({ valid: false });
       }
       // Roblox ID matches, key is valid
-      return res.json({ valid: true });
+      return res.json({ valid: true, expiresAt });
     }
 
     // First time use: lock the key to this Roblox account
@@ -570,7 +573,7 @@ app.post("/api/verify-key", async (req: any, res: any) => {
       return res.status(500).json({ valid: false, error: "Failed to lock key" });
     }
 
-    res.json({ valid: true });
+    res.json({ valid: true, expiresAt });
   } catch (error: any) {
     res.status(500).json({ valid: false, error: "Internal Error" });
   }
