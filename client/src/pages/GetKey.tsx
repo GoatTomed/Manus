@@ -51,11 +51,7 @@ export default function GetKey() {
     try {
       const visitorId = localStorage.getItem("ys_visitor_id");
       const res = await axios.post("/api/get-key/start", { visitorId });
-      const { sessionId, verificationHash } = res.data;
-
-      const verifyUrl = `${window.location.origin}/api/v/${verificationHash}?session=${sessionId}`;
-      const earnPasteUrl = await createEarnPasteLink(verifyUrl, 15);
-
+      const { earnPasteUrl } = res.data;
       window.location.href = earnPasteUrl;
     } catch (err: any) {
       const msg = err.response?.data?.error || "Error starting process.";
@@ -74,11 +70,7 @@ export default function GetKey() {
     setError("");
     try {
       const res = await axios.post("/api/get-key/step2", { sessionId });
-      const verificationHash = res.data.verificationHash;
-
-      const verifyUrl = `${window.location.origin}/api/v/${verificationHash}?session=${sessionId}`;
-      const earnPasteUrl = await createEarnPasteLink(verifyUrl, 15);
-
+      const { earnPasteUrl } = res.data;
       window.location.href = earnPasteUrl;
     } catch (err: any) {
       const msg = err.response?.data?.error || "Error starting final step.";
@@ -100,34 +92,34 @@ export default function GetKey() {
       <Navbar />
 
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-3xl">
+        <div className="w-full max-w-2xl">
           {/* GET KEY Badge */}
-          <div className="flex justify-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-blue-900/30 border border-blue-500/50 rounded-full px-6 py-2">
-              <Search size={18} className="text-blue-400" />
-              <span className="font-bold text-blue-400 tracking-wider">GET KEY</span>
+          <div className="flex justify-center mb-8">
+            <div className="inline-flex items-center gap-2 bg-[#00ABFF]/15 border border-[#00ABFF]/40 rounded-full px-4 py-2">
+              <Search size={16} className="text-[#00ABFF]" />
+              <span className="font-bold text-[#00ABFF] tracking-wider text-sm">GET KEY</span>
             </div>
           </div>
 
           {/* Main Container */}
-          <div className="bg-[#0a0d14] border border-white/10 rounded-2xl p-12 shadow-2xl">
+          <div className="bg-[#0a0d14] border border-white/10 rounded-2xl p-8 shadow-2xl">
             {/* Title */}
-            <h1 className="text-4xl font-bold text-center mb-4">
+            <h1 className="text-3xl font-bold text-center mb-3 text-white">
               Complete Verification
             </h1>
-            <p className="text-gray-400 text-center mb-12 text-lg">
+            <p className="text-gray-400 text-center mb-8 text-sm">
               Complete a quick verification to get your key and start using our scripts
             </p>
 
             {/* Progress Section */}
-            <div className="mb-12">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-gray-400 font-semibold">Progress</span>
-                <span className="text-blue-400 font-bold text-lg">{progressPercentage}%</span>
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-400 font-semibold text-sm">Progress</span>
+                <span className="text-[#00ABFF] font-bold">{progressPercentage}%</span>
               </div>
-              <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-blue-500 transition-all duration-500 ease-out"
+                  className="h-full bg-[#00ABFF] transition-all duration-500 ease-out"
                   style={{ width: `${progressPercentage}%` }}
                 ></div>
               </div>
@@ -135,33 +127,35 @@ export default function GetKey() {
 
             {/* Error Message */}
             {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-center mb-8 font-bold">
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-center mb-6 font-bold text-sm">
                 {error}
               </div>
             )}
 
-            {/* Checkpoints */}
-            <div className="space-y-4">
-              {/* Step 1 - Always visible until completed */}
+            {/* Checkpoints Section */}
+            <div className="space-y-3 mb-6">
+              <div className="text-gray-400 font-semibold text-xs uppercase tracking-widest">
+                CHECKPOINTS ({currentStep > 1 ? 1 : 0}/{currentStep === 3 ? 2 : 2})
+              </div>
+
+              {/* Step 1 */}
               {currentStep === 1 && (
-                <div className="border border-white/10 rounded-xl p-6 bg-white/5 hover:bg-white/10 transition-all">
+                <div className="border border-white/10 rounded-xl p-4 bg-white/5 hover:bg-white/10 transition-all">
                   <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-lg border-2 border-blue-500 flex items-center justify-center bg-blue-500/10">
-                        <span className="text-blue-400 font-bold text-lg">1</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg border-2 border-[#00ABFF] flex items-center justify-center bg-[#00ABFF]/10">
+                        <span className="text-[#00ABFF] font-bold text-sm">1</span>
                       </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-white">First Step</h3>
-                      </div>
+                      <h3 className="text-base font-bold text-white">First Step</h3>
                     </div>
                     <button
                       onClick={handleStart}
                       disabled={isLoading}
-                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-8 py-3 rounded-lg font-bold transition-all flex items-center gap-2"
+                      className="bg-[#00ABFF] hover:bg-[#0099EE] disabled:opacity-50 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 flex-shrink-0"
                     >
                       {isLoading ? (
                         <>
-                          <Loader2 className="animate-spin" size={18} />
+                          <Loader2 className="animate-spin" size={16} />
                         </>
                       ) : (
                         "Start"
@@ -171,89 +165,67 @@ export default function GetKey() {
                 </div>
               )}
 
-              {/* Step 2 - Only visible after step 1 is completed */}
-              {currentStep >= 2 && (
-                <div className={`border rounded-xl p-6 transition-all ${
-                  currentStep === 2 ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-green-500/30 bg-green-500/5"
-                }`}>
+              {/* Step 2 */}
+              {currentStep === 2 && (
+                <div className="border border-white/10 rounded-xl p-4 bg-white/5 hover:bg-white/10 transition-all">
                   <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center ${
-                        currentStep === 2 
-                          ? "border-blue-500 bg-blue-500/10" 
-                          : "border-green-500 bg-green-500/10"
-                      }`}>
-                        {currentStep === 2 ? (
-                          <span className="text-blue-400 font-bold text-lg">2</span>
-                        ) : (
-                          <Check className="text-green-400" size={24} />
-                        )}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg border-2 border-[#00ABFF] bg-[#00ABFF]/10 flex items-center justify-center">
+                        <span className="text-[#00ABFF] font-bold text-sm">2</span>
                       </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-white">Last Step</h3>
-                      </div>
+                      <h3 className="text-base font-bold text-white">Last Step</h3>
                     </div>
-                    {currentStep === 2 && (
-                      <button
+                    <button
                         onClick={handleStep2}
                         disabled={isLoading}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-8 py-3 rounded-lg font-bold transition-all flex items-center gap-2"
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="animate-spin" size={18} />
-                          </>
-                        ) : (
-                          "Start"
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3 - Key Display */}
-              {currentStep === 3 && (
-                <div className="border border-green-500/30 rounded-xl p-6 bg-green-500/5">
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <h3 className="text-2xl font-bold text-green-400 mb-2">Verification Complete!</h3>
-                      <p className="text-gray-400">Your key is ready to use</p>
-                    </div>
-                    <div className="bg-black/40 border border-white/10 rounded-lg p-6 flex items-center justify-between gap-4">
-                      <code className="text-xl font-mono font-bold tracking-wider text-white flex-1 break-all">
-                        {generatedKey || "••••-••••"}
-                      </code>
-                      <button
-                        onClick={copyToClipboard}
-                        className="text-blue-400 p-3 hover:bg-white/10 rounded-lg transition-all flex-shrink-0"
-                        disabled={!generatedKey}
-                      >
-                        {copied ? <Check size={24} /> : <Copy size={24} />}
-                      </button>
-                    </div>
-                    <p className="text-green-500/70 text-sm text-center">
-                      {copied ? "✓ Copied to clipboard!" : "Click to copy your key"}
-                    </p>
+                        className="bg-[#00ABFF] hover:bg-[#0099EE] disabled:opacity-50 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 flex-shrink-0"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="animate-spin" size={16} />
+                        </>
+                      ) : (
+                        "Start"
+                      )}
+                    </button>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Action Buttons - Only show after key is generated */}
+            {/* Step 3 - Key Display */}
             {currentStep === 3 && (
-              <div className="grid grid-cols-2 gap-4 mt-12">
+              <div className="border border-green-500/30 rounded-xl p-6 bg-green-500/5 space-y-4">
+                <div className="text-center">
+                  <h3 className="text-xl font-bold text-green-400 mb-1">Verification Complete!</h3>
+                  <p className="text-gray-400 text-sm">Your key is ready to use</p>
+                </div>
+                <div className="bg-black/40 border border-white/10 rounded-lg p-4 flex items-center justify-between gap-3">
+                  <code className="text-sm font-mono font-bold tracking-wider text-white flex-1 break-all">
+                    {generatedKey || "••••-••••"}
+                  </code>
+                  <button
+                    onClick={copyToClipboard}
+                    className="text-[#00ABFF] p-2 hover:bg-white/10 rounded-lg transition-all flex-shrink-0"
+                    disabled={!generatedKey}
+                  >
+                    {copied ? <Check size={20} /> : <Copy size={20} />}
+                  </button>
+                </div>
+                <p className="text-green-500/70 text-xs text-center">
+                  {copied ? "✓ Copied to clipboard!" : "Click to copy your key"}
+                </p>
+              </div>
+            )}
+
+            {/* Action Button - Only show after key is generated */}
+            {currentStep === 3 && (
+              <div className="mt-6">
                 <button
                   onClick={() => setLocation("/")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition-all"
+                  className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-2.5 rounded-lg font-bold text-sm transition-all"
                 >
                   Home
-                </button>
-                <button
-                  onClick={() => setLocation("/redeem")}
-                  className="bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-lg font-bold transition-all"
-                >
-                  Redeem
                 </button>
               </div>
             )}
