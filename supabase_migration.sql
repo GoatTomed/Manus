@@ -18,3 +18,7 @@ CREATE INDEX IF NOT EXISTS idx_keys_redeemed_by ON keys(redeemed_by);
 
 -- 4. Add script_id to keys table to track which script was redeemed
 ALTER TABLE keys ADD COLUMN IF NOT EXISTS script_id TEXT DEFAULT NULL;
+
+-- 5. Add generated_by to keys table to track who generated the key for 24h limit
+ALTER TABLE keys ADD COLUMN IF NOT EXISTS generated_by TEXT DEFAULT NULL;
+CREATE INDEX IF NOT EXISTS idx_keys_generated_by ON keys(generated_by);
