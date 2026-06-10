@@ -487,4 +487,57 @@ app.delete("/api/analytics/users/:userId/ban", authorizeAnalytics, async (req: a
   }
 });
 
+// ─── Roblox Key Verification Endpoint ─────────────────────────────────────────
+
+app.post("/api/verify-key", async (req: any, res: any) => {
+  try {
+    const { key, robloxId } = req.body;
+    
+    if (!key || !robloxId) {
+      return res.status(400).json({ valid: false, error: "Missing key or robloxId" });
+    }
+
+    // Trim and uppercase the key for consistency
+    const normalizedKey = String(key).trim().toUpperCase();
+
+    // Query the keys table for the key
+    const { data: keyRecord, error: queryError } = await supabase
+      .from("keys")
+      .select("*")
+      .eq("key_value", normalizedKey)
+      .eq("is_used", false)
+      .single();
+
+    if (queryError || !keyRecord) {
+      // Key not found or already used
+      return res.json({ valid: false });
+    }
+
+    // Check if key has a roblox_id already
+    if (keyRecord.roblox_id) {
+      // Key is already locked to a Roblox account
+      if (keyRecord.roblox_id !== String(robloxId)) {
+        // Roblox ID doesn't match
+        return res.json({ valid: false });
+      }
+      // Roblox ID matches, key is valid
+      return res.json({ valid: true });
+    }
+
+    // First time use: lock the key to this Roblox account
+    const { error: updateError } = await supabase
+      .from("keys")
+      .update({ roblox_id: String(robloxId) })
+      .eq("key_value", normalizedKey);
+
+    if (updateError) {
+      return res.status(500).json({ valid: false, error: "Failed to lock key" });
+    }
+
+    res.json({ valid: true });
+  } catch (error: any) {
+    res.status(500).json({ valid: false, error: "Internal Error" });
+  }
+});
+
 export default app;

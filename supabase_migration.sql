@@ -28,3 +28,12 @@ BEGIN
   END IF;
 END $$;
 CREATE INDEX IF NOT EXISTS idx_keys_generated_by ON keys(generated_by);
+
+-- 6. Add roblox_id column to keys table to lock keys to specific Roblox accounts
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='keys' AND column_name='roblox_id') THEN
+    ALTER TABLE keys ADD COLUMN roblox_id TEXT DEFAULT NULL;
+  END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_keys_roblox_id ON keys(roblox_id);
