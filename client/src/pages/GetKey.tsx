@@ -3,7 +3,6 @@ import { useLocation } from "wouter";
 import axios from "axios";
 import { Loader2, Copy, Check } from "lucide-react";
 import { createEarnPasteLink } from "../hooks/useEarnPaste";
-import KeyCounter from "../components/KeyCounter";
 import Navbar from "../components/Navbar";
 
 const LOGO_URL =
@@ -98,121 +97,124 @@ export default function GetKey() {
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
       <Navbar />
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 pt-24">
-        <div className="w-full max-w-md space-y-6">
+      <main className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-2xl">
           {/* Logo */}
-          <div className="flex justify-center animate-fade-in-up">
-            <img src={LOGO_URL} alt="Logo" className="w-20 h-20 object-contain" />
+          <div className="flex justify-center mb-12">
+            <img src={LOGO_URL} alt="Logo" className="w-32 h-32 object-contain" />
           </div>
 
-          {/* Main Container: Key Counter + GUI */}
-          <div className="space-y-0 animate-fade-in-up-delay-1">
-            {/* Key Counter - Attached to top of GUI */}
-            <div className="bg-white/5 border border-white/10 rounded-t-xl p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#00ABFF]"></div>
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Keys</span>
-              </div>
-              <KeyCounter />
+          {/* Main GUI Container - Larger and Taller */}
+          <div className="bg-[#0a0d14] border border-white/10 rounded-2xl p-12 shadow-2xl min-h-[600px] flex flex-col justify-between">
+            {/* Header */}
+            <div className="text-center mb-12">
+              <h1 className="text-5xl font-bold tracking-tight mb-4">
+                Get Your <span className="text-[#00ABFF]">Key</span>
+              </h1>
+              <p className="text-gray-400 text-lg font-medium">
+                Complete verification to generate your key
+              </p>
             </div>
 
-            {/* Get Key GUI */}
-            <div className="bg-[#0a0d14] border border-white/10 border-t-0 rounded-b-xl p-8 space-y-6 animate-fade-in-up-delay-2">
-              <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold tracking-tight text-white">
-                  Get Your <span className="text-[#00ABFF]">Key</span>
-                </h1>
-                <p className="text-gray-500 text-sm font-medium">
-                  {currentStep === 3 ? "Key Ready" : "Complete 2 steps to generate key"}
-                </p>
-              </div>
-
+            {/* Content Area */}
+            <div className="flex-1 flex flex-col justify-center">
               {error && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs text-center font-bold">
+                <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-center mb-8 font-bold text-lg">
                   {error}
                 </div>
               )}
 
               {currentStep === 1 ? (
-                <div className="space-y-4">
-                  <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-center">
-                    <p className="text-gray-400 text-xs leading-relaxed">
-                      You can generate <span className="text-[#00ABFF] font-bold">one key every 24 hours</span>. 
-                      Please complete the verification steps below.
+                <div className="space-y-8">
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+                    <p className="text-gray-300 text-lg leading-relaxed mb-4">
+                      You can generate <span className="text-[#00ABFF] font-bold text-xl">one key every 24 hours</span>
+                    </p>
+                    <p className="text-gray-500 text-base">
+                      Click below to start the verification process
                     </p>
                   </div>
                   <button
                     onClick={handleStart}
                     disabled={isLoading}
-                    className="w-full bg-[#00ABFF] hover:bg-[#0099EE] disabled:opacity-50 text-white py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-[#00ABFF] hover:bg-[#0099EE] disabled:opacity-50 text-white py-6 rounded-xl font-bold text-xl transition-all flex items-center justify-center gap-3"
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="animate-spin" size={18} />
+                        <Loader2 className="animate-spin" size={28} />
                         Starting...
                       </>
                     ) : (
-                      "Get Key (Step 1/2)"
+                      "Start Verification"
                     )}
                   </button>
                 </div>
               ) : currentStep === 2 ? (
-                <div className="space-y-6">
-                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                    <span>Progress</span>
-                    <span className="text-[#00ABFF]">Step 2 of 2</span>
-                  </div>
-                  <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#00ABFF] w-1/2"></div>
+                <div className="space-y-8">
+                  <div className="text-center">
+                    <div className="inline-block bg-white/5 border border-white/10 rounded-full px-8 py-3 mb-6">
+                      <p className="text-gray-300 font-bold text-lg">1 of 2 Steps Completed</p>
+                    </div>
+                    <p className="text-gray-400 text-lg">
+                      Complete the final step to generate your key
+                    </p>
                   </div>
                   <button
                     onClick={handleStep2}
                     disabled={isLoading}
-                    className="w-full bg-[#00ABFF] hover:bg-[#0099EE] disabled:opacity-50 text-white py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-[#00ABFF] hover:bg-[#0099EE] disabled:opacity-50 text-white py-6 rounded-xl font-bold text-xl transition-all flex items-center justify-center gap-3"
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="animate-spin" size={18} />
+                        <Loader2 className="animate-spin" size={28} />
                         Continuing...
                       </>
                     ) : (
-                      "Continue (Step 2/2)"
+                      "Complete Final Step"
                     )}
                   </button>
                 </div>
               ) : (
-                <div className="space-y-6 animate-fade-in">
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                    <p className="text-green-500 font-bold text-sm text-center mb-3">Verification Complete!</p>
-                    <div className="bg-black/40 border border-white/10 rounded-lg p-4 flex items-center justify-between">
-                      <code className="text-sm font-mono font-bold tracking-wider text-white">
+                <div className="space-y-8 animate-fade-in">
+                  <div className="text-center mb-8">
+                    <div className="inline-block bg-green-500/10 border border-green-500/20 rounded-full px-8 py-3 mb-6">
+                      <p className="text-green-500 font-bold text-lg">2 of 2 Steps Completed</p>
+                    </div>
+                    <p className="text-gray-300 text-lg font-semibold">
+                      Your key is ready!
+                    </p>
+                  </div>
+
+                  <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-8">
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                      <code className="text-2xl font-mono font-bold tracking-wider text-white flex-1 break-all">
                         {generatedKey || "••••-••••"}
                       </code>
                       <button
                         onClick={copyToClipboard}
-                        className="text-[#00ABFF] p-2 hover:bg-white/5 rounded transition-all"
+                        className="text-[#00ABFF] p-3 hover:bg-white/10 rounded-lg transition-all flex-shrink-0"
                         disabled={!generatedKey}
                       >
-                        {copied ? <Check size={18} /> : <Copy size={18} />}
+                        {copied ? <Check size={28} /> : <Copy size={28} />}
                       </button>
                     </div>
-                    <p className="text-green-500/70 text-[10px] mt-3 text-center">
-                      {copied ? "Copied to clipboard!" : "Click to copy your key"}
+                    <p className="text-green-500/70 text-sm text-center">
+                      {copied ? "✓ Copied to clipboard!" : "Click the icon to copy your key"}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <button
                       onClick={() => setLocation("/")}
-                      className="bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded-lg font-bold text-xs transition-all"
+                      className="bg-[#00ABFF] hover:bg-[#0099EE] text-white py-4 rounded-xl font-bold text-lg transition-all"
                     >
-                      Go Home
+                      Home
                     </button>
                     <button
                       onClick={() => setLocation("/redeem")}
-                      className="bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-lg font-bold text-xs transition-all"
+                      className="bg-white/5 hover:bg-white/10 border border-white/10 text-white py-4 rounded-xl font-bold text-lg transition-all"
                     >
-                      Redeem Key
+                      Redeem
                     </button>
                   </div>
                 </div>
