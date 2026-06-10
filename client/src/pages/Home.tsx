@@ -18,29 +18,6 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, []);
 
-  const STEPS = [
-    {
-      number: "01",
-      title: "Get Key",
-      description: "Verify to generate a key."
-    },
-    {
-      number: "02",
-      title: "Redeem",
-      description: "Add it to your balance."
-    },
-    {
-      number: "03",
-      title: "Browse",
-      description: "Pick your key."
-    },
-    {
-      number: "04",
-      title: "Unlock",
-      description: "Copy and use instantly."
-    }
-  ];
-
   if (isLoading) {
     return (
       <div style={{
@@ -72,7 +49,7 @@ export default function Home() {
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
       <Navbar />
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 pt-24 space-y-24">
+      <main className="flex-1 flex flex-col items-center justify-center p-6 pt-24">
         {/* Hero Section */}
         <div className="text-center px-4 max-w-sm w-full animate-fade-in-up">
           {/* Logo */}
@@ -97,40 +74,11 @@ export default function Home() {
                 Get Key
               </button>
             </Link>
-{/* Redeem Key button hidden */}
-          </div>
-        </div>
-
-        {/* Tutorial Section (Exact User Specifications) */}
-        <div className="w-full max-w-6xl animate-fade-in-up-delay-1 pb-16 px-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {STEPS.map((step, index) => (
-              <div 
-                key={index} 
-                className="relative p-[18px_16px] bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.07)] rounded-[14px] overflow-hidden group flex flex-col"
-                style={{ padding: '18px 16px' }}
-              >
-                {/* Top shine effect (decorative line) */}
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.08)] to-transparent"></div>
-                
-                {/* Step number (large muted label) */}
-                <div 
-                  className="text-[1.4rem] font-extrabold text-[rgba(255,255,255,0.06)] tracking-[-0.04em] mb-[10px]"
-                >
-                  {step.number}
-                </div>
-                
-                {/* Title */}
-                <h3 className="text-[0.76rem] font-bold text-white mb-[6px] tracking-tight">
-                  {step.title}
-                </h3>
-                
-                {/* Subtitle/description */}
-                <p className="text-[0.65rem] text-[rgba(255,255,255,0.3)] leading-[1.6] font-medium">
-                  {step.description}
-                </p>
-              </div>
-            ))}
+            <Link href="/redeem">
+              <button className="w-full sm:w-auto bg-white/5 border border-white/10 text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-white/10 transition-all">
+                Redeem Key
+              </button>
+            </Link>
           </div>
         </div>
       </main>

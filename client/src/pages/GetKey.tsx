@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import axios from "axios";
-import { Loader2, Copy, Check, Eye } from "lucide-react";
-import { createEarnPasteLink } from "../hooks/useEarnPaste";
+import { Loader2, Copy, Check } from "lucide-react";
 import KeyCounter from "../components/KeyCounter";
 import Navbar from "../components/Navbar";
 
@@ -10,79 +9,22 @@ const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
 
 export default function GetKey() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
   const [generatedKey, setGeneratedKey] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [keyGenerated, setKeyGenerated] = useState(false);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const step = params.get("step");
-    const completed = params.get("completed");
-    const session = params.get("session");
-
-    if (completed === "true" && session) {
-      setCurrentStep(3);
-      setSessionId(session);
-      fetchResult(session);
-      // Clean up the URL parameters immediately so the key disappears on refresh
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (step === "2" && session) {
-      setCurrentStep(2);
-      setSessionId(session);
-    }
-  }, [location]);
-
-  const fetchResult = async (sid: string) => {
+  const handleGenerateKey = async () => {
+    setIsLoading(true);
+    setError("");
     try {
-      const res = await axios.get(`/api/get-key/result/${sid}`);
+      const res = await axios.post("/api/generate-key");
       setGeneratedKey(res.data.key);
-    } catch {
-      // If refresh happened, we might lose the session, but that's what we want (key disappearance)
-      setError("Verification expired or page refreshed. Please start again.");
-    }
-  };
-
-  const handleStart = async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      const res = await axios.post("/api/get-key/start");
-      const newSessionId = res.data.sessionId;
-      const verificationHash = res.data.verificationHash;
-
-      const verifyUrl = `${window.location.origin}/api/v/${verificationHash}`;
-      const earnPasteUrl = await createEarnPasteLink(verifyUrl, 15);
-
-      window.location.href = earnPasteUrl;
+      setKeyGenerated(true);
     } catch (err: any) {
-      const msg = err.response?.data?.error || err.message || "Error starting process.";
-      setError(msg);
-      setIsLoading(false);
-    }
-  };
-
-  const handleStep2 = async () => {
-    if (!sessionId) {
-      setError("Session not found. Please start over.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError("");
-    try {
-      const res = await axios.post("/api/get-key/step2", { sessionId });
-      const verificationHash = res.data.verificationHash;
-
-      const verifyUrl = `${window.location.origin}/api/v/${verificationHash}`;
-      const earnPasteUrl = await createEarnPasteLink(verifyUrl, 15);
-
-      window.location.href = earnPasteUrl;
-    } catch (err: any) {
-      const msg = err.response?.data?.error || err.message || "Error starting final step.";
+      const msg = err.response?.data?.error || err.message || "Error generating key.";
       setError(msg);
       setIsLoading(false);
     }
@@ -94,82 +36,102 @@ export default function GetKey() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleRedeemKey = () => {
-    // Clear state before redirecting to ensure the key disappears
+  const handleGetAnother = () => {
     setGeneratedKey("");
-    setSessionId(null);
-    setCurrentStep(1);
-    // Use setLocation for instant internal navigation instead of window.location.href
-    setLocation("/redeem");
+    setKeyGenerated(false);
+    setError("");
   };
 
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
       <Navbar />
 
-      <main className="flex-1 flex items-center justify-center p-6 pt-24">
-        <div className="w-full max-w-md">
-          <div className="flex justify-center mb-6">
+      <main className="flex-1 flex flex-col items-center justify-center p-6 pt-24">
+        <div className="w-full max-w-md space-y-6">
+          {/* Logo */}
+          <div className="flex justify-center animate-fade-in-up">
             <img src={LOGO_URL} alt="Logo" className="w-20 h-20 object-contain" />
           </div>
 
-          <div className="bg-[#0a0d14] border border-white/10 rounded-lg p-8 shadow-xl space-y-6">
-            <KeyCounter />
-
-            <h1 className="text-2xl font-bold text-center tracking-tight">
-              Get Your <span className="text-[#00ABFF]">Key</span>
-            </h1>
-
-            {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs text-center">
-                {error}
+          {/* Main Container: Key Counter + GUI */}
+          <div className="space-y-0 animate-fade-in-up-delay-1">
+            {/* Key Counter - Attached to top of GUI */}
+            <div className="bg-white/5 border border-white/10 rounded-t-xl p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#00ABFF]"></div>
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Keys</span>
               </div>
-            )}
+              <KeyCounter />
+            </div>
 
-            {currentStep === 1 ? (
-              <div className="space-y-6">
+            {/* Get Key GUI */}
+            <div className="bg-[#0a0d14] border border-white/10 border-t-0 rounded-b-xl p-8 space-y-6 animate-fade-in-up-delay-2">
+              <div className="text-center space-y-2">
+                <h1 className="text-2xl font-bold tracking-tight text-white">
+                  Get Your <span className="text-[#00ABFF]">Key</span>
+                </h1>
+                <p className="text-gray-500 text-sm font-medium">Generate a new key instantly</p>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs text-center">
+                  {error}
+                </div>
+              )}
+
+              {!keyGenerated ? (
                 <button
-                  onClick={handleStart}
+                  onClick={handleGenerateKey}
                   disabled={isLoading}
-                  className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full bg-[#00ABFF] hover:bg-[#0099EE] disabled:opacity-50 text-white py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2"
                 >
-                  {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Get Key"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} />
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate Key"
+                  )}
                 </button>
-              </div>
-            ) : currentStep === 2 ? (
-              <div className="space-y-6">
-                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                  <span>Progress</span>
-                  <span className="text-[#00ABFF]">Step 2 of 2</span>
+              ) : (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                    <p className="text-green-500 font-bold text-sm text-center mb-3">Key Generated!</p>
+                    <div className="bg-black/40 border border-white/10 rounded-lg p-4 flex items-center justify-between">
+                      <code className="text-sm font-mono font-bold tracking-wider text-white">
+                        {generatedKey}
+                      </code>
+                      <button
+                        onClick={copyToClipboard}
+                        className="text-[#00ABFF] p-2 hover:bg-white/5 rounded transition-all"
+                      >
+                        {copied ? <Check size={18} /> : <Copy size={18} />}
+                      </button>
+                    </div>
+                    <p className="text-green-500/70 text-[10px] mt-3 text-center">
+                      {copied ? "Copied to clipboard!" : "Click to copy your key"}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setLocation("/")}
+                      className="bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded-lg font-bold text-xs transition-all"
+                    >
+                      Go Home
+                    </button>
+                    <button
+                      onClick={handleGetAnother}
+                      className="bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-lg font-bold text-xs transition-all"
+                    >
+                      Get Another
+                    </button>
+                  </div>
                 </div>
-                <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#00ABFF] w-1/2"></div>
-                </div>
-                <button
-                  onClick={handleStep2}
-                  disabled={isLoading}
-                  className="w-full bg-[#00ABFF] hover:bg-[#0099EE] text-white py-3 rounded font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Continue"}
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-6 text-center">
-                <div className="text-green-500 text-sm font-bold uppercase tracking-widest mb-2">Key Ready</div>
-                <div className="bg-white/5 border border-white/10 rounded p-4 flex items-center justify-between">
-                  <code className="text-lg font-mono font-bold tracking-wider">
-                    {generatedKey || "••••-••••"}
-                  </code>
-                  <button onClick={copyToClipboard} className="text-[#00ABFF] p-2 hover:bg-white/5 rounded">
-                    {copied ? <Check size={18} /> : <Copy size={18} />}
-                  </button>
-                </div>
-{/* Redeem Key button hidden */}
-              </div>
-            )}
+              )}
+            </div>
           </div>
-          
-{/* Preview Scripts Button removed */}
         </div>
       </main>
     </div>
