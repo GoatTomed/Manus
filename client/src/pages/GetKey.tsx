@@ -145,7 +145,7 @@ export default function GetKey() {
       <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="animate-spin text-[#00ABFF]" size={48} />
+          <Loader2 className="animate-spin text-[#00ABFF]" size={48} strokeWidth={3} />
         </main>
       </div>
     );
@@ -220,9 +220,9 @@ export default function GetKey() {
                       <button
                         onClick={handleStart}
                         disabled={isLoading}
-                        className="bg-[#00ABFF] hover:bg-[#0099EE] disabled:opacity-50 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 flex-shrink-0"
+                        className="bg-white/5 border border-[#00ABFF]/30 hover:border-[#00ABFF] disabled:opacity-50 text-[#00ABFF] px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 flex-shrink-0"
                       >
-                        {isLoading ? <Loader2 className="animate-spin" size={16} /> : "Start"}
+                        {isLoading ? <Loader2 className="animate-spin text-[#00ABFF]" size={16} /> : "Start"}
                       </button>
                     </div>
                   </div>
@@ -241,9 +241,9 @@ export default function GetKey() {
                       <button
                         onClick={handleStep2}
                         disabled={isLoading}
-                        className="bg-[#00ABFF] hover:bg-[#0099EE] disabled:opacity-50 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 flex-shrink-0"
+                        className="bg-white/5 border border-[#00ABFF]/30 hover:border-[#00ABFF] disabled:opacity-50 text-[#00ABFF] px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 flex-shrink-0"
                       >
-                        {isLoading ? <Loader2 className="animate-spin" size={16} /> : "Start"}
+                        {isLoading ? <Loader2 className="animate-spin text-[#00ABFF]" size={16} /> : "Start"}
                       </button>
                     </div>
                   </div>
