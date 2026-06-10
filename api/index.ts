@@ -124,6 +124,35 @@ async function createEarnPasteLink(targetUrl: string, timer: number = 15): Promi
   return data.url;
 }
 
+app.get("/api/get-key/check", async (req: any, res: any) => {
+  try {
+    const { visitorId } = req.query;
+    if (!visitorId) return res.json({ hasKey: false });
+
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentKey } = await supabase
+      .from("keys")
+      .select("key_value, created_at")
+      .eq("generated_by", String(visitorId))
+      .gte("created_at", twentyFourHoursAgo)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (recentKey) {
+      return res.json({ 
+        hasKey: true, 
+        key: recentKey.key_value,
+        expiresAt: new Date(new Date(recentKey.created_at).getTime() + 24 * 60 * 60 * 1000).toISOString()
+      });
+    }
+
+    res.json({ hasKey: false });
+  } catch (error: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
 app.post("/api/get-key/start", async (req: any, res: any) => {
   try {
     const { visitorId } = req.body;
