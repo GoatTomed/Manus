@@ -2,7 +2,6 @@
  * Design: Cyberpunk Minimal Dark — Page Home
  */
 import { Link } from "wouter";
-import Navbar from "../components/Navbar";
 import { useEffect, useState } from "react";
 
 const LOGO_URL =
@@ -47,9 +46,7 @@ export default function Home() {
 
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
-      <Navbar />
-
-      <main className="flex-1 flex flex-col items-center justify-center p-6 pt-24">
+      <main className="flex-1 flex flex-col items-center justify-center p-6">
         {/* Hero Section */}
         <div className="text-center px-4 max-w-sm w-full animate-fade-in-up">
           {/* Logo */}

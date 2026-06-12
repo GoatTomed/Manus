@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import axios from "axios";
 import { Loader2, Copy, Check, Search, Clock } from "lucide-react";
-import Navbar from "../components/Navbar";
+
 
 export default function GetKey() {
   const [location, setLocation] = useLocation();
@@ -153,9 +153,7 @@ export default function GetKey() {
 
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
-      <Navbar />
-
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 pt-16 sm:pt-24">
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
         <div className="w-full max-w-2xl">
           {/* GET KEY Badge */}
           <div className="flex justify-center mb-6 sm:mb-8">
