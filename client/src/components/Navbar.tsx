@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 
-const LOGO_URL = "/logo.png";
+const LOGO_URL =
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
 
 export default function Navbar() {
   return (
