@@ -155,10 +155,10 @@ export default function GetKey() {
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
       <Navbar />
 
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 pt-16 sm:pt-24">
         <div className="w-full max-w-2xl">
           {/* GET KEY Badge */}
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-6 sm:mb-8">
             <div className="inline-flex items-center gap-2 bg-[#00ABFF]/15 border border-[#00ABFF]/40 rounded-full px-4 py-2">
               <Search size={16} className="text-[#00ABFF]" />
               <span className="font-bold text-[#00ABFF] tracking-wider text-sm">GET KEY</span>
@@ -166,12 +166,12 @@ export default function GetKey() {
           </div>
 
           {/* Main Container */}
-          <div className="bg-[#0a0d14] border border-white/10 rounded-2xl p-8 shadow-2xl">
+          <div className="bg-[#0a0d14] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
             {/* Title */}
-            <h1 className="text-3xl font-bold text-center mb-3 text-white">
+            <h1 className="text-2xl sm:text-3xl font-bold text-center mb-2 sm:mb-3 text-white">
               {currentStep === 3 ? "Your Key is Ready" : "Complete Verification"}
             </h1>
-            <p className="text-gray-400 text-center mb-8 text-sm">
+            <p className="text-gray-400 text-center mb-6 sm:mb-8 text-xs sm:text-sm">
               {currentStep === 3 
                 ? "You have already generated a key in the last 24 hours." 
                 : "Complete a quick verification to get your key and start using our scripts"}

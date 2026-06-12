@@ -63,7 +63,7 @@ export default function Home() {
           </div>
 
           {/* Title */}
-          <h1 className="text-5xl font-bold tracking-tight mb-8">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6 sm:mb-8">
             <span className="text-white">You</span>
             <span style={{ color: "#00ABFF" }}>Suck</span>
           </h1>
