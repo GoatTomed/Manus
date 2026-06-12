@@ -143,7 +143,6 @@ export default function GetKey() {
   if (isLoading && currentStep !== 3) {
     return (
       <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
-        <Navbar />
         <main className="flex-1 flex items-center justify-center">
           <Loader2 className="animate-spin text-[#00ABFF]" size={48} strokeWidth={3} />
         </main>
