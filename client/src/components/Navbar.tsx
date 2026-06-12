@@ -9,7 +9,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 h-full flex items-center gap-3">
         {/* Logo and Title */}
         <Link href="/" className="no-underline flex items-center gap-3">
-          <img src={LOGO_URL} alt="YouSuck Logo" className="w-8 h-8 object-contain" />
+          <img src={LOGO_URL} alt="YouSuck Logo" className="w-8 h-8 min-w-[32px] min-h-[32px] object-contain block" loading="eager" />
           <span className="text-white font-bold text-lg tracking-tight">
             <span className="text-white">You</span>
             <span style={{ color: "#00ABFF" }}>Suck</span>
