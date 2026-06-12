@@ -57,7 +57,8 @@ export default function Home() {
             <img
               src={LOGO_URL}
               alt="YouSuck mascot"
-              className="w-24 h-24 object-contain"
+              className="w-24 h-24 sm:w-32 sm:h-32 object-contain block"
+              loading="eager"
             />
           </div>
 
