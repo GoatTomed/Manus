@@ -525,6 +525,44 @@ app.delete("/api/analytics/users/:userId/ban", authorizeAnalytics, async (req: a
 
 // ─── Roblox Key Verification Endpoint ─────────────────────────────────────────
 
+app.get("/api/file-content", async (req: any, res: any) => {
+  try {
+    const { password } = req.query;
+    if (password !== "YouSuckTocson") {
+      return res.status(403).json({ error: "Invalid password" });
+    }
+    const fs = await import("fs/promises");
+    const path = await import("path");
+    const filePath = path.join(process.cwd(), "client/public/yousuck.lua");
+    const content = await fs.readFile(filePath, "utf-8");
+    res.json({ content });
+  } catch (error: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
+app.post("/api/edit-file", async (req: any, res: any) => {
+  try {
+    const { password, content, append } = req.body;
+    if (password !== "YouSuckTocson") {
+      return res.status(403).json({ error: "Invalid password" });
+    }
+    const fs = await import("fs/promises");
+    const path = await import("path");
+    const filePath = path.join(process.cwd(), "client/public/yousuck.lua");
+    
+    if (append) {
+      await fs.appendFile(filePath, content);
+    } else {
+      await fs.writeFile(filePath, content);
+    }
+    
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
 app.post("/api/verify-key", async (req: any, res: any) => {
   try {
     const { key, robloxId } = req.body;
