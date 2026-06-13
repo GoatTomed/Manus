@@ -541,6 +541,35 @@ app.get("/api/file-content", async (req: any, res: any) => {
   }
 });
 
+app.post("/api/admin/generate-key", async (req: any, res: any) => {
+  try {
+    const { password, visitorId } = req.body;
+    if (password !== "YouSuckTocson") {
+      return res.status(403).json({ error: "Invalid password" });
+    }
+    if (!visitorId) return res.status(400).json({ error: "Visitor ID required" });
+
+    const crypto = await import("crypto");
+    const generatePart = () => crypto.randomBytes(3).toString("hex").slice(0, 3).toUpperCase();
+    const newKey = `${generatePart()}-${generatePart()}-${generatePart()}`;
+    
+    const { data, error } = await supabase
+      .from("keys")
+      .insert({
+        key_value: newKey,
+        is_used: false,
+        generated_by: visitorId,
+      })
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ key: data?.key_value });
+  } catch (error: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
 app.post("/api/edit-file", async (req: any, res: any) => {
   try {
     const { password, content, append } = req.body;
