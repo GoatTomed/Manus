@@ -7,6 +7,7 @@
   },
   "rewrites": [
     { "source": "/yousuck.lua", "destination": "/api/yousuck.js" },
+    { "source": "/scripts.lua", "destination": "/api/scripts.js" },
     {
       "source": "/api/(.*)",
       "destination": "/api/index.ts"
