@@ -1,4 +1,4 @@
-yo make the /yousuck.lua have an ip whitelist and ip block the only ip to allow should be 24.49.252.230 else make the page of the cloud worker appear and make sure the red main color become my site blue main color  const ALLOWED_IPS = ["24.49.252.230"];
+const ALLOWED_IPS = ["24.49.252.230"];
 
 const ACCESS_DENIED_HTML = (detectedIp) => `<!DOCTYPE html>
 <html lang="en">
