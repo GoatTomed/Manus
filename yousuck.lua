@@ -1,4 +1,13 @@
 const ALLOWED_IPS = ["24.49.252.230"];
+const SCRIPT_PATH = "/scripts/p2nh4nj2n2f92"; // Chemin du script LUA sécurisé
+
+// Placeholder pour le contenu du script LUA. Remplacez ceci par votre vrai script LUA.
+const LUA_SCRIPT_CONTENT = `
+-- Votre script LUA ira ici
+print("Hello from your secured LUA script!")
+-- Exemple: local variable = "value"
+-- Exemple: game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed = 50
+`;
 
 const ACCESS_DENIED_HTML = (detectedIp) => `<!DOCTYPE html>
 <html lang="en">
@@ -134,7 +143,7 @@ const ACCESS_DENIED_HTML = (detectedIp) => `<!DOCTYPE html>
   <div class="container">
     <div class="badge"><span>403 Error</span></div>
     <h1><span class="light">Access </span><span class="bold">Denied</span></h1>
-    <p class="description">You don\'t have permission to access this resource. Your IP: <span id="detected-ip">${detectedIp}</span></p>
+    <p class="description">You don't have permission to access this resource. Your IP: <span id="detected-ip">${detectedIp}</span></p>
     <div class="button-group">
       <a href="https://sixsense.cloud" class="btn btn-primary">
         <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,12 +210,39 @@ const ACCESS_DENIED_HTML = (detectedIp) => `<!DOCTYPE html>
 
 export default {
   async fetch(request) {
-        let ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || request.headers.get("X-Real-IP");
+    const url = new URL(request.url);
+    let ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || request.headers.get("X-Real-IP");
     if (ip) ip = ip.split(",")[0].trim();
     else ip = "Unknown";
 
-    if (!ALLOWED_IPS.includes(ip)) {
-            return new Response(ACCESS_DENIED_HTML(ip), {
+    // Vérifie si le chemin de la requête correspond au chemin du script sécurisé
+    if (url.pathname === SCRIPT_PATH) {
+      if (ALLOWED_IPS.includes(ip)) {
+        // Si l'IP est autorisée, renvoie le script LUA
+        return new Response(LUA_SCRIPT_CONTENT, {
+          headers: {
+            "Content-Type": "text/plain",
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+          },
+        });
+      } else {
+        // Si l'IP n'est pas autorisée, renvoie la page d'accès refusé
+        return new Response(ACCESS_DENIED_HTML(ip), {
+          status: 403,
+          headers: {
+            "Content-Type": "text/html",
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "X-Content-Type-Options": "nosniff",
+          },
+        });
+      }
+    } else {
+      // Pour toutes les autres requêtes, renvoie la page d'accès refusé par défaut
+      return new Response(ACCESS_DENIED_HTML(ip), {
         status: 403,
         headers: {
           "Content-Type": "text/html",
@@ -217,7 +253,5 @@ export default {
         },
       });
     }
-
-    return fetch(request);
   },
 };
