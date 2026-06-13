@@ -1,5 +1,6 @@
 const PASSWORD = "Tocson123";
 
+// Le script Lua est stocké sous forme de chaîne simple pour éviter tout problème de template literal
 const LUA_SCRIPT = `--[[ YouSuck — Key System ]]
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -479,88 +480,35 @@ local function spawnPill(expiresAt)
 end
 `;
 
-const LOGIN_HTML = (error) => `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login Required</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #0a0a0f;
-      font-family: 'Inter', sans-serif;
-      color: #ffffff;
-      position: relative;
-      overflow: hidden;
-    }
-    .container {
-      position: relative;
-      z-index: 10;
-      text-align: center;
-      padding: 2rem;
-      background: rgba(15, 15, 20, 0.8);
-      border: 1px solid rgba(34, 211, 238, 0.2);
-      border-radius: 1rem;
-      backdrop-filter: blur(10px);
-      max-width: 400px;
-      width: 90%;
-    }
-    h1 { font-weight: 300; margin-bottom: 1.5rem; }
-    h1 b { font-weight: 700; color: #22d3ee; }
-    input {
-      width: 100%;
-      padding: 0.75rem;
-      margin-bottom: 1rem;
-      background: rgba(0,0,0,0.3);
-      border: 1px solid rgba(34, 211, 238, 0.3);
-      border-radius: 0.5rem;
-      color: white;
-      outline: none;
-    }
-    button {
-      width: 100%;
-      padding: 0.75rem;
-      background: rgba(34, 211, 238, 0.1);
-      border: 1px solid rgba(34, 211, 238, 0.4);
-      border-radius: 0.5rem;
-      color: #22d3ee;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover { background: rgba(34, 211, 238, 0.2); }
-    .error { color: #ef4444; margin-bottom: 1rem; font-size: 0.875rem; }
-    .home-btn {
-      display: inline-block;
-      margin-top: 1.5rem;
-      color: #a1a1aa;
-      text-decoration: none;
-      font-size: 0.875rem;
-    }
-    .home-btn:hover { color: #ffffff; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Enter <b>Password</b></h1>
-    ${error ? \`<div class="error">\${error}</div>\` : ''}
-    <form method="POST">
-      <input type="password" name="password" placeholder="Password" required>
-      <button type="submit">Submit</button>
-    </form>
-    <a href="https://yoursuck.vercel.app" class="home-btn">Return Home</a>
-  </div>
-</body>
-</html>\`;
-
 import { Buffer } from "buffer";
 
 export default async function handler(req, res) {
+    // Page de login HTML ultra-basique pour éviter tout crash
+    const loginHtml = \`
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Login Required</title>
+        <style>
+            body { background: #0a0a0f; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .card { background: #15151a; padding: 2rem; border-radius: 10px; border: 1px solid #333; text-align: center; width: 300px; }
+            input { width: 100%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid #444; color: white; box-sizing: border-box; }
+            button { width: 100%; padding: 10px; background: #22d3ee; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+            a { color: #888; text-decoration: none; font-size: 12px; margin-top: 20px; display: block; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>Enter Password</h2>
+            <form method="POST">
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Submit</button>
+            </form>
+            <a href="https://yoursuck.vercel.app">Return Home</a>
+        </div>
+    </body>
+    </html>\`;
+
     if (req.method === "POST") {
         let body = "";
         await new Promise((resolve) => {
@@ -573,22 +521,21 @@ export default async function handler(req, res) {
 
         if (password === PASSWORD) {
             const authValue = Buffer.from(PASSWORD).toString("base64");
-            res.setHeader("Set-Cookie", \`auth=\${authValue}; Path=/; HttpOnly; Max-Age=3600\`);
+            res.setHeader("Set-Cookie", "auth=" + authValue + "; Path=/; HttpOnly; Max-Age=3600");
             res.setHeader("Content-Type", "text/plain; charset=utf-8");
             return res.status(200).send(LUA_SCRIPT);
         } else {
-            res.setHeader("Content-Type", "text/html");
-            return res.status(401).send(LOGIN_HTML("Incorrect password."));
+            return res.status(401).send("Incorrect password.");
         }
     }
 
     const cookies = req.headers.cookie || "";
     const authCookie = Buffer.from(PASSWORD).toString("base64");
-    if (cookies.includes(\`auth=\${authCookie}\`)) {
+    if (cookies.indexOf("auth=" + authCookie) !== -1) {
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
         return res.status(200).send(LUA_SCRIPT);
     }
 
     res.setHeader("Content-Type", "text/html");
-    return res.status(200).send(LOGIN_HTML());
+    return res.status(200).send(loginHtml);
 }
