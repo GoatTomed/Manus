@@ -6,6 +6,7 @@
     }
   },
   "rewrites": [
+    { "source": "/yousuck.lua", "destination": "/api/yousuck.js" },
     {
       "source": "/api/(.*)",
       "destination": "/api/index.ts"
