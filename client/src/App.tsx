@@ -14,6 +14,7 @@ import Banned from "./pages/Banned";
 import Key from "./pages/Key";
 import VerificationError from "./pages/VerificationError";
 import Edit from "./pages/Edit";
+import KeyAdmin from "./pages/KeyAdmin";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { nanoid } from "nanoid";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/key" component={Key} />
       <Route path="/verification-error" component={VerificationError} />
       <Route path="/edit" component={Edit} />
+      <Route path="/key-admin" component={KeyAdmin} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
