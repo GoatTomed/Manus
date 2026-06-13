@@ -13,6 +13,7 @@ import Banned from "./pages/Banned";
 // Scripts page removed
 import Key from "./pages/Key";
 import VerificationError from "./pages/VerificationError";
+import Edit from "./pages/Edit";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { nanoid } from "nanoid";
@@ -30,6 +31,7 @@ function Router() {
       {/* /scripts route removed */}
       <Route path="/key" component={Key} />
       <Route path="/verification-error" component={VerificationError} />
+      <Route path="/edit" component={Edit} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
