@@ -523,6 +523,11 @@ app.delete("/api/analytics/users/:userId/ban", authorizeAnalytics, async (req: a
   }
 });
 
+// ─── In-Memory File Storage ──────────────────────────────────────────────────────
+// Store file content in memory since Vercel serverless functions cannot persist files
+let fileContent = `-- YouSuck.lua
+print("You Suck!")`;
+
 // ─── Roblox Key Verification Endpoint ─────────────────────────────────────────
 
 app.get("/api/file-content", async (req: any, res: any) => {
@@ -531,11 +536,7 @@ app.get("/api/file-content", async (req: any, res: any) => {
     if (password !== "YouSuckTocson") {
       return res.status(403).json({ error: "Invalid password" });
     }
-    const fs = await import("fs/promises");
-    const path = await import("path");
-    const filePath = path.join(process.cwd(), "client/public/yousuck.lua");
-    const content = await fs.readFile(filePath, "utf-8");
-    res.json({ content });
+    res.json({ content: fileContent });
   } catch (error: any) {
     res.status(500).json({ error: "Internal Error" });
   }
@@ -576,14 +577,11 @@ app.post("/api/edit-file", async (req: any, res: any) => {
     if (password !== "YouSuckTocson") {
       return res.status(403).json({ error: "Invalid password" });
     }
-    const fs = await import("fs/promises");
-    const path = await import("path");
-    const filePath = path.join(process.cwd(), "client/public/yousuck.lua");
     
     if (append) {
-      await fs.appendFile(filePath, content);
+      fileContent += content;
     } else {
-      await fs.writeFile(filePath, content);
+      fileContent = content;
     }
     
     res.json({ success: true });
