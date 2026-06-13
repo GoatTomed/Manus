@@ -38,27 +38,404 @@ const LOGIN_HTML = (detectedIp, errorMessage = "") => `<!DOCTYPE html>
 </body>
 </html>`;
 
-const ACCESS_DENIED_HTML = (detectedIp) => `<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accès Refusé</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #0a0a0a; color: #f0f0f0; font-family: 'Gotham', sans-serif; }
-        .accent-blue { color: #22d3ee; }
-    </style>
+const ACCESS_DENIED_HTML = (detectedIp) => `<html lang="en" data-theme="light" style="--font-family: 'Inter', sans-serif; --border-radius: 6px; --white: #ffffff; --dark: #030625; --blue-primary: #225aea; --blue-depressed: #1448cb; --blue-light: #f2f6ff; --blue-dark: #000e58; --red-primary: #22d3ee; --red-depressed: #1448cb; --green-primary: #16895a; --yellow-primary: #f6b60e; --neutral-100: #f2f3f8; --neutral-200: #e2e6f3; --neutral-300: #c5cce3; --neutral-400: #a1aac8; --neutral-500: #707ba0; --neutral-600: #434c69; --neutral-700: #2b3450; --neutral-800: #151e3a; --neutral-900: #030625; --white-85-to-neutral-dark-50-85: rgba(255, 255, 255, 0.85); --color-white-to-dark: #ffffff; --white-to-neutral-dark-50: #ffffff; --color-dark-to-white: #030625; --color-dark-to-dark-50: #030625; --default-border-color: #f2f3f8; --fill-color: #707ba0; --menu-fill: #151e3a; --theme-switcher-text-color-default: #707ba0; --theme-switcher-text-color-active: #ffffff; --theme-switcher-border-color: #f2f3f8; --user-background-color: #ffffff; --notif-background-color: #ffffff; --notif-border-color: #f2f3f8; --notif-gradient-bottom: linear-gradient(360deg, #fff 15%, rgba(255, 255, 255, 0) 100%); --notif-gradient-top: linear-gradient(360deg, #fff 15%, rgba(255, 255, 255, 0) 100%); --notif-header-text: #151e3a; --notif-fill-color: #707ba0; --notif-empty-text-color: #a1aac8; --notif-empty-icon-color: #a1aac8; --notif-item-text-color: #151e3a; --notif-item-time-text-color: #c5cce3; --notif-item-border-color: #f2f3f8; --sidebar-fill-outline: #707ba0; --sidebar-fill-bold: #225aea; --sidebar-link-bgc: #f2f6ff; --sidebar-link: #707ba0; --sidebar-link-active: #225aea; --sidebar-sticky-bgc: #ffffff; --sidebar-sticky-brc: #f2f3f8; --tab-text-bgc: #f2f3f8; --tab-text-color: #c5cce3; --tab-bgc: #ffffff; --tab-no-active-bgc: #f2f3f8; --tab-no-active-brc: #f2f3f8; --tab-no-active-text-color: #c5cce3; --tab-red-bgc: #fff4f4; --tab-yellow-bgc: #fff9e8; --tab-pink-bgc: #fff9fc; --tab-purple-bgc: #f6f0ff; --tab-green-bgc: #e7fff1; --tab-brown-bgc: #fff6ee; --tab-red-brc: #fff4f4; --tab-yellow-brc: #fff9e8; --tab-pink-brc: #ffdeee; --tab-purple-brc: #f6f0ff; --tab-green-brc: #e7fff1; --tab-brown-brc: #f1d5ba; --category-text-color: #151e3a; --button-bgc: #225aea; --calendar-text-color: #151e3a; --week-text-color: #151e3a; --week-day-color: #707ba0; --week-id-color: #c5cce3; --week-tag-bgc: #ffffff; --timer-divider-bgc: #f2f3f8; --timer-progress-bgc: #f2f3f8; --drop-text-color: #a1aac8; --drop-week-text-color: #151e3a; --drop-summary-text: #151e3a; --drop-shadow: -20px 20px 55px rgba(13, 77, 167, 0.2); --days-countdown: -webkit-linear-gradient(90deg, #ffbf1c, #ffce19); --hours-countdown: -webkit-linear-gradient(90deg, #225aea, #22d3ee); --minutes-countdown: -webkit-linear-gradient(90deg, #225aea, #22d3ee); --seconds-countdown: -webkit-linear-gradient(90deg, #5179e5, #177fff); --skeleton-bg: linear-gradient(90deg, #e2e6f3 20%, #ffffff 37%, #e2e6f3 63%); --skeleton-red: linear-gradient(90deg, #22d3ee 20%, #fff4f4 37%, #22d3ee 63%); --skeleton-blue: linear-gradient(90deg, #225aea 20%, #f2f6ff 37%, #225aea 63%); --scroll-gradient-top: linear-gradient(#ffffff, rgba(255, 255, 255, 0.25)); --scroll-gradient-bottom: linear-gradient(rgba(255, 255, 255, 0.25), #ffffff); --locked-gradient: linear-gradient(360deg, #ffffff 0%, rgba(255, 255, 255, 0) 102.78%); --shopify-gradient: linear-gradient(94.11deg, #95bf47 -62.57%, #ffffff 19.28%); --mobile-navigation-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff); --black-to-white: #000000; --white-to-black: #ffffff; --white-to-neutral-dark-200: #ffffff; --white-to-blue-900: #ffffff; --neutral-100-to-700: #f2f3f8; --neutral-700-to-neutral-dark-500: #2b3450; --neutral-800-to-100: #151e3a; --neutral-700-to-100: #2b3450; --completed-video: rgba(255, 255, 255, 0.55); --modal-bg: 0px 24px 24px -12px rgba(21, 30, 58, 0.04),
+0px 12px 12px -6px rgba(21, 30, 58, 0.04),
+0px 6px 6px -3px rgba(21, 30, 58, 0.04),
+0px 3px 3px -1.5px rgba(21, 30, 58, 0.04),
+0px 1px 1px -0.5px rgba(21, 30, 58, 0.04),
+0px 0px 0px 1px rgba(34, 90, 234, 0.04); --box-shadow-circle: 0px 24px 24px -12px rgba(34, 90, 234, 0.04),
+0px 12px 12px -6px rgba(34, 90, 234, 0.04),
+0px 6px 6px -3px rgba(34, 90, 234, 0.04),
+0px 3px 3px -1.5px rgba(34, 90, 234, 0.04),
+0px 1px 1px -0.5px rgba(34, 90, 234, 0.04),
+0px 0px 0px 1px rgba(34, 90, 234, 0.04); --box-shadow-object-large: 0px 0px 24px -12px rgba(21, 30, 58, 0.24),
+0px 12px 12px -6px rgba(21, 30, 58, 0.06),
+0px 6px 6px -3px rgba(21, 30, 58, 0.04),
+0px 3px 3px -1.5px rgba(21, 30, 58, 0.04),
+0px 1px 1px -0.5px rgba(21, 30, 58, 0.04); --box-shadow-object-middle: 0px 24px 24px -12px rgba(21, 30, 58, 0.04),
+0px 12px 12px -6px rgba(21, 30, 58, 0.04),
+0px 6px 6px -3px rgba(21, 30, 58, 0.04),
+0px 3px 3px -1.5px rgba(21, 30, 58, 0.04),
+0px 1px 1px -0.5px rgba(21, 30, 58, 0.04); --box-shadow-btn-secondary: 0px -1px 2px 0px rgba(242, 243, 248, 0.48) inset, 0px 0px 0px 1px rgba(197, 204, 227, 0.45), 0px 4px 4px 0px rgba(21, 30, 58, 0.04); --box-shadow-btn-secondary-without-border: 0px -1px 2px 0px rgba(242, 243, 248, 0.48) inset, 0px 4px 4px 0px rgba(21, 30, 58, 0.04); --box-shadow-left-line: linear-gradient(90deg, rgba(242, 243, 248, 0) 12.01%, rgba(34, 90, 234, 0.15) 84.59%); --box-shadow-right-line: linear-gradient(90deg, rgba(226, 230, 243, 0.55) 0%, rgba(226, 230, 243, 0) 100%); --box-shadow-btn-primary: 0px -1px 2px 0px rgba(20, 72, 203, 0.48) inset, 0px 0px 0px 1px rgba(34, 90, 234, 0.16), 0px 8px 16px -8px rgba(34, 90, 234, 0.64), 0px 4px 4px 0px rgba(0, 0, 0, 0.06); --dark-dropshadow-neutral: 0px -1px 2px 0px rgba(242, 243, 248, 0.48) inset, 0px 0px 0px 1px rgba(197, 204, 227, 0.45), 0px 4px 4px 0px rgba(21, 30, 58, 0.04); --dropshadow-neutral: 0px 8px 40px 0px rgba(112, 123, 160, 0.1); --box-shadow-active-menu: 0px -1px 2px 0px rgba(242, 243, 248, 0.48) inset, 0px 0px 0px 1px rgba(197, 204, 227, 0.45), 0px 4px 4px 0px rgba(21, 30, 58, 0.04); --box-shadow-negative: 0px -1px 2px 0px rgba(242, 243, 248, 0.48) inset, 0px 0px 0px 1px rgba(34, 211, 238, 0.45), 0px 4px 4px 0px rgba(34, 211, 238, 0.04); --bg-yellow: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 100%), #f6b60e; --bg-orange: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 100%), #df7009; --bg-red: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 100%), #22d3ee; --box-shadow-yellow: 0px 20px 20px -10px rgba(98, 36, 10, 0.04),
+0px 10px 10px -5px rgba(98, 36, 10, 0.04),
+0px 5px 5px -2.5px rgba(98, 36, 10, 0.04),
+0px 2.5px 2.5px -1.25px rgba(98, 36, 10, 0.04),
+0px 0.833px 0.833px -0.417px rgba(98, 36, 10, 0.04),
+0px 0px 0px 0.833px rgba(98, 36, 10, 0.04); --box-shadow-red: 0px 0px 0px 0.83px rgba(112, 6, 6, 0.04),
+0px 0.83px 0.83px -0.42px rgba(112, 6, 6, 0.04),
+0px 2.5px 2.5px -1.25px rgba(112, 6, 6, 0.04),
+0px 5px 5px -2.5px rgba(112, 6, 6, 0.04),
+0px 10px 10px -5px rgba(112, 6, 6, 0.04),
+0px 20px 20px -10px rgba(112, 6, 6, 0.04); --border-yellow: rgba(160, 116, 1, 0.5); --border-red: #700606; --border-orange: #df7009; --white-to-neutral-dark-100: #ffffff; --blue-depressed-to-neutral-100: #1448cb; --white-to-neutral-dark: #ffffff; --yellow-to-neutral-dark-100: #fff9e8; --white-to-neutral-dark-310: #ffffff; --blue-primary-to-white: #225aea; --blue-100-to-neutral-dark-100: #f2f6ff; --neutral-600-to-neutral-dark-400: #434c69; --neutral-600-to-neutral-dark-500: #434c69; --blue-400-to-neutral-dark-700: #225aea; --blue-400-to-neutral-dark-400: #225aea; --blue-100-to-neutral-dark-400: #f2f6ff; --neutral-100-to-neutral-dark-100: #f2f3f8; --neutral-100-to-neutral-dark-200: #f2f3f8; --neutral-200-to-neutral-dark-300: #e2e6f3; --neutral-300-to-neutral-dark-300: #c5cce3; --neutral-dark-300-to-neutral-300: rgba(255, 255, 255, 0.18); --neutral-500-to-neutral-dark-500: #707ba0; --neutral-400-to-neutral-dark-500: #a1aac8; --neutral-400-to-neutral-dark-400: #a1aac8; --neutral-200-to-neutral-dark-200: #e2e6f3; --bottom-gradient-bg: linear-gradient(180deg, rgba(255, 255, 255, 0) 50%, #fff 100%); --right-gradient-bg: linear-gradient(90deg, rgba(255, 255, 255, 0) 10%, #fff 90%); --blue-100-to-neutral-dark-200: #f2f6ff; --blue-600-to-neutral-dark-500: #1448cb; --neutral-50-to-neutral-dark-50: #f9f9fc; --neutral-50-to-neutral-dark-100: #f9f9fc; --neutral-50-to-neutral-dark-200: #f9f9fc; --neutral-100-to-800: #f2f3f8; --blue-xlight-to-neutral-dark: #f9fbff; --blue-depressed-to-white: #1448cb; --blue-xlight-to-neutral-dark-50: #f9fbff; --blue-xlight-to-neutral-dark-100: #f9fbff; --blue-xlight-to-neutral-dark-500: #f9fbff; --blue-light-to-blue-dark: #f2f6ff; --blue-light-to-neutral-dark-100: #f2f6ff; --yellow-xlight-to-neutral-dark-200: #fffcf4; --yellow-xlight-to-yellow-dark: #fffcf4; --orange-primary-to-orange-xlight: #df7009; --white-to-orange-primary: #ffffff; --neutral-140-to-840: #fafafc; --neutral-100-to-900: #f2f3f8; --neutral-200-to-400: #e2e6f3; --neutral-200-to-500: #e2e6f3; --neutral-200-to-700: #e2e6f3; --neutral-200-to-800: #e2e6f3; --neutral-200-to-900: #e2e6f3; --neutral-300-to-500: #c5cce3; --neutral-300-to-600: #c5cce3; --neutral-300-to-700: #c5cce3; --neutral-300-to-800: #c5cce3; --neutral-400-to-500: #a1aac8; --neutral-400-to-600: #a1aac8; --neutral-500-to-200: #707ba0; --neutral-500-to-100: #707ba0; --neutral-500-to-400: #707ba0; --neutral-500-to-600: #707ba0; --neutral-500-to-800: #707ba0; --neutral-700-to-200: #2b3450; --neutral-800-to-200: #151e3a; --neutral-800-to-300: #151e3a; --neutral-800-to-500: #151e3a; --neutral-800-to-600: #151e3a; --neutral-800-to-700: #151e3a; --neutral-900-to-200: #030625; --neutral-900-to-neutral-dark-50: #030625; --neutral-200-to-neutral-dark-50: #e2e6f3; --neutral-200-to-neutral-dark: #e2e6f3; --neutral-600-to-100: #434c69; --neutral-800-to-neutral-dark: #151e3a; --neutral-800-to-neutral-100: #151e3a; --neutral-100-to-blue-800: #f2f3f8; --neutral-100-to-blue-700: #f2f3f8; --neutral-100-to-blue-900: #f2f3f8; --neutral-100-to-blue-950: #f2f3f8; --neutral-100-to-blue-500: #f2f3f8; --neutral-200-to-blue-600: #e2e6f3; --neutral-200-to-blue-800: #e2e6f3; --neutral-200-to-blue-900: #e2e6f3; --neutral-200-to-blue-700: #e2e6f3; --neutral-300-to-blue-600: #c5cce3; --neutral-300-to-blue-500: #c5cce3; --neutral-300-to-blue-700: #c5cce3; --neutral-300-to-blue-800: #c5cce3; --neutral-400-to-blue-600: #a1aac8; --neutral-400-to-blue-700: #a1aac8; --neutral-500-to-blue-600: #707ba0; --neutral-500-to-blue-700: #707ba0; --neutral-800-to-blue-500: #151e3a; --neutral-800-to-blue-600: #151e3a; --blue-to-neutral-dark-700: #225aea; --blue-depressed-to-neutral-dark-700: #1448cb; --blue-to-neutral-dark-500: #225aea; --blue-to-neutral-dark-400: #225aea; --blue-to-neutral-dark-300: #225aea; --blue-depressed-to-blue-primary: #1448cb; --blue-depressed-to-neutral-dark-500: #1448cb; --blue-light-to-neutral-dark-200: #f2f6ff; --blue-light-to-blue-primary: #f2f6ff; --blue-depressed-to-blue-dark: #1448cb; --neutral-100-to-red-900: #f2f3f8; --neutral-500-to-red-600: #707ba0; --neutral-100-to-yellow-900: #f2f3f8; --neutral-500-to-yellow-600: #707ba0; --neutral-100-to-pink-900: #f2f3f8; --neutral-500-to-pink-600: #707ba0; --neutral-800-to-white: #151e3a; --blue-500-to-white: #225aea; --blue-100-to-dark: #f2f6ff; --blue-200-to-neutral-800: #f2f6ff; --blue-100-to-900: #f2f6ff; --blue-100-to-neutral-900: #f2f6ff; --blue-100-to-950: #f2f6ff; --red-100-to-900: #fff4f4; --yellow-100-to-900: #fff9e8; --pink-100-to-900: #fff9fc; --green-100-to-900: #e7fff1; --purple-100-to-900: #f6f0ff; --brown-100-to-900: #fff6ee; --orange-100-to-900: #fff5ea; --blue-200-to-600: #f2f6ff; --red-200-to-600: #fff4f4; --yellow-200-to-600: #fff9e8; --pink-200-to-600: #ffdeee; --green-200-to-600: #e7fff1; --purple-200-to-600: #f6f0ff; --brown-200-to-600: #f1d5ba; --blue-200-to-700: #f2f6ff; --blue-200-to-800: #f2f6ff; --blue-500-to-400: #225aea; --red-200-to-700: #fff4f4; --red-200-to-800: #fff4f4; --yellow-200-to-700: #fff9e8; --yellow-200-to-800: #fff9e8; --pink-200-to-700: #ffdeee; --green-200-to-700: #e7fff1; --green-200-to-800: #e7fff1; --purple-200-to-700: #f6f0ff; --purple-200-to-800: #f6f0ff; --brown-200-to-700: #f1d5ba; --bottom-gradient: linear-gradient(360deg, #ffffff 65.22%, rgba(255, 255, 255, 0) 95.94%); --grey-to-neutral-dark-400: #a1aac8; --neutral-800-to-900: #151e3a; --image-gallery-gradient-left: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0) 98.44%); --image-gallery-gradient-right: linear-gradient(270deg, #ffffff 0%, rgba(255, 255, 255, 0) 98.44%); --white-to-black-blur-gradient: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, white 75%); --tooltip-border-color: #030625;"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Access Denied | SIXSENSE</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0a0a0f;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #ffffff;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    /* Base gradient - RED */
+    .base-gradient {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 211, 238, 0.08) 0%, transparent 50%),
+                  linear-gradient(to bottom, #050508 0%, #0a0a0f 100%);
+      z-index: 0;
+    }
+    
+    /* Grid Pattern - RED */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 1;
+    }
+    
+    /* Dot accents - RED */
+    .dot-accents {
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(34, 211, 238, 0.15) 1px, transparent 1px);
+      background-size: 60px 60px;
+      background-position: 30px 30px;
+      z-index: 2;
+    }
+    
+    /* Vignette effect */
+    .vignette {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 0%, rgba(5, 5, 8, 0.4) 100%);
+      z-index: 3;
+    }
+    
+    /* Scanline effect */
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
+      z-index: 4;
+    }
+    
+    /* Particle canvas */
+    #particleCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.6;
+      z-index: 5;
+    }
+    
+    /* Top highlight glow - RED */
+    .top-highlight {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.5), transparent);
+      box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+      pointer-events: none;
+      z-index: 6;
+    }
+    
+    /* Container */
+    .container {
+      position: relative;
+      z-index: 10;
+      max-width: 48rem;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(2rem);
+      animation: fadeInUp 0.7s ease-out forwards;
+    }
+    
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      background: rgba(34, 211, 238, 0.2);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      margin-bottom: 1.5rem;
+      box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
+    }
+    
+    .badge span {
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      color: #22d3ee;
+      text-transform: uppercase;
+    }
+    
+    /* Title */
+    h1 {
+      font-size: clamp(2.25rem, 5vw, 3.75rem);
+      margin-bottom: 1.25rem;
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+    }
+    
+    h1 .light {
+      font-weight: 300;
+      color: #ffffff;
+    }
+    
+    h1 .bold {
+      font-weight: 600;
+      color: #ffffff;
+    }
+    
+    /* Description */
+    .description {
+      font-size: clamp(1rem, 2vw, 1.125rem);
+      color: #a1a1aa;
+      max-width: 36rem;
+      margin: 0 auto 2rem auto;
+      font-weight: 300;
+      line-height: 1.6;
+    }
+    
+    /* Buttons */
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    @media (min-width: 640px) {
+      .button-group {
+        flex-direction: row;
+      }
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      font-size: 0.875rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      border: 1px solid;
+    }
+    
+    .btn-primary {
+      background: rgba(34, 211, 238, 0.1);
+      border-color: rgba(34, 211, 238, 0.3);
+      color: #22d3ee;
+    }
+    
+    .btn-primary:hover {
+      background: rgba(34, 211, 238, 0.2);
+      box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+    }
+    
+    .btn-secondary {
+      background: rgba(24, 24, 27, 0.4);
+      border-color: rgba(34, 211, 238, 0.2);
+      color: #ffffff;
+    }
+    
+    .btn-secondary:hover {
+      border-color: rgba(34, 211, 238, 0.3);
+      background: rgba(24, 24, 27, 0.6);
+      box-shadow: 0 0 15px rgba(34, 211, 238, 0.15);
+    }
+    
+    .icon {
+      width: 1rem;
+      height: 1rem;
+    }
+  </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 text-center">
-    <div class="max-w-md">
-        <h1 class="text-6xl font-bold mb-4">403</h1>
-        <h2 class="text-2xl font-bold mb-2">Accès Refusé</h2>
-        <p class="text-gray-500 mb-6">Votre adresse IP (${detectedIp}) n'est pas autorisée à accéder à ce script.</p>
-        <div class="w-16 h-1 bg-accent-blue mx-auto"></div>
+<body>
+  <!-- Base gradient - RED -->
+  <div class="base-gradient"></div>
+  
+  <!-- Grid Pattern - RED -->
+  <div class="grid-bg"></div>
+  
+  <!-- Dot accents - RED -->
+  <div class="dot-accents"></div>
+  
+  <!-- Particle canvas - RED -->
+  <canvas id="particleCanvas" width="1408" height="1264"></canvas>
+  
+  <!-- Vignette effect -->
+  <div class="vignette"></div>
+  
+  <!-- Scanline effect -->
+  <div class="scanlines"></div>
+  
+  <!-- Top highlight glow - RED -->
+  <div class="top-highlight"></div>
+  
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Badge -->
+    <div class="badge">
+      <span>403 Error</span>
     </div>
-</body>
-</html>`;
+    
+    <!-- Title -->
+    <h1>
+      <span class="light">Access </span><span class="bold">Denied</span>
+    </h1>
+    
+    <!-- Description -->
+    
+    
+    <!-- Buttons -->
+    
+    <div class="button-group">
+      <a href="https://sixsense.cloud" class="btn btn-primary">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+        <span>Return Home</span>
+      </a>
+    </div>
+    
+  </div>
+  
+  <script>
+    // Particle animation - RED theme
+    (function() {
+      const canvas = document.getElementById('particleCanvas');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      let particles = [];
+      
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      
+      function createParticles() {
+        const particleCount = Math.min(50, Math.floor(window.innerWidth / 30));
+        particles = [];
+        
+        for (let i = 0; i < particleCount; i++) {
+          particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2 + 0.5,
+            speedX: (Math.random() - 0.5) * 0.3,
+            speedY: (Math.random() - 0.5) * 0.3,
+            opacity: Math.random() * 0.5 + 0.1,
+            pulse: Math.random() * Math.PI * 2,
+            pulseSpeed: Math.random() * 0.02 + 0.01
+          });
+        }
+      }
+      
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(function(particle) {
+          particle.x += particle.speedX;
+          particle.y += particle.speedY;
+          particle.pulse += particle.pulseSpeed;
+          
+          if (particle.x < 0) particle.x = canvas.width;
+          if (particle.x > canvas.width) particle.x = 0;
+          if (particle.y < 0) particle.y = canvas.height;
+          if (particle.y > canvas.height) particle.y = 0;
+          
+          const pulseOpacity = particle.opacity * (0.5 + 0.5 * Math.sin(particle.pulse));
+          
+          // Draw particle - RED
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(34, 211, 238, ' + pulseOpacity + ')';
+          ctx.fill();
+          
+          // Glow effect - RED
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size * 3, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(34, 211, 238, ' + (pulseOpacity * 0.1) + ')';
+          ctx.fill();
+        });
+        
+        // Connection lines - RED
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const p1 = particles[i];
+            const p2 = particles[j];
+            const dx = p1.x - p2.x;
+            const dy = p1.y - p2.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < 150) {
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.strokeStyle = 'rgba(34, 211, 238, ' + (0.03 * (1 - distance / 150)) + ')';
+              ctx.lineWidth = 0.5;
+              ctx.stroke();
+            }
+          }
+        }
+        
+        requestAnimationFrame(animate);
+      }
+      
+      resize();
+      createParticles();
+      animate();
+      
+      window.addEventListener('resize', function() {
+        resize();
+        createParticles();
+      });
+    })();
+  </script>
+<script defer="" src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;4f68841b060f430d86695c474cd68d7c&quot;,&quot;r&quot;:1,&quot;server_timing&quot;:{&quot;name&quot;:{&quot;cfCacheStatus&quot;:true,&quot;cfEdge&quot;:true,&quot;cfExtPri&quot;:true,&quot;cfL4&quot;:true,&quot;cfOrigin&quot;:true,&quot;cfSpeedBrain&quot;:true},&quot;location_startswith&quot;:null}}" crossorigin="anonymous"></script>
+
+<div id="my-extension-root" class="my-extension-root" style="width: 100vw; height: 1px; position: fixed; top: 0px; left: 0px; z-index: 2147483641; display: none;"></div></body></html>`;
 
 export default async function handler(req, res) {
     const ip = req.headers["cf-connecting-ip"] || req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || req.socket.remoteAddress;
