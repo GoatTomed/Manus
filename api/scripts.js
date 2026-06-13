@@ -226,7 +226,7 @@ corner(SDot, 3)
 local SLbl = lbl(StatusRow, {
 	Size = UDim2.new(1, -12, 1, 0),
 	Position = UDim2.new(0, 12, 0, 0),
-	Text = "Awaitin input",
+	Text = "Awaiting input",
 	TextColor3 = C.TextLow,
 	TextSize = 11,
 	Font = Enum.Font.Gotham,
@@ -259,7 +259,7 @@ lbl(Footer, {
 	ZIndex=5,
 })
 
--- TOAST
+-- TOAST (moved up so buttons can use it)
 local function toast(msg, col, duration)
 	col = col or C.Primary; duration = duration or 3
 	local T = frm(Gui, {
@@ -287,7 +287,7 @@ local BtnRow = frm(Body, {
 	ZIndex = 4,
 })
 
--- GET KEY button
+-- GET KEY button (left half)
 local GetKeyWrap = frm(BtnRow, {
 	Size = UDim2.new(0.48, 0, 1, 0),
 	Position = UDim2.new(0, 0, 0, 0),
@@ -307,7 +307,7 @@ GetKeyBtn.MouseEnter:Connect(function() tw(GetKeyWrap, {BackgroundColor3 = Color
 GetKeyBtn.MouseLeave:Connect(function() tw(GetKeyWrap, {BackgroundColor3 = C.Primary}) end)
 GetKeyBtn.MouseButton1Down:Connect(function() tw(GetKeyWrap, {BackgroundColor3 = C.PrimaryLo}, 0.08) end)
 GetKeyBtn.MouseButton1Up:Connect(function()
-	tw(GetKeyWrap, {BackgroundColor3 = Color3.fromRGB(1, 168, 225)}, 0.1)
+	tw(GetKeyWrap, {BackgroundColor3 = C.Primary}, 0.1)
 	setclipboard("https://yoursuck.vercel.app/")
 	pcall(function()
 		StarterGui:SetCore("SendNotification", {
@@ -319,7 +319,7 @@ GetKeyBtn.MouseButton1Up:Connect(function()
 	toast("Link copied to clipboard!", C.Primary, 2.5)
 end)
 
--- VERIFY KEY button
+-- VERIFY KEY button (right half)
 local BtnWrap = frm(BtnRow, {
 	Size = UDim2.new(0.48, 0, 1, 0),
 	Position = UDim2.new(0.52, 0, 0, 0),
@@ -339,6 +339,144 @@ Btn.MouseEnter:Connect(function() tw(BtnWrap, {BackgroundColor3 = Color3.fromRGB
 Btn.MouseLeave:Connect(function() tw(BtnWrap, {BackgroundColor3 = C.Primary}) end)
 Btn.MouseButton1Down:Connect(function() tw(BtnWrap, {BackgroundColor3 = C.PrimaryLo}, 0.08) end)
 Btn.MouseButton1Up:Connect(function() tw(BtnWrap, {BackgroundColor3 = C.Primary}, 0.1) end)
+
+-- SESSION PILL + KEY INFO
+local function isoToTs(s)
+	if not s or type(s)~="string" then return os.time()+86400 end
+	local y,mo,d,h,mi,sc = s:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
+	if not y then return os.time()+86400 end
+	return os.time({year=y,month=mo,day=d,hour=h,min=mi,sec=sc})
+end
+
+local function spawnPill(expiresAt)
+	local ts = isoToTs(expiresAt)
+
+	local Pill = frm(Gui, {
+		Size=UDim2.new(0,220,0,36),
+		Position=UDim2.new(1,-230,1,10),
+		BackgroundColor3=C.Surface,
+		ZIndex=15,
+		Active=true,
+	})
+	corner(Pill, 18); stroke(Pill, C.Border, 1); makeDraggable(Pill)
+	local PillDot = frm(Pill, {
+		Size=UDim2.new(0,7,0,7),
+		Position=UDim2.new(0,12,0.5,-3),
+		BackgroundColor3=C.Success,
+		ZIndex=16,
+	})
+	corner(PillDot, 4)
+	local PillLbl = lbl(Pill, {
+		Size=UDim2.new(1,-28,1,0),
+		Position=UDim2.new(0,24,0,0),
+		Text="Session active",
+		TextColor3=C.TextMid,
+		TextSize=11,
+		Font=Enum.Font.GothamBold,
+		TextXAlignment=Enum.TextXAlignment.Left,
+		ZIndex=16,
+	})
+	tw(Pill, {Position=UDim2.new(1,-230,1,-46)}, 0.4, Enum.EasingStyle.Back)
+
+	local Info = frm(Gui, {
+		Size=UDim2.new(0,220,0,90),
+		Position=UDim2.new(1,-230,1,10),
+		BackgroundColor3=C.Surface,
+		ZIndex=15,
+		Active=true,
+	})
+	corner(Info, 10); stroke(Info, C.Border, 1); makeDraggable(Info)
+
+	local InfoBar = frm(Info, {
+		Size=UDim2.new(1,0,0,30),
+		Position=UDim2.new(0,0,0,0),
+		BackgroundColor3=Color3.fromRGB(14,14,14),
+		ZIndex=16,
+	})
+	corner(InfoBar, 10)
+	frm(InfoBar, {
+		Size=UDim2.new(1,0,0,10),
+		Position=UDim2.new(0,0,1,-10),
+		BackgroundColor3=Color3.fromRGB(14,14,14),
+		ZIndex=16,
+	})
+	frm(Info, {
+		Size=UDim2.new(1,0,0,1),
+		Position=UDim2.new(0,0,0,30),
+		BackgroundColor3=C.Border,
+		ZIndex=16,
+	})
+	local KeyInfoDot = frm(InfoBar, {
+		Size=UDim2.new(0,7,0,7),
+		Position=UDim2.new(0,10,0.5,-3),
+		BackgroundColor3=C.Primary,
+		ZIndex=17,
+	})
+	corner(KeyInfoDot, 4)
+	lbl(InfoBar, {
+		Size=UDim2.new(1,-20,1,0),
+		Position=UDim2.new(0,22,0,0),
+		Text="Key Info",
+		TextColor3=C.Text,
+		TextSize=12,
+		Font=Enum.Font.GothamBold,
+		TextXAlignment=Enum.TextXAlignment.Left,
+		ZIndex=17,
+	})
+
+	local function infoRow(parent, icon, label, yPos)
+		local row = frm(parent, {
+			Size=UDim2.new(1,-20,0,18),
+			Position=UDim2.new(0,10,0,yPos),
+			BackgroundTransparency=1,
+			ZIndex=17,
+		})
+		lbl(row, {
+			Size=UDim2.new(0,60,1,0),
+			Position=UDim2.new(0,0,0,0),
+			Text=icon.." "..label,
+			TextColor3=C.TextLow,
+			TextSize=11,
+			Font=Enum.Font.Gotham,
+			TextXAlignment=Enum.TextXAlignment.Left,
+			ZIndex=17,
+		})
+		local val = lbl(row, {
+			Size=UDim2.new(1,-64,1,0),
+			Position=UDim2.new(0,64,0,0),
+			Text="—",
+			TextColor3=C.TextMid,
+			TextSize=11,
+			Font=Enum.Font.GothamBold,
+			TextXAlignment=Enum.TextXAlignment.Left,
+			ZIndex=17,
+		})
+		return val
+	end
+
+	local TimeVal = infoRow(Info, "", "Expires", 38)
+	local UserVal = infoRow(Info, "", "User", 60)
+	UserVal.Text = Player.Name
+	tw(Info, {Position=UDim2.new(1,-230,1,-146)}, 0.4, Enum.EasingStyle.Back)
+
+	local conn
+	conn = RunService.Heartbeat:Connect(function()
+		if not Pill.Parent then conn:Disconnect() return end
+		local left = ts - os.time()
+		if left <= 0 then
+			PillLbl.Text = "Session expired"
+			PillLbl.TextColor3 = C.Error
+			PillDot.BackgroundColor3 = C.Error
+			TimeVal.Text = "Expired"
+			TimeVal.TextColor3 = C.Error
+		else
+			local h = math.floor(left/3600)
+			local m = math.floor((left%3600)/60)
+			local s = left%60
+			TimeVal.Text = string.format("%02dh %02dm %02ds", h, m, s)
+		end
+	end)
+end
 `;
 
 const LOGIN_HTML = (error) => `<!DOCTYPE html>
@@ -410,7 +548,7 @@ const LOGIN_HTML = (error) => `<!DOCTYPE html>
 <body>
   <div class="container">
     <h1>Enter <b>Password</b></h1>
-    ${error ? `<div class="error">${error}</div>` : ''}
+    ${error ? \`<div class="error">\${error}</div>\` : ''}
     <form method="POST">
       <input type="password" name="password" placeholder="Password" required>
       <button type="submit">Submit</button>
@@ -418,7 +556,9 @@ const LOGIN_HTML = (error) => `<!DOCTYPE html>
     <a href="https://yoursuck.vercel.app" class="home-btn">Return Home</a>
   </div>
 </body>
-</html>`;
+</html>\`;
+
+import { Buffer } from "buffer";
 
 export default async function handler(req, res) {
     if (req.method === "POST") {
@@ -433,7 +573,7 @@ export default async function handler(req, res) {
 
         if (password === PASSWORD) {
             const authValue = Buffer.from(PASSWORD).toString("base64");
-            res.setHeader("Set-Cookie", `auth=${authValue}; Path=/; HttpOnly; Max-Age=3600`);
+            res.setHeader("Set-Cookie", \`auth=\${authValue}; Path=/; HttpOnly; Max-Age=3600\`);
             res.setHeader("Content-Type", "text/plain; charset=utf-8");
             return res.status(200).send(LUA_SCRIPT);
         } else {
@@ -444,7 +584,7 @@ export default async function handler(req, res) {
 
     const cookies = req.headers.cookie || "";
     const authCookie = Buffer.from(PASSWORD).toString("base64");
-    if (cookies.includes(`auth=${authCookie}`)) {
+    if (cookies.includes(\`auth=\${authCookie}\`)) {
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
         return res.status(200).send(LUA_SCRIPT);
     }
