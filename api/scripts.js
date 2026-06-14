@@ -18,6 +18,8 @@ export default async function handler(req, res) {
         const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
         const actualIp = typeof clientIp === 'string' ? clientIp.split(',')[0].trim() : clientIp;
         
+        console.log(`[DEBUG] IP: ${actualIp}, UA: ${userAgent}, Auth: ${authHeader}`);
+
         const isRoblox = userAgent.toLowerCase().includes("roblox");
         const isMe = actualIp.includes(ALLOWED_IP);
         const isAuthorized = authHeader === SECRET_KEY || isRoblox || isMe;
@@ -41,9 +43,7 @@ export default async function handler(req, res) {
                 path: '/scripts.lua',
                 user_agent: userAgent
             });
-        } catch (e) {
-            console.error("Logging error:", e);
-        }
+        } catch (e) {}
 
         const accessDeniedHtml = `
         <!DOCTYPE html>
@@ -70,6 +70,7 @@ export default async function handler(req, res) {
             h1 .bold { font-weight: 600; color: #22d3ee; }
             .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 500; font-size: 0.875rem; text-decoration: none; transition: all 0.3s ease; border: 1px solid rgba(34, 211, 238, 0.3); background: rgba(34, 211, 238, 0.1); color: #22d3ee; }
             .btn:hover { background: rgba(34, 211, 238, 0.2); box-shadow: 0 0 20px rgba(34, 211, 238, 0.2); }
+            .ip-info { position: fixed; bottom: 1rem; right: 1rem; font-size: 0.7rem; color: rgba(255, 255, 255, 0.2); z-index: 20; font-family: monospace; }
           </style>
         </head>
         <body>
@@ -84,6 +85,7 @@ export default async function handler(req, res) {
             <h1><span class="light">Access </span><span class="bold">Denied</span></h1>
             <a href="https://yoursuck.vercel.app/" class="btn">Return Home</a>
           </div>
+          <div class="ip-info">ID: ${actualIp}</div>
           <script>
             (function() {
               const canvas = document.getElementById('particleCanvas');
