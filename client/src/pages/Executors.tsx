@@ -300,9 +300,7 @@ export default function Executors() {
             <span className="text-white">Supported </span>
             <span style={{ color: "#00ABFF" }}>Executors</span>
           </h1>
-          <p className="text-zinc-400 text-lg max-w-3xl mx-auto leading-relaxed">
-            All Executors Below Redirect To Executor Official Site To Download.
-          </p>
+
 
           {/* Filter Buttons */}
           <div className="flex items-center justify-center gap-3 mt-8 flex-wrap">
