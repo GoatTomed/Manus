@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import Navbar from "@/components/Navbar";
 
 type Category = "all" | "windows" | "macos" | "mobile";
 
@@ -19,7 +18,7 @@ const EXECUTORS: Executor[] = [
   {
     name: "Wave",
     logo: "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f30a.png",
-    href: "https://work.ink/2hKT/Wave",
+    href: "https://getwave.gg/",
     platform: "Windows",
     category: ["windows"],
     badge: "recommended",
@@ -28,7 +27,7 @@ const EXECUTORS: Executor[] = [
   {
     name: "Seliware",
     logo: "https://scriptblox.com/images/exec/thumbs/Seliware.png",
-    href: "https://work.ink/2hKT/Seliware",
+    href: "https://seliware.com/",
     platform: "Windows",
     category: ["windows"],
     badge: "recommended",
@@ -37,7 +36,7 @@ const EXECUTORS: Executor[] = [
   {
     name: "Velocity",
     logo: "https://velocity-executor.com/wp-content/uploads/2025/06/velocity-main.png",
-    href: "https://workink.net/1Yct/velocitydownload",
+    href: "https://velocity-executor.com/download/",
     platform: "Windows",
     category: ["windows"],
     badge: "recommended",
@@ -46,7 +45,7 @@ const EXECUTORS: Executor[] = [
   {
     name: "Bunni",
     logo: "https://bunniexecutor.com/wp-content/uploads/2025/06/bunni-logo.png",
-    href: "https://work.ink/2hKT/Bunni",
+    href: "https://bunni.fun/",
     platform: "Windows",
     category: ["windows"],
     badge: "supported",
@@ -62,7 +61,7 @@ const EXECUTORS: Executor[] = [
   {
     name: "Solara",
     logo: "https://avatars.githubusercontent.com/u/208881794?s=200&v=4",
-    href: "https://work.ink/2hKT/Solara",
+    href: "https://getsolara.dev/download/static/files/BootstrapperNew.exe",
     platform: "Windows",
     category: ["windows"],
     badge: "supported",
@@ -71,7 +70,7 @@ const EXECUTORS: Executor[] = [
   {
     name: "Cryptic",
     logo: "https://getcryptic.net/logo.png",
-    href: "https://work.ink/2hKT/Cryptic",
+    href: "https://getcryptic.net/",
     platform: "macOS, Mobile",
     category: ["macos", "mobile"],
     badge: "supported",
@@ -80,7 +79,7 @@ const EXECUTORS: Executor[] = [
   {
     name: "Delta",
     logo: "https://velocity-executor.com/wp-content/uploads/2025/06/velocity-main.png",
-    href: "https://work.ink/2hKT/Delta",
+    href: "https://discord.gg/deltax",
     platform: "Mobile",
     category: ["mobile"],
     badge: "recommended",
@@ -88,7 +87,7 @@ const EXECUTORS: Executor[] = [
   {
     name: "Fluxus",
     logo: "https://images.dwncdn.net/images/t_app-icon-l/p/69d46195-d1b1-4d4e-9ece-4aac6a27faf7/3398186052/fluxus-executor-logo",
-    href: "https://work.ink/2hKT/Fluxus",
+    href: "https://fluxus-team.com/#how-to-download--install-fluxus",
     platform: "Mobile",
     category: ["mobile"],
     badge: "supported",
@@ -261,9 +260,7 @@ export default function Executors() {
 
   return (
     <div className="min-h-screen dot-grid-bg">
-      <Navbar />
-
-      <div className="relative max-w-7xl mx-auto px-6 pt-28 pb-16 z-10">
+      <div className="relative max-w-7xl mx-auto px-6 pt-12 pb-16 z-10">
         {/* Back Button */}
         <Link
           href="/"
