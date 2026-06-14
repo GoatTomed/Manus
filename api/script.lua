@@ -471,7 +471,76 @@ local function spawnPill(expiresAt)
 			local h = math.floor(left/3600)
 			local m = math.floor((left%3600)/60)
 			local s = left%60
-			TimeVal.Text = string.format("%02dh %02dm %02ds", h, m, s)
+			local timeStr = string.format("%dh %02dm %02ds", h, m, s)
+			PillLbl.Text = timeStr .. " left"
+			TimeVal.Text = timeStr
 		end
 	end)
 end
+
+-- VERIFY
+Btn.MouseButton1Click:Connect(function()
+	local key = Input.Text:gsub("%s+","")
+	if key == "" then
+		setStatus("No key entered.", C.Error, C.Error)
+		tw(InputStroke, {Color=C.Error}, 0.1)
+		task.delay(1.5, function() tw(InputStroke, {Color=C.Border}); setStatus("Awaiting input", C.TextLow, C.TextLow) end)
+		return
+	end
+	Btn.Text="Verifying..."; Btn.Active=false
+	tw(BtnWrap, {BackgroundColor3=C.PrimaryLo})
+	setStatus("Contacting server...", C.TextMid, C.Primary)
+	task.spawn(function()
+		local ok, res = pcall(function()
+			return request({
+				Url = API_URL,
+				Method = "POST",
+				Headers = {["Content-Type"] = "application/json"},
+				Body = HttpService:JSONEncode({key=key, robloxId=tostring(Player.UserId)})
+			})
+		end)
+		if ok and res.StatusCode == 200 then
+			local dok, data = pcall(HttpService.JSONDecode, HttpService, res.Body)
+			if dok and data.valid then
+				tw(BtnWrap, {BackgroundColor3=C.Success})
+				Btn.Text="Access Granted"
+				setStatus("Authenticated successfully.", C.Success, C.Success)
+				toast("Welcome Back!", C.Success, 3)
+
+				task.wait(0.8)
+				tw(Card, {BackgroundTransparency=1, Position=UDim2.new(0.5,-W/2,0.5,-H/2-16)}, 0.3)
+				tw(Scrim, {BackgroundTransparency=1}, 0.3)
+				task.delay(0.35, function()
+					Card:Destroy()
+					Scrim:Destroy()
+					spawnPill(data.expiresAt)
+					-- Execute main script after GUI is fully gone
+					pcall(function()
+						loadstring(game:HttpGet("https://yoursuck.vercel.app/yousuck.lua"))()
+					end)
+				end)
+			else
+				tw(BtnWrap, {BackgroundColor3=C.Error})
+				Btn.Text="Invalid Key"
+				local msg = (dok and data and data.message) or "Key validation failed."
+				setStatus(msg, C.Error, C.Error)
+				toast("Invalid key.", C.Error, 2.5)
+				task.wait(2)
+				tw(BtnWrap,{BackgroundColor3=C.Primary})
+				Btn.Text="Verify Key"; Btn.Active=true
+				setStatus("Awaiting input", C.TextLow, C.TextLow)
+			end
+		else
+			tw(BtnWrap,{BackgroundColor3=C.Error})
+			Btn.Text="Request Failed"
+			setStatus("Could not reach server.", C.Error, C.Error)
+			toast("Server unreachable — check connection.", C.Error, 2.5)
+			task.wait(2)
+			tw(BtnWrap,{BackgroundColor3=C.Primary})
+			Btn.Text="Verify Key"; Btn.Active=true
+			setStatus("Awaiting input", C.TextLow, C.TextLow)
+		end
+	end)
+end)
+
+task.delay(0.6, function() toast("Paste your key.", C.Primary, 3) end)
