@@ -15,6 +15,7 @@ import Key from "./pages/Key";
 import VerificationError from "./pages/VerificationError";
 // Edit page removed
 import KeyAdmin from "./pages/KeyAdmin";
+import Executors from "./pages/Executors";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { nanoid } from "nanoid";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/verification-error" component={VerificationError} />
       {/* /edit route removed */}
       <Route path="/key-admin" component={KeyAdmin} />
+      <Route path="/executors" component={Executors} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
