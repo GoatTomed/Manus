@@ -1,11 +1,13 @@
 const PASSWORD = "Tocson123";
+const SECRET_KEY = "YouSuck-UltraSecret-9921"; // Ta clé secrète
+
 import { Buffer } from "buffer";
 import fs from "fs";
 import path from "path";
 
 export default async function handler(req, res) {
-    const userAgent = req.headers["user-agent"] || "";
-    const isRoblox = userAgent.toLowerCase().includes("roblox");
+    const authHeader = req.headers["x-secret-auth"] || "";
+    const isAuthorized = authHeader === SECRET_KEY;
 
     const loginHtml = `
     <!DOCTYPE html>
@@ -41,8 +43,8 @@ export default async function handler(req, res) {
         }
     };
 
-    // SI ROBLOX : On envoie le script direct
-    if (isRoblox) {
+    // SI LA CLÉ SECRÈTE EST PRÉSENTE : On envoie le script direct
+    if (isAuthorized) {
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
         res.setHeader("Access-Control-Allow-Origin", "*");
         return res.status(200).send(getLuaScript());
