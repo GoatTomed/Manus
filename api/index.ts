@@ -22,7 +22,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
-const ALLOWED_IP = "144.168.52.250";
+const ALLOWED_IP = "24.49.252.230";
 const DEV_MODE = process.env.NODE_ENV === "development";
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
