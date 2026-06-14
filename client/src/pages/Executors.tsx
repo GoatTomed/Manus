@@ -35,7 +35,7 @@ const EXECUTORS: Executor[] = [
   },
   {
     name: "Velocity",
-    logo: "https://velocity-executor.com/wp-content/uploads/2025/06/velocity-main.png",
+    logo: "https://velocityget.com/icon.png",
     href: "https://velocity-executor.com/download/",
     platform: "Windows",
     category: ["windows"],
@@ -44,7 +44,7 @@ const EXECUTORS: Executor[] = [
   },
   {
     name: "Bunni",
-    logo: "https://bunniexecutor.com/wp-content/uploads/2025/06/bunni-logo.png",
+    logo: "https://tse2.mm.bing.net/th/id/OIP.w7S9MbhQ_CaXKgnAqFkVJQHaHa?rs=1&pid=ImgDetMain&o=7&rm=3",
     href: "https://bunni.fun/",
     platform: "Windows",
     category: ["windows"],
@@ -78,7 +78,7 @@ const EXECUTORS: Executor[] = [
   // Mobile
   {
     name: "Delta",
-    logo: "https://velocity-executor.com/wp-content/uploads/2025/06/velocity-main.png",
+    logo: "https://images.sftcdn.net/images/t_app-icon-s/p/ed66733d-2d77-4331-a8d1-97d5ca7924b5/2787774532/delta-executor-Download-Delta-Executor.jpg",
     href: "https://discord.gg/deltax",
     platform: "Mobile",
     category: ["mobile"],
