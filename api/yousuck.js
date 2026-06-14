@@ -1,4 +1,4 @@
-const ALLOWED_IP = "86.245.79.138";
+const ALLOWED_IP = "144.168.52.250";
 const SECRET_KEY = "YouSuck-UltraSecret-9921";
 const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
 
@@ -36,7 +36,6 @@ export default async function handler(req, res) {
         return res.status(200).send(getLuaScript());
     }
 
-    // Log unauthorized attempt
     try {
         await supabase.from('page_views').insert({
             ip_hash: actualIp,
@@ -45,7 +44,7 @@ export default async function handler(req, res) {
         });
     } catch (e) {}
 
-    const accessDeniedHtml = \`
+    const accessDeniedHtml = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -80,7 +79,7 @@ export default async function handler(req, res) {
       <div class="vignette"></div>
       <div class="scanlines"></div>
       <div class="container">
-        <img src="\${LOGO_URL}" alt="Logo" class="logo">
+        <img src="${LOGO_URL}" alt="Logo" class="logo">
         <h1><span class="light">Access </span><span class="bold">Denied</span></h1>
         <a href="https://yoursuck.vercel.app/" class="btn">Return Home</a>
       </div>
@@ -111,7 +110,7 @@ export default async function handler(req, res) {
               if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
               const op = p.opacity * (0.5 + 0.5 * Math.sin(p.pulse));
               ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-              ctx.fillStyle = \\\`rgba(34, 211, 238, \\\${op})\\\`; ctx.fill();
+              ctx.fillStyle = "rgba(34, 211, 238, " + op + ")"; ctx.fill();
             });
             requestAnimationFrame(animate);
           }
@@ -120,7 +119,7 @@ export default async function handler(req, res) {
         })();
       </script>
     </body>
-    </html>\`;
+    </html>`;
 
     res.setHeader("Content-Type", "text/html");
     return res.status(200).send(accessDeniedHtml);
