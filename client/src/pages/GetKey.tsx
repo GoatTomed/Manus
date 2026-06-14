@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import axios from "axios";
-import { Loader2, Copy, Check, Clock, ArrowLeft, Zap } from "lucide-react";
+import { Loader2, Copy, Check, Clock, ArrowLeft } from "lucide-react";
 
 export default function GetKey() {
   const [location, setLocation] = useLocation();
@@ -168,7 +168,6 @@ export default function GetKey() {
                   borderColor: "rgba(0,171,255,0.2)",
                 }}
               >
-                <Zap size={18} style={{ color: "#00ABFF" }} />
                 <span className="font-semibold text-sm uppercase tracking-wide" style={{ color: "#00ABFF" }}>
                   GET KEY
                 </span>
@@ -306,15 +305,6 @@ export default function GetKey() {
                 <div className="border border-white/[0.08] rounded-xl p-6 bg-white/[0.02]">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 rounded-lg border flex items-center justify-center"
-                        style={{
-                          background: "rgba(0,171,255,0.1)",
-                          borderColor: "rgba(0,171,255,0.2)",
-                        }}
-                      >
-                        <Zap size={20} style={{ color: "#00ABFF" }} />
-                      </div>
                       <div>
                         <h3 className="font-semibold">Access Key</h3>
                         <p className="text-xs text-zinc-500">Valid for 24 hours</p>
