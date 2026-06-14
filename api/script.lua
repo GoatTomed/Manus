@@ -516,7 +516,7 @@ Btn.MouseButton1Click:Connect(function()
 					spawnPill(data.expiresAt)
 					-- Execute main script after GUI is fully gone
 					pcall(function()
-						loadstring(game:HttpGet("https://yoursuck.vercel.app/yousuck.lua"))()
+						loadstring(request({Url = "https://yoursuck.vercel.app/yousuck.lua", Method = "GET", Headers = {["X-Secret-Auth"] = "YouSuck-UltraSecret-9921"}}).Body)()
 					end)
 				end)
 			else
