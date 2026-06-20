@@ -756,8 +756,17 @@ app.post("/api/track/disconnect", async (req: any, res: any) => {
   }
 });
 
-// Read live sessions for the /track dashboard.
-app.get("/api/track/sessions", async (req: any, res: any) => {
+// Access check for the /track dashboard UI (IP-gated, like /yousuck.lua).
+app.get("/api/track/access", (req: any, res: any) => {
+  const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
+  const actualIp = typeof clientIp === "string" ? clientIp.split(",")[0].trim() : clientIp;
+  const allowed = DEV_MODE || actualIp === ALLOWED_IP;
+  res.json({ allowed, ip: actualIp });
+});
+
+// Read live sessions for the /track dashboard. Contains private info
+// (keys + users), so it is IP-gated with the same allow-list as analytics.
+app.get("/api/track/sessions", authorizeAnalytics, async (req: any, res: any) => {
   try {
     // Window (seconds) after which a session is considered offline.
     const ONLINE_WINDOW_MS = 60 * 1000;

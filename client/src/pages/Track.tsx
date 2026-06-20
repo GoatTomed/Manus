@@ -24,6 +24,7 @@ import {
   Code,
   Network,
   Plug,
+  Lock,
   type LucideIcon,
 } from "lucide-react";
 
@@ -349,6 +350,21 @@ export default function Track() {
   // Logs
   const [logs, setLogs] = useState<LogEntry[]>(LOGS);
 
+  // IP access gate (same allow-list as /yousuck.lua). "checking" until the
+  // server confirms the visitor's IP is authorized to view private info.
+  const [access, setAccess] = useState<"checking" | "allowed" | "denied">("checking");
+  const [visitorIp, setVisitorIp] = useState("");
+
+  useEffect(() => {
+    fetch("/api/track/access")
+      .then((r) => r.json())
+      .then((d) => {
+        setVisitorIp(d?.ip || "");
+        setAccess(d?.allowed ? "allowed" : "denied");
+      })
+      .catch(() => setAccess("denied"));
+  }, []);
+
   useEffect(() => {
     const id = setInterval(() => {
       const s = Math.floor((Date.now() - startRef.current) / 1000);
@@ -399,6 +415,66 @@ export default function Track() {
   const topbarSection = inClientMode
     ? clientView.charAt(0).toUpperCase() + clientView.slice(1)
     : homeView.charAt(0).toUpperCase() + homeView.slice(1);
+
+  // ─── IP access gate ─────────────────────────────────────────────────────────
+  if (access !== "allowed") {
+    return (
+      <div className="mcp-root">
+        <style>{STYLES}</style>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            padding: 24,
+            gap: 14,
+          }}
+        >
+          <div className="no-client-icon">
+            {access === "checking" ? <Clock size={26} /> : <Lock size={26} />}
+          </div>
+          {access === "checking" ? (
+            <>
+              <h2 style={{ fontSize: 18, fontWeight: 500, margin: 0 }}>
+                Verifying access…
+              </h2>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>
+                Checking your connection.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 style={{ fontSize: 22, fontWeight: 600, margin: 0 }}>
+                Access <span style={{ color: "var(--accent)" }}>Denied</span>
+              </h2>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0, maxWidth: 360 }}>
+                This dashboard contains private information and is restricted to
+                authorized IP addresses only.
+              </p>
+              <a className="client-chip" href="/" style={{ marginTop: 6 }}>
+                Return Home
+              </a>
+              {visitorIp && (
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontFamily: "var(--font-mono,monospace)",
+                    color: "var(--text-tertiary)",
+                    marginTop: 8,
+                  }}
+                >
+                  ID: {visitorIp}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mcp-root">
