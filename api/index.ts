@@ -710,4 +710,95 @@ app.post("/api/verify-key", async (req: any, res: any) => {
   }
 });
 
+// ─── Live Session Tracking (/track) ───────────────────────────────────────────
+// Roblox script calls this on load + on an interval to report it is online.
+app.post("/api/track/heartbeat", async (req: any, res: any) => {
+  try {
+    const { key, robloxId, username, placeId, gameName, executor } = req.body;
+    if (!key || !robloxId) {
+      return res.status(400).json({ error: "Missing key or robloxId" });
+    }
+
+    const { error } = await supabase
+      .from("active_sessions")
+      .upsert(
+        {
+          key_value: String(key).trim().toUpperCase(),
+          roblox_id: String(robloxId),
+          roblox_username: username ? String(username) : null,
+          place_id: placeId !== undefined && placeId !== null ? String(placeId) : null,
+          game_name: gameName ? String(gameName) : null,
+          executor: executor ? String(executor) : null,
+          last_seen: new Date().toISOString(),
+        },
+        { onConflict: "key_value" }
+      );
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true });
+  } catch (error: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
+// Optional: explicit disconnect (script unloading / player leaving).
+app.post("/api/track/disconnect", async (req: any, res: any) => {
+  try {
+    const { key } = req.body;
+    if (!key) return res.status(400).json({ error: "Missing key" });
+    await supabase
+      .from("active_sessions")
+      .delete()
+      .eq("key_value", String(key).trim().toUpperCase());
+    res.json({ ok: true });
+  } catch (error: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
+// Read live sessions for the /track dashboard.
+app.get("/api/track/sessions", async (req: any, res: any) => {
+  try {
+    // Window (seconds) after which a session is considered offline.
+    const ONLINE_WINDOW_MS = 60 * 1000;
+
+    const { data, error } = await supabase
+      .from("active_sessions")
+      .select("*")
+      .order("last_seen", { ascending: false });
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    const now = Date.now();
+    const sessions = (data || []).map((s: any) => ({
+      key_value: s.key_value,
+      roblox_id: s.roblox_id,
+      roblox_username: s.roblox_username,
+      place_id: s.place_id,
+      game_name: s.game_name,
+      executor: s.executor,
+      last_seen: s.last_seen,
+      online: now - new Date(s.last_seen).getTime() < ONLINE_WINDOW_MS,
+    }));
+
+    const onlineSessions = sessions.filter((s: any) => s.online);
+    const games = new Set(
+      onlineSessions
+        .map((s: any) => s.game_name || s.place_id)
+        .filter((g: any) => !!g)
+    );
+
+    res.json({
+      sessions,
+      stats: {
+        online: onlineSessions.length,
+        total: sessions.length,
+        games: games.size,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
 export default app;
