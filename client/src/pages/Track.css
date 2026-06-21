@@ -1,21 +1,21 @@
 .track-page *{box-sizing:border-box}
 .track-page{
-  --bg-primary:#ffffff;
-  --bg-secondary:#f8f8f7;
-  --bg-tertiary:#f1f0ed;
-  --bg-info:#e8f0fc;
-  --bg-success:#eaf5ee;
-  --bg-warning:#fdf3e3;
-  --bg-danger:#fcecea;
-  --text-primary:#1a1a18;
-  --text-secondary:#6b6b66;
-  --text-tertiary:#9b9b96;
-  --text-info:#185fa5;
-  --text-success:#1a7c3e;
-  --text-warning:#92580a;
-  --text-danger:#a32d2d;
-  --border:rgba(0,0,0,0.1);
-  --border-md:rgba(0,0,0,0.18);
+  --bg-primary:#16161a;
+  --bg-secondary:#1c1c21;
+  --bg-tertiary:#0e0e11;
+  --bg-info:#16273b;
+  --bg-success:#15301f;
+  --bg-warning:#3a2a0d;
+  --bg-danger:#3a1818;
+  --text-primary:#f1f1ef;
+  --text-secondary:#9a9a97;
+  --text-tertiary:#686865;
+  --text-info:#5b9fe0;
+  --text-success:#4fcf80;
+  --text-warning:#e0a83f;
+  --text-danger:#e06868;
+  --border:rgba(255,255,255,0.09);
+  --border-md:rgba(255,255,255,0.16);
   --radius-sm:6px;
   --radius-md:8px;
   --radius-lg:12px;
@@ -24,7 +24,7 @@
 }
 .track-page{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text-primary);font-size:14px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
 
-/* -- Topbar -- */
+/* ── Topbar ── */
 .topbar{height:48px;background:var(--bg-primary);border-bottom:0.5px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;z-index:10}
 .topbar-logo{display:flex;align-items:center;gap:7px;font-weight:500;font-size:13px;color:var(--text-secondary);text-decoration:none}
 .topbar-logo i{font-size:16px}
@@ -38,10 +38,10 @@
 .back-btn:hover{background:var(--bg-secondary);color:var(--text-primary)}
 .back-btn i{font-size:15px}
 
-/* -- Layout -- */
+/* ── Layout ── */
 .layout{display:flex;flex:1;overflow:hidden}
 
-/* -- Sidebar -- */
+/* ── Sidebar ── */
 .sidebar{width:204px;background:var(--bg-secondary);border-right:0.5px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
 .sidebar-nav{padding:8px;display:flex;flex-direction:column;gap:1px;flex:1}
 .sidebar-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-md);font-size:13px;color:var(--text-secondary);cursor:pointer;background:none;border:none;width:100%;text-align:left;transition:background 0.1s,color 0.1s}
@@ -55,12 +55,12 @@
 .gh-link:hover{color:var(--text-primary)}
 .gh-link i{font-size:16px}
 
-/* -- Main -- */
+/* ── Main ── */
 .main-content{flex:1;overflow-y:auto;position:relative}
 .view{display:none;height:100%}
 .view.active{display:flex;flex-direction:column}
 
-/* -- Clients view -- */
+/* ── Clients view ── */
 .clients-center{display:flex;align-items:center;justify-content:center;flex:1;padding:24px}
 .no-client-box{width:360px;text-align:center}
 .no-client-icon{width:56px;height:56px;border-radius:var(--radius-lg);background:var(--bg-primary);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--text-secondary)}
@@ -84,7 +84,7 @@
 .client-row-sub{font-size:11px;color:var(--text-secondary);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .client-row i.ti-chevron-right{font-size:14px;color:var(--text-tertiary)}
 
-/* -- Overview view -- */
+/* ── Overview view ── */
 .overview-wrap{padding:24px;display:flex;flex-direction:column;gap:14px}
 .hero-card{background:var(--bg-primary);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;display:flex;align-items:center;gap:14px}
 .hero-avatar{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;flex-shrink:0}
@@ -106,7 +106,7 @@
 .tile-stat-label{color:var(--text-secondary)}
 .tile-stat-val{font-weight:500}
 
-/* -- Scripts view -- */
+/* ── Scripts view ── */
 .scripts-wrap{padding:24px;display:flex;flex-direction:column;gap:0;flex:1}
 .scripts-header{margin-bottom:18px}
 .scripts-header h2{font-size:16px;font-weight:500}
@@ -146,7 +146,7 @@
 .index-btn:hover{opacity:0.85}
 .idle-label{font-size:10px;color:var(--text-tertiary)}
 
-/* -- Tools view -- */
+/* ── Tools view ── */
 .tools-wrap{padding:24px;display:flex;gap:14px;flex:1;min-height:0;overflow:hidden}
 .tools-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:0;overflow:hidden}
 .tools-card{background:var(--bg-primary);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;flex:1}
@@ -180,7 +180,7 @@
 .tool-item.active{background:var(--bg-tertiary);color:var(--text-primary);font-weight:500}
 .tool-item i{font-size:14px;flex-shrink:0}
 
-/* -- Server view -- */
+/* ── Server view ── */
 .server-wrap{padding:24px;display:flex;flex-direction:column;gap:14px}
 .server-wrap h2{font-size:16px;font-weight:500}
 .server-wrap>p{font-size:13px;color:var(--text-secondary);margin-top:3px}
@@ -210,7 +210,7 @@
 .ct-id{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
 .ct-transport{font-size:11px;color:var(--text-tertiary);margin-left:10px}
 
-/* -- Logs view -- */
+/* ── Logs view ── */
 .logs-wrap{padding:24px;display:flex;flex-direction:column;gap:0;flex:1}
 .logs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .logs-header h2{font-size:16px;font-weight:500}
@@ -232,7 +232,7 @@
 .lvl-err{background:var(--bg-danger);color:var(--text-danger)}
 .log-msg{color:var(--text-primary);padding-left:4px}
 
-/* -- Settings view -- */
+/* ── Settings view ── */
 .settings-wrap{padding:24px;display:flex;flex-direction:column;gap:12px;flex:1;overflow-y:auto}
 .settings-wrap h2{font-size:16px;font-weight:500}
 .settings-wrap>p{font-size:13px;color:var(--text-secondary);margin-top:3px;margin-bottom:6px}
