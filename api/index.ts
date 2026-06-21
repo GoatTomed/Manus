@@ -710,4 +710,55 @@ app.post("/api/verify-key", async (req: any, res: any) => {
   }
 });
 
+// ─── Heartbeat & Tracking ───────────────────────────────────────────────────
+
+app.post("/api/heartbeat", async (req: any, res: any) => {
+  try {
+    const { key, robloxId, robloxName, gameId, gameName, jobId } = req.body;
+    
+    if (!key || !robloxId) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Upsert the heartbeat record
+    const { error } = await supabase
+      .from("heartbeats")
+      .upsert({
+        key_value: key,
+        roblox_id: String(robloxId),
+        roblox_name: robloxName,
+        game_id: gameId,
+        game_name: gameName,
+        job_id: jobId,
+        last_heartbeat: new Date().toISOString()
+      }, {
+        onConflict: 'key_value, roblox_id'
+      });
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("Heartbeat error:", error);
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
+app.get("/api/online-users", authorizeAnalytics, async (req: any, res: any) => {
+  try {
+    // Define "online" as having a heartbeat in the last 2 minutes
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    
+    const { data, error } = await supabase
+      .from("heartbeats")
+      .select("*")
+      .gte("last_heartbeat", twoMinutesAgo)
+      .order("last_heartbeat", { ascending: false });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
 export default app;

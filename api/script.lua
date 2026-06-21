@@ -1,14 +1,17 @@
---[[ YouSuck — Key System ]]
+--[[ YouSuck — Key System with Heartbeat ]]
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
+local MarketplaceService = game:GetService("MarketplaceService")
 local Player = Players.LocalPlayer
 local request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 if not request then request = function(o) return HttpService:RequestAsync(o) end end
 
 local API_URL = "https://yoursuck.vercel.app/api/verify-key"
+local HEARTBEAT_URL = "https://yoursuck.vercel.app/api/heartbeat"
+local HEARTBEAT_INTERVAL = 30 -- seconds
 
 -- PALETTE
 local C = {
@@ -166,17 +169,6 @@ local Title = lbl(Body, {
 Title.RichText = true
 Title.Text = '                  <font color="#FFFFFF">You</font><font color="#00ABFF">Suck</font>'
 
-lbl(Body, {
-	Size = UDim2.new(1, 0, 0, 14),
-	Position = UDim2.new(0, 0, 0, 44),
-	Text = " ",
-	TextColor3 = C.TextMid,
-	TextSize = 11,
-	Font = Enum.Font.Gotham,
-	TextXAlignment = Enum.TextXAlignment.Left,
-	ZIndex = 4,
-})
-
 -- INPUT
 local InputWrap = frm(Body, {
 	Size = UDim2.new(1, 0, 0, 42),
@@ -238,26 +230,7 @@ local function setStatus(msg, col, dotCol)
 	tw(SDot, {BackgroundColor3 = dotCol or C.TextLow}, 0.15)
 end
 
--- FOOTER
-local Footer = frm(Body, {
-	Size = UDim2.new(1, 0, 0, 34),
-	Position = UDim2.new(0, 0, 1, -34),
-	BackgroundTransparency = 1,
-	ZIndex = 4,
-})
-frm(Footer, {Size=UDim2.new(1,0,0,1), BackgroundColor3=C.Border})
-lbl(Footer, {
-	Size=UDim2.new(0.5,0,1,0),
-	Position=UDim2.new(0,0,0,0),
-	Text="",
-	TextColor3=C.TextLow,
-	TextSize=10,
-	Font=Enum.Font.Gotham,
-	TextXAlignment=Enum.TextXAlignment.Left,
-	ZIndex=5,
-})
-
--- TOAST (moved up so buttons can use it)
+-- TOAST
 local function toast(msg, col, duration)
 	col = col or C.Primary; duration = duration or 3
 	local T = frm(Gui, {
@@ -285,7 +258,7 @@ local BtnRow = frm(Body, {
 	ZIndex = 4,
 })
 
--- GET KEY button (left half)
+-- GET KEY button
 local GetKeyWrap = frm(BtnRow, {
 	Size = UDim2.new(0.48, 0, 1, 0),
 	Position = UDim2.new(0, 0, 0, 0),
@@ -303,21 +276,12 @@ GetKeyBtn.TextSize = 13
 GetKeyBtn.ZIndex = 5
 GetKeyBtn.MouseEnter:Connect(function() tw(GetKeyWrap, {BackgroundColor3 = Color3.fromRGB(3,190,255)}) end)
 GetKeyBtn.MouseLeave:Connect(function() tw(GetKeyWrap, {BackgroundColor3 = C.Primary}) end)
-GetKeyBtn.MouseButton1Down:Connect(function() tw(GetKeyWrap, {BackgroundColor3 = C.PrimaryLo}, 0.08) end)
 GetKeyBtn.MouseButton1Up:Connect(function()
-	tw(GetKeyWrap, {BackgroundColor3 = C.Primary}, 0.1)
 	setclipboard("https://yoursuck.vercel.app/")
-	pcall(function()
-		StarterGui:SetCore("SendNotification", {
-			Title = "YouSuck",
-			Text = "Link copied to clipboard!",
-			Duration = 3,
-		})
-	end)
 	toast("Link copied to clipboard!", C.Primary, 2.5)
 end)
 
--- VERIFY KEY button (right half)
+-- VERIFY KEY button
 local BtnWrap = frm(BtnRow, {
 	Size = UDim2.new(0.48, 0, 1, 0),
 	Position = UDim2.new(0.52, 0, 0, 0),
@@ -335,10 +299,35 @@ Btn.TextSize = 13
 Btn.ZIndex = 5
 Btn.MouseEnter:Connect(function() tw(BtnWrap, {BackgroundColor3 = Color3.fromRGB(3,190,255)}) end)
 Btn.MouseLeave:Connect(function() tw(BtnWrap, {BackgroundColor3 = C.Primary}) end)
-Btn.MouseButton1Down:Connect(function() tw(BtnWrap, {BackgroundColor3 = C.PrimaryLo}, 0.08) end)
-Btn.MouseButton1Up:Connect(function() tw(BtnWrap, {BackgroundColor3 = C.Primary}, 0.1) end)
 
--- SESSION PILL + KEY INFO
+-- HEARTBEAT IMPLEMENTATION
+local function startHeartbeat(key)
+    local gameName = "Unknown Game"
+    pcall(function()
+        gameName = MarketplaceService:GetProductInfo(game.PlaceId).Name
+    end)
+
+    task.spawn(function()
+        while task.wait(HEARTBEAT_INTERVAL) do
+            pcall(function()
+                request({
+                    Url = HEARTBEAT_URL,
+                    Method = "POST",
+                    Headers = {["Content-Type"] = "application/json"},
+                    Body = HttpService:JSONEncode({
+                        key = key,
+                        robloxId = tostring(Player.UserId),
+                        robloxName = Player.Name,
+                        gameId = game.PlaceId,
+                        gameName = gameName,
+                        jobId = game.JobId
+                    })
+                })
+            end)
+        end
+    end)
+end
+
 local function isoToTs(s)
 	if not s or type(s)~="string" then return os.time()+86400 end
 	local y,mo,d,h,mi,sc = s:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
@@ -346,8 +335,9 @@ local function isoToTs(s)
 	return os.time({year=y,month=mo,day=d,hour=h,min=mi,sec=sc})
 end
 
-local function spawnPill(expiresAt)
+local function spawnPill(expiresAt, key)
 	local ts = isoToTs(expiresAt)
+    startHeartbeat(key)
 
 	local Pill = frm(Gui, {
 		Size=UDim2.new(0,220,0,36),
@@ -376,87 +366,6 @@ local function spawnPill(expiresAt)
 	})
 	tw(Pill, {Position=UDim2.new(1,-230,1,-46)}, 0.4, Enum.EasingStyle.Back)
 
-	local Info = frm(Gui, {
-		Size=UDim2.new(0,220,0,90),
-		Position=UDim2.new(1,-230,1,10),
-		BackgroundColor3=C.Surface,
-		ZIndex=15,
-		Active=true,
-	})
-	corner(Info, 10); stroke(Info, C.Border, 1); makeDraggable(Info)
-
-	local InfoBar = frm(Info, {
-		Size=UDim2.new(1,0,0,30),
-		Position=UDim2.new(0,0,0,0),
-		BackgroundColor3=Color3.fromRGB(14,14,14),
-		ZIndex=16,
-	})
-	corner(InfoBar, 10)
-	frm(InfoBar, {
-		Size=UDim2.new(1,0,0,10),
-		Position=UDim2.new(0,0,1,-10),
-		BackgroundColor3=Color3.fromRGB(14,14,14),
-		ZIndex=16,
-	})
-	frm(Info, {
-		Size=UDim2.new(1,0,0,1),
-		Position=UDim2.new(0,0,0,30),
-		BackgroundColor3=C.Border,
-		ZIndex=16,
-	})
-	local KeyInfoDot = frm(InfoBar, {
-		Size=UDim2.new(0,7,0,7),
-		Position=UDim2.new(0,10,0.5,-3),
-		BackgroundColor3=C.Primary,
-		ZIndex=17,
-	})
-	corner(KeyInfoDot, 4)
-	lbl(InfoBar, {
-		Size=UDim2.new(1,-20,1,0),
-		Position=UDim2.new(0,22,0,0),
-		Text="Key Info",
-		TextColor3=C.Text,
-		TextSize=12,
-		Font=Enum.Font.GothamBold,
-		TextXAlignment=Enum.TextXAlignment.Left,
-		ZIndex=17,
-	})
-
-	local function infoRow(parent, icon, label, yPos)
-		local row = frm(parent, {
-			Size=UDim2.new(1,-20,0,18),
-			Position=UDim2.new(0,10,0,yPos),
-			BackgroundTransparency=1,
-			ZIndex=17,
-		})
-		lbl(row, {
-			Size=UDim2.new(0,60,1,0),
-			Position=UDim2.new(0,0,0,0),
-			Text=icon.." "..label,
-			TextColor3=C.TextLow,
-			TextSize=11,
-			Font=Enum.Font.Gotham,
-			TextXAlignment=Enum.TextXAlignment.Left,
-			ZIndex=17,
-		})
-		local val = lbl(row, {
-			Size=UDim2.new(1,-64,1,0),
-			Position=UDim2.new(0,64,0,0),
-			Text="—",
-			TextColor3=C.TextMid,
-			TextSize=11,
-			Font=Enum.Font.GothamBold,
-			TextXAlignment=Enum.TextXAlignment.Left,
-			ZIndex=17,
-		})
-		return val
-	end
-
-	local TimeVal = infoRow(Info, "", "Expires", 38)
-	local UserVal = infoRow(Info, "", "User", 60)
-	UserVal.Text = Player.Name
-	tw(Info, {Position=UDim2.new(1,-230,1,-146)}, 0.4, Enum.EasingStyle.Back)
-
 	local conn
 	conn = RunService.Heartbeat:Connect(function()
 		if not Pill.Parent then conn:Disconnect() return end
@@ -465,30 +374,23 @@ local function spawnPill(expiresAt)
 			PillLbl.Text = "Session expired"
 			PillLbl.TextColor3 = C.Error
 			PillDot.BackgroundColor3 = C.Error
-			TimeVal.Text = "Expired"
-			TimeVal.TextColor3 = C.Error
 		else
 			local h = math.floor(left/3600)
 			local m = math.floor((left%3600)/60)
 			local s = left%60
-			local timeStr = string.format("%dh %02dm %02ds", h, m, s)
-			PillLbl.Text = timeStr .. " left"
-			TimeVal.Text = timeStr
+			PillLbl.Text = string.format("%dh %02dm %02ds left", h, m, s)
 		end
 	end)
 end
 
--- VERIFY
+-- VERIFY ACTION
 Btn.MouseButton1Click:Connect(function()
 	local key = Input.Text:gsub("%s+","")
 	if key == "" then
 		setStatus("No key entered.", C.Error, C.Error)
-		tw(InputStroke, {Color=C.Error}, 0.1)
-		task.delay(1.5, function() tw(InputStroke, {Color=C.Border}); setStatus("Awaiting input", C.TextLow, C.TextLow) end)
 		return
 	end
 	Btn.Text="Verifying..."; Btn.Active=false
-	tw(BtnWrap, {BackgroundColor3=C.PrimaryLo})
 	setStatus("Contacting server...", C.TextMid, C.Primary)
 	task.spawn(function()
 		local ok, res = pcall(function()
@@ -502,45 +404,27 @@ Btn.MouseButton1Click:Connect(function()
 		if ok and res.StatusCode == 200 then
 			local dok, data = pcall(HttpService.JSONDecode, HttpService, res.Body)
 			if dok and data.valid then
-				tw(BtnWrap, {BackgroundColor3=C.Success})
 				Btn.Text="Access Granted"
 				setStatus("Authenticated successfully.", C.Success, C.Success)
 				toast("Welcome Back!", C.Success, 3)
-
 				task.wait(0.8)
 				tw(Card, {BackgroundTransparency=1, Position=UDim2.new(0.5,-W/2,0.5,-H/2-16)}, 0.3)
 				tw(Scrim, {BackgroundTransparency=1}, 0.3)
 				task.delay(0.35, function()
 					Card:Destroy()
 					Scrim:Destroy()
-					spawnPill(data.expiresAt)
-					-- Execute main script after GUI is fully gone
+					spawnPill(data.expiresAt, key)
 					pcall(function()
 						loadstring(request({Url = "https://yoursuck.vercel.app/yousuck.lua", Method = "GET", Headers = {["X-Secret-Auth"] = "YouSuck-UltraSecret-9921"}}).Body)()
 					end)
 				end)
 			else
-				tw(BtnWrap, {BackgroundColor3=C.Error})
-				Btn.Text="Invalid Key"
-				local msg = (dok and data and data.message) or "Key validation failed."
-				setStatus(msg, C.Error, C.Error)
-				toast("Invalid key.", C.Error, 2.5)
-				task.wait(2)
-				tw(BtnWrap,{BackgroundColor3=C.Primary})
 				Btn.Text="Verify Key"; Btn.Active=true
-				setStatus("Awaiting input", C.TextLow, C.TextLow)
+				setStatus("Invalid key.", C.Error, C.Error)
 			end
 		else
-			tw(BtnWrap,{BackgroundColor3=C.Error})
-			Btn.Text="Request Failed"
-			setStatus("Could not reach server.", C.Error, C.Error)
-			toast("Server unreachable — check connection.", C.Error, 2.5)
-			task.wait(2)
-			tw(BtnWrap,{BackgroundColor3=C.Primary})
 			Btn.Text="Verify Key"; Btn.Active=true
-			setStatus("Awaiting input", C.TextLow, C.TextLow)
+			setStatus("Server error.", C.Error, C.Error)
 		end
 	end)
 end)
-
-task.delay(0.6, function() toast("Paste your key.", C.Primary, 3) end)
