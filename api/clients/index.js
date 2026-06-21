@@ -1,9 +1,8 @@
-﻿import { NextResponse } from 'next/server';
+﻿let activeClients = [];
 
-let activeClients = [];
-
-export default async function handler(req, res) {
+export default function handler(req, res) {
   if (req.method === 'GET') {
+    // Clean old clients (5 minutes timeout)
     activeClients = activeClients.filter(c => Date.now() - (c.lastHeartbeat || 0) < 300000);
     return res.status(200).json(activeClients);
   }
@@ -35,7 +34,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     } catch (e) {
       console.error(e);
-      return res.status(500).json({ success: false });
+      return res.status(500).json({ success: false, error: e.message });
     }
   }
 
