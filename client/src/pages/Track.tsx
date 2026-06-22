@@ -48,6 +48,9 @@ export default function Track() {
   const [allGames, setAllGames] = useState<Record<string, string>>({});
   const [gamesLoading, setGamesLoading] = useState(false);
 
+  // Real-time uptime update for all clients
+  const [clientUptimes, setClientUptimes] = useState<Record<string, number>>({});
+
   const fetchGames = async () => {
     setGamesLoading(true);
     try {
@@ -89,15 +92,29 @@ export default function Track() {
         if (res.ok) {
           const data: Client[] = await res.json();
           setClients(data);
+          
+          // Initialize/Update real-time uptimes
+          const newUptimes: Record<string, number> = {};
+          data.forEach(c => {
+            newUptimes[c.id] = c.uptime || 0;
+          });
+          setClientUptimes(prev => ({...prev, ...newUptimes}));
+
           setHistoricalClients(prev => [...prev, ...data.filter(c => !prev.find(h => h.id === c.id))]);
         }
       } catch (e) { 
         console.error(e); 
         if (clients.length === 0) {
-          setClients([
+          const mockData: Client[] = [
             { id: "1", name: "PlayerOne", place: "Paint or Die", placeId: "123456789", av: "", avc: "av-green", robloxId: "123", uptime: 1240 },
             { id: "2", name: "NoobSlayer", place: "Merge a Nuke", placeId: "987654321", av: "", avc: "av-blue", robloxId: "456", uptime: 4560 },
-          ]);
+          ];
+          setClients(mockData);
+          const newUptimes: Record<string, number> = {};
+          mockData.forEach(c => {
+            newUptimes[c.id] = c.uptime || 0;
+          });
+          setClientUptimes(newUptimes);
         }
       } finally { 
         setLoading(false); 
@@ -106,6 +123,20 @@ export default function Track() {
     fetchClients();
     const interval = setInterval(fetchClients, 3000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Real-time timer effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setClientUptimes(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(id => {
+          next[id] += 1;
+        });
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -220,8 +251,7 @@ export default function Track() {
                           alt="Game Icon"
                           style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.display = "none";
-                            e.currentTarget.parentElement!.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;">🎮</div>';
+                            (e.currentTarget as HTMLImageElement).src = `https://www.roblox.com/asset-thumbnail/image?assetId=${gameId}&width=150&height=150&format=png`;
                           }}
                         />
                       </div>
@@ -283,14 +313,20 @@ export default function Track() {
                     )}
                     {filteredClients.map((c) => (
                       <div className="client-row" key={c.id} onClick={() => selectClient(c)}>
-                        <div className={`client-avatar ${c.avc || "av-green"}`}>
-                          {c.robloxId && (
+                        <div className="client-avatar" style={{ background: "transparent", border: "none" }}>
+                          {c.robloxId ? (
                             <img 
                               src={`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${c.robloxId}&size=150x150&format=Png&isCircular=false`} 
                               alt="" 
                               style={{width:"100%", height:"100%", borderRadius:"50%"}} 
-                              onError={e => (e.currentTarget as HTMLImageElement).style.display='none'} 
+                              onError={e => {
+                                (e.currentTarget as HTMLImageElement).src = `https://www.roblox.com/headshot-thumbnail/image?userId=${c.robloxId}&width=150&height=150&format=png`;
+                              }} 
                             />
+                          ) : (
+                            <div style={{width:"100%", height:"100%", borderRadius:"50%", background:"var(--bg-tertiary)", display:"flex", alignItems:"center", justifyContent:"center"}}>
+                              <i className="ti ti-user" style={{fontSize:"24px"}}></i>
+                            </div>
                           )}
                         </div>
                         <div className="client-row-meta">
@@ -298,7 +334,7 @@ export default function Track() {
                           <div className="client-row-sub">{c.place}</div>
                         </div>
                         <div style={{ marginLeft: "auto", textAlign: "right" }}>
-                          <div style={{ fontSize: "13px", color: "#4ade80" }}>{formatUptime(c.uptime || 0)}</div>
+                          <div style={{ fontSize: "13px", color: "#4ade80" }}>{formatUptime(clientUptimes[c.id] || c.uptime || 0)}</div>
                         </div>
                         <i className="ti ti-chevron-right"></i>
                       </div>
@@ -336,8 +372,7 @@ export default function Track() {
                         alt="Game Icon"
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = "none";
-                          e.currentTarget.parentElement!.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:42px;">🎮</div>';
+                          (e.currentTarget as HTMLImageElement).src = `https://www.roblox.com/asset-thumbnail/image?assetId=${selectedClient.placeId}&width=150&height=150&format=png`;
                         }}
                       />
                     </div>
@@ -357,23 +392,26 @@ export default function Track() {
                         <div style={{ fontSize: "21px", fontWeight: "600" }}>{selectedClient.name}</div>
                       </div>
                       <div>
-                        <div style={{ color: "var(--text-tertiary)", fontSize: "13px" }}>PLAY TIME</div>
+                        <div style={{ color: "var(--text-tertiary)", fontSize: "13px" }}>UPTIME</div>
                         <div style={{ fontSize: "21px", fontWeight: "600", color: "#4ade80" }}>
-                          {formatUptime(selectedClient.uptime || 0)}
+                          {formatUptime(clientUptimes[selectedClient.id] || selectedClient.uptime || 0)}
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
 
-          {/* Other views placeholder */}
-          {!inClientMode && (homeView === "server" || homeView === "logs") && (
-            <div className="view active" style={{ padding: "40px", textAlign: "center", color: "var(--text-secondary)" }}>
-              <h2>{homeView === "server" ? "Server Status" : "Logs"}</h2>
-              <p style={{ marginTop: "20px" }}>Coming soon</p>
+                <div style={{ marginTop: "40px", paddingTop: "32px", borderTop: "1px solid var(--border)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                   <div className="stat-card">
+                      <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>EXECUTOR</div>
+                      <div style={{ fontSize: "16px", fontWeight: "500" }}>{selectedClient.executor || "Unknown"}</div>
+                   </div>
+                   <div className="stat-card">
+                      <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>ROBLOX ID</div>
+                      <div style={{ fontSize: "16px", fontWeight: "500" }}>{selectedClient.robloxId || "N/A"}</div>
+                   </div>
+                </div>
+              </div>
             </div>
           )}
         </main>
