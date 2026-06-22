@@ -263,4 +263,61 @@
 .test-btn{display:inline-flex;align-items:center;gap:6px;background:var(--bg-secondary);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:7px 14px;font-size:12px;cursor:pointer;color:var(--text-primary);font-family:var(--font-sans);transition:background 0.1s;margin-top:4px}
 .test-btn:hover{background:var(--bg-tertiary)}
 .test-btn i{font-size:14px}
-.footer-actions{display:flex;align-items:center;gap:6px}
+.footer-actions{display:flex;align-items:center;gap:6px}/* ── Game History ── */
+.history-list { margin-top: 12px; }
+.history-item {
+  padding: 16px 18px;
+  background: var(--bg-primary);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.history-item:hover {
+  background: var(--bg-success);
+  border-color: var(--text-success);
+  transform: translateX(4px);
+}
+.history-game { font-size: 15px; font-weight: 600; }
+.history-dot { color: var(--text-tertiary); margin: 0 8px; }
+.history-timeago { color: var(--text-secondary); }
+.history-playtime { color: var(--text-success); margin-top: 6px; font-size: 13px; }
+.total-play { color: var(--text-tertiary); font-size: 12.5px; }
+
+/* ── Timeline Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-content {
+  background: var(--bg-primary); border: 1px solid var(--border-md);
+  border-radius: var(--radius-lg); padding: 32px; width: 90%; max-width: 820px;
+  position: relative; max-height: 92vh; overflow-y: auto;
+}
+.modal-close {
+  position: absolute; top: 20px; right: 24px; font-size: 28px;
+  cursor: pointer; color: var(--text-tertiary); background: none; border: none;
+}
+.modal-title { font-size: 22px; font-weight: 600; margin: 0 0 4px 0; }
+.modal-subtitle { color: var(--text-secondary); margin-bottom: 24px; }
+
+.timeline-graph { margin: 24px 0 32px; }
+.hour-cards { display: flex; gap: 12px; flex-wrap: wrap; }
+.hour-card {
+  background: var(--bg-secondary); border: 0.5px solid var(--border);
+  border-radius: var(--radius-md); padding: 14px 16px; min-width: 148px;
+  transition: all 0.2s;
+}
+.hour-card:hover { border-color: var(--text-success); transform: translateY(-2px); }
+.hour-time { font-size: 13px; color: var(--text-tertiary); font-family: var(--font-mono); }
+.hour-activity { font-size: 15px; font-weight: 600; color: var(--text-success); margin: 4px 0; }
+.hour-detail { font-size: 12px; color: var(--text-secondary); }
+
+/* Clear button */
+.clear-btn {
+  background: var(--bg-danger); color: var(--text-danger);
+  border: 0.5px solid rgba(224,104,104,0.3); padding: 6px 14px;
+  border-radius: var(--radius-sm); font-size: 12px; cursor: pointer;
+}
+.clear-btn:hover { opacity: 0.9; }
