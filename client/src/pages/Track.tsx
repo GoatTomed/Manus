@@ -38,9 +38,7 @@ function RobloxAvatar({ robloxId }: { robloxId: string }) {
 
   useEffect(() => {
     if (!robloxId) return;
-    fetch(
-      `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${robloxId}&size=150x150&format=Png&isCircular=false`
-    )
+    fetch(`/api/roblox-avatar?userId=${robloxId}`)
       .then((r) => r.json())
       .then((data) => {
         const imageUrl = data?.data?.[0]?.imageUrl;
@@ -72,6 +70,36 @@ function RobloxAvatar({ robloxId }: { robloxId: string }) {
       }}
     >
       <i className="ti ti-user" style={{ fontSize: "24px" }}></i>
+    </div>
+  );
+}
+
+function GameIcon({ placeId, size = 72 }: { placeId: string; size?: number }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!placeId) return;
+    fetch(`/api/roblox-gameicon?placeId=${placeId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const imageUrl = data?.data?.[0]?.imageUrl;
+        if (imageUrl) setUrl(imageUrl);
+      })
+      .catch(() => {});
+  }, [placeId]);
+
+  return (
+    <div style={{
+      width: `${size}px`, height: `${size}px`,
+      borderRadius: size > 80 ? "14px" : "12px",
+      overflow: "hidden", border: "2px solid var(--border)",
+      flexShrink: 0, background: "#1f1f28",
+      display: "flex", alignItems: "center", justifyContent: "center"
+    }}>
+      {url
+        ? <img src={url} alt="Game Icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        : <i className="ti ti-device-gamepad" style={{ fontSize: "24px", color: "var(--text-tertiary)" }}></i>
+      }
     </div>
   );
 }
@@ -278,28 +306,7 @@ export default function Track() {
                       alignItems: "center",
                       gap: "20px"
                     }}>
-                      {/* FIX 2: Game icon — hide the img if it fails, no broken fallback URL */}
-                      <div style={{
-                        width: "72px",
-                        height: "72px",
-                        borderRadius: "12px",
-                        overflow: "hidden",
-                        border: "2px solid var(--border)",
-                        flexShrink: 0,
-                        background: "#1f1f28",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}>
-                        <img
-                          src={`https://thumbnails.roblox.com/v1/places/gameicons?placeIds=${gameId}&size=150x150&format=Png&isCircular=false`}
-                          alt="Game Icon"
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.display = "none";
-                          }}
-                        />
-                      </div>
+                      <GameIcon placeId={gameId} size={72} />
 
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: "17px", fontWeight: "600" }}>Game ID: <strong>{gameId}</strong></div>
@@ -397,30 +404,8 @@ export default function Track() {
                 margin: "0 auto"
               }}>
                 <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
-                  {/* FIX 2 applied: game icon hides on error instead of using broken fallback */}
-                  {selectedClient.placeId && (
-                    <div style={{
-                      width: "120px",
-                      height: "120px",
-                      borderRadius: "14px",
-                      overflow: "hidden",
-                      border: "2px solid var(--border)",
-                      flexShrink: 0,
-                      background: "#1f1f28",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center"
-                    }}>
-                      <img
-                        src={`https://thumbnails.roblox.com/v1/places/gameicons?placeIds=${selectedClient.placeId}&size=150x150&format=Png&isCircular=false`}
-                        alt="Game Icon"
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                    </div>
-                  )}
+                  {/* FIX 2 applied: game icon via proxy */}
+                  {selectedClient.placeId && <GameIcon placeId={selectedClient.placeId} size={120} />}
 
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "24px", fontWeight: "600", marginBottom: "6px" }}>
