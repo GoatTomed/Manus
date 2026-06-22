@@ -32,6 +32,50 @@ function formatUptime(seconds: number) {
   return `${h}:${m}:${s}`;
 }
 
+// FIX 1: Fetches the JSON from Roblox thumbnails API, then uses the real CDN image URL as src
+function RobloxAvatar({ robloxId }: { robloxId: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!robloxId) return;
+    fetch(
+      `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${robloxId}&size=150x150&format=Png&isCircular=false`
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        const imageUrl = data?.data?.[0]?.imageUrl;
+        if (imageUrl) setUrl(imageUrl);
+      })
+      .catch(() => {});
+  }, [robloxId]);
+
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt=""
+        style={{ width: "100%", height: "100%", borderRadius: "50%" }}
+      />
+    );
+  }
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        borderRadius: "50%",
+        background: "var(--bg-tertiary)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <i className="ti ti-user" style={{ fontSize: "24px" }}></i>
+    </div>
+  );
+}
+
 export default function Track() {
   const [inClientMode, setInClientMode] = useState(false);
   const [homeView, setHomeView] = useState<HomeView>("clients");
@@ -48,7 +92,6 @@ export default function Track() {
   const [allGames, setAllGames] = useState<Record<string, string>>({});
   const [gamesLoading, setGamesLoading] = useState(false);
 
-  // Real-time uptime update for all clients
   const [clientUptimes, setClientUptimes] = useState<Record<string, number>>({});
 
   const fetchGames = async () => {
@@ -67,15 +110,14 @@ export default function Track() {
         }
         setAllGames(parsed);
       }
-    } catch (e) { 
-      console.error(e); 
-      // Fallback
+    } catch (e) {
+      console.error(e);
       setAllGames({
         "123456789": "https://example.com/script1.lua",
         "987654321": "https://example.com/script2.lua"
       });
-    } finally { 
-      setGamesLoading(false); 
+    } finally {
+      setGamesLoading(false);
     }
   };
 
@@ -92,18 +134,20 @@ export default function Track() {
         if (res.ok) {
           const data: Client[] = await res.json();
           setClients(data);
-          
-          // Initialize/Update real-time uptimes
+
           const newUptimes: Record<string, number> = {};
           data.forEach(c => {
             newUptimes[c.id] = c.uptime || 0;
           });
-          setClientUptimes(prev => ({...prev, ...newUptimes}));
+          setClientUptimes(prev => ({ ...prev, ...newUptimes }));
 
-          setHistoricalClients(prev => [...prev, ...data.filter(c => !prev.find(h => h.id === c.id))]);
+          setHistoricalClients(prev => [
+            ...prev,
+            ...data.filter(c => !prev.find(h => h.id === c.id))
+          ]);
         }
-      } catch (e) { 
-        console.error(e); 
+      } catch (e) {
+        console.error(e);
         if (clients.length === 0) {
           const mockData: Client[] = [
             { id: "1", name: "PlayerOne", place: "Paint or Die", placeId: "123456789", av: "", avc: "av-green", robloxId: "123", uptime: 1240 },
@@ -116,8 +160,8 @@ export default function Track() {
           });
           setClientUptimes(newUptimes);
         }
-      } finally { 
-        setLoading(false); 
+      } finally {
+        setLoading(false);
       }
     };
     fetchClients();
@@ -125,14 +169,11 @@ export default function Track() {
     return () => clearInterval(interval);
   }, []);
 
-  // Real-time timer effect
   useEffect(() => {
     const timer = setInterval(() => {
       setClientUptimes(prev => {
         const next = { ...prev };
-        Object.keys(next).forEach(id => {
-          next[id] += 1;
-        });
+        Object.keys(next).forEach(id => { next[id] += 1; });
         return next;
       });
     }, 1000);
@@ -152,10 +193,11 @@ export default function Track() {
   }, []);
 
   const [clientQuery, setClientQuery] = useState("");
-  const filteredClients = useMemo(() => clients.filter(c => 
-    c.name.toLowerCase().includes(clientQuery.toLowerCase()) || 
-    c.place?.toLowerCase().includes(clientQuery.toLowerCase())
-  ), [clients, clientQuery]);
+  const filteredClients = useMemo(() =>
+    clients.filter(c =>
+      c.name.toLowerCase().includes(clientQuery.toLowerCase()) ||
+      c.place?.toLowerCase().includes(clientQuery.toLowerCase())
+    ), [clients, clientQuery]);
 
   function selectClient(c: Client) {
     setSelectedClient(c);
@@ -168,8 +210,8 @@ export default function Track() {
     setHomeView("clients");
   }
 
-  const topbarLabel = inClientMode 
-    ? (selectedClient?.name || "Client") 
+  const topbarLabel = inClientMode
+    ? (selectedClient?.name || "Client")
     : homeNav.find(n => n.id === homeView)?.label ?? "";
 
   return (
@@ -189,12 +231,12 @@ export default function Track() {
         <aside className="sidebar">
           <nav className="sidebar-nav">
             {homeNav.map((n) => (
-              <button 
-                key={n.id} 
+              <button
+                key={n.id}
                 className={`sidebar-item ${homeView === n.id && !inClientMode ? "active" : ""}`}
-                onClick={() => { 
-                  setHomeView(n.id); 
-                  setInClientMode(false); 
+                onClick={() => {
+                  setHomeView(n.id);
+                  setInClientMode(false);
                 }}
               >
                 <i className={`ti ${n.icon}`}></i>
@@ -211,7 +253,7 @@ export default function Track() {
         </aside>
 
         <main className="main-content">
-          {/* SCRIPTS PAGE - WITH GAME THUMBNAILS */}
+          {/* SCRIPTS PAGE */}
           {!inClientMode && homeView === "scripts" && (
             <div className="view active" style={{ padding: "32px" }}>
               <div className="scripts-header">
@@ -236,7 +278,7 @@ export default function Track() {
                       alignItems: "center",
                       gap: "20px"
                     }}>
-                      {/* GAME THUMBNAIL */}
+                      {/* FIX 2: Game icon — hide the img if it fails, no broken fallback URL */}
                       <div style={{
                         width: "72px",
                         height: "72px",
@@ -244,14 +286,17 @@ export default function Track() {
                         overflow: "hidden",
                         border: "2px solid var(--border)",
                         flexShrink: 0,
-                        background: "#1f1f28"
+                        background: "#1f1f28",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
                       }}>
                         <img
                           src={`https://thumbnails.roblox.com/v1/places/gameicons?placeIds=${gameId}&size=150x150&format=Png&isCircular=false`}
                           alt="Game Icon"
                           style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = `https://www.roblox.com/asset-thumbnail/image?assetId=${gameId}&width=150&height=150&format=png`;
+                            (e.currentTarget as HTMLImageElement).style.display = "none";
                           }}
                         />
                       </div>
@@ -297,11 +342,11 @@ export default function Track() {
 
                   <div className="search-field">
                     <i className="ti ti-search"></i>
-                    <input 
-                      type="text" 
-                      placeholder="Search clients..." 
-                      value={clientQuery} 
-                      onChange={(e) => setClientQuery(e.target.value)} 
+                    <input
+                      type="text"
+                      placeholder="Search clients..."
+                      value={clientQuery}
+                      onChange={(e) => setClientQuery(e.target.value)}
                     />
                   </div>
 
@@ -313,21 +358,16 @@ export default function Track() {
                     )}
                     {filteredClients.map((c) => (
                       <div className="client-row" key={c.id} onClick={() => selectClient(c)}>
+                        {/* FIX 1 applied: RobloxAvatar fetches JSON then uses real CDN image URL */}
                         <div className="client-avatar" style={{ background: "transparent", border: "none" }}>
-                          {c.robloxId ? (
-                            <img 
-                              src={`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${c.robloxId}&size=150x150&format=Png&isCircular=false`} 
-                              alt="" 
-                              style={{width:"100%", height:"100%", borderRadius:"50%"}} 
-                              onError={e => {
-                                (e.currentTarget as HTMLImageElement).src = `https://www.roblox.com/headshot-thumbnail/image?userId=${c.robloxId}&width=150&height=150&format=png`;
-                              }} 
-                            />
-                          ) : (
-                            <div style={{width:"100%", height:"100%", borderRadius:"50%", background:"var(--bg-tertiary)", display:"flex", alignItems:"center", justifyContent:"center"}}>
-                              <i className="ti ti-user" style={{fontSize:"24px"}}></i>
-                            </div>
-                          )}
+                          {c.robloxId
+                            ? <RobloxAvatar robloxId={c.robloxId} />
+                            : (
+                              <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "var(--bg-tertiary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <i className="ti ti-user" style={{ fontSize: "24px" }}></i>
+                              </div>
+                            )
+                          }
                         </div>
                         <div className="client-row-meta">
                           <div className="client-row-name">{c.name}</div>
@@ -357,6 +397,7 @@ export default function Track() {
                 margin: "0 auto"
               }}>
                 <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
+                  {/* FIX 2 applied: game icon hides on error instead of using broken fallback */}
                   {selectedClient.placeId && (
                     <div style={{
                       width: "120px",
@@ -365,14 +406,17 @@ export default function Track() {
                       overflow: "hidden",
                       border: "2px solid var(--border)",
                       flexShrink: 0,
-                      background: "#1f1f28"
+                      background: "#1f1f28",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
                     }}>
                       <img
                         src={`https://thumbnails.roblox.com/v1/places/gameicons?placeIds=${selectedClient.placeId}&size=150x150&format=Png&isCircular=false`}
                         alt="Game Icon"
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = `https://www.roblox.com/asset-thumbnail/image?assetId=${selectedClient.placeId}&width=150&height=150&format=png`;
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
                         }}
                       />
                     </div>
@@ -402,14 +446,14 @@ export default function Track() {
                 </div>
 
                 <div style={{ marginTop: "40px", paddingTop: "32px", borderTop: "1px solid var(--border)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-                   <div className="stat-card">
-                      <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>EXECUTOR</div>
-                      <div style={{ fontSize: "16px", fontWeight: "500" }}>{selectedClient.executor || "Unknown"}</div>
-                   </div>
-                   <div className="stat-card">
-                      <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>ROBLOX ID</div>
-                      <div style={{ fontSize: "16px", fontWeight: "500" }}>{selectedClient.robloxId || "N/A"}</div>
-                   </div>
+                  <div className="stat-card">
+                    <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>EXECUTOR</div>
+                    <div style={{ fontSize: "16px", fontWeight: "500" }}>{selectedClient.executor || "Unknown"}</div>
+                  </div>
+                  <div className="stat-card">
+                    <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>ROBLOX ID</div>
+                    <div style={{ fontSize: "16px", fontWeight: "500" }}>{selectedClient.robloxId || "N/A"}</div>
+                  </div>
                 </div>
               </div>
             </div>
