@@ -394,50 +394,47 @@ export default function Track() {
 
           {/* CLIENT OVERVIEW */}
           {inClientMode && selectedClient && clientView === "overview" && (
-            <div className="view active" style={{ padding: "50px 40px" }}>
+            <div className="view active" style={{ padding: "32px 40px" }}>
               <div style={{
                 background: "var(--bg-primary)",
                 border: "1px solid var(--border)",
                 borderRadius: "18px",
-                padding: "36px",
-                maxWidth: "760px",
+                padding: "40px",
+                maxWidth: "100%",
                 margin: "0 auto"
               }}>
-                <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
-                  {/* FIX 2 applied: game icon via proxy */}
-                  {selectedClient.placeId && <GameIcon placeId={selectedClient.placeId} size={120} />}
+                {/* TOP BANNER with game icon + info */}
+                <div style={{ display: "flex", gap: "40px", alignItems: "flex-start" }}>
+                  {selectedClient.placeId && <GameIcon placeId={selectedClient.placeId} size={160} />}
 
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "24px", fontWeight: "600", marginBottom: "6px" }}>
+                    <div style={{ fontSize: "28px", fontWeight: "700", marginBottom: "6px" }}>
                       {selectedClient.place || "Unknown Game"}
                     </div>
-                    <div style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>
+                    <div style={{ color: "var(--text-secondary)", marginBottom: "28px", fontSize: "14px" }}>
                       Game ID: <strong>{selectedClient.placeId}</strong>
                     </div>
 
-                    <div style={{ display: "flex", gap: "50px" }}>
+                    <div style={{ display: "flex", gap: "60px" }}>
                       <div>
-                        <div style={{ color: "var(--text-tertiary)", fontSize: "13px" }}>PLAYER</div>
-                        <div style={{ fontSize: "21px", fontWeight: "600" }}>{selectedClient.name}</div>
+                        <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>PLAYER</div>
+                        <div style={{ fontSize: "22px", fontWeight: "600" }}>{selectedClient.name}</div>
                       </div>
                       <div>
-                        <div style={{ color: "var(--text-tertiary)", fontSize: "13px" }}>UPTIME</div>
-                        <div style={{ fontSize: "21px", fontWeight: "600", color: "#4ade80" }}>
+                        <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>UPTIME</div>
+                        <div style={{ fontSize: "22px", fontWeight: "600", color: "#4ade80" }}>
                           {formatUptime(clientUptimes[selectedClient.id] || selectedClient.uptime || 0)}
                         </div>
                       </div>
+                      <div>
+                        <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>EXECUTOR</div>
+                        <div style={{ fontSize: "22px", fontWeight: "600" }}>{selectedClient.executor || "Unknown"}</div>
+                      </div>
+                      <div>
+                        <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>ROBLOX ID</div>
+                        <div style={{ fontSize: "22px", fontWeight: "600" }}>{selectedClient.robloxId || "N/A"}</div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                <div style={{ marginTop: "40px", paddingTop: "32px", borderTop: "1px solid var(--border)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-                  <div className="stat-card">
-                    <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>EXECUTOR</div>
-                    <div style={{ fontSize: "16px", fontWeight: "500" }}>{selectedClient.executor || "Unknown"}</div>
-                  </div>
-                  <div className="stat-card">
-                    <div style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "4px" }}>ROBLOX ID</div>
-                    <div style={{ fontSize: "16px", fontWeight: "500" }}>{selectedClient.robloxId || "N/A"}</div>
                   </div>
                 </div>
               </div>
