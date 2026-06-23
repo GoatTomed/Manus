@@ -736,6 +736,16 @@ app.post("/api/heartbeat", async (req: any, res: any) => {
       });
 
     if (error) throw error;
+
+    // Log the connection
+    await supabase.from("connection_logs").insert({
+      roblox_id: String(robloxId),
+      roblox_name: robloxName,
+      place_id: String(gameId),
+      place_name: gameName,
+      executor: req.body.executor || "Unknown",
+    });
+
     res.json({ success: true });
   } catch (error: any) {
     console.error("Heartbeat error:", error);
@@ -796,7 +806,25 @@ app.get("/api/roblox-gameicon", async (req, res) => {
 });
 
 
+
+app.get("/api/connection-logs", async (req: any, res: any) => {
+  try {
+    const { data, error } = await supabase
+      .from("connection_logs")
+      .select("*")
+      .order("connected_at", { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
+
 export default app;
+
+
 
 
 
