@@ -784,7 +784,20 @@ app.get("/api/roblox-gameicon", async (req, res) => {
 });
 
 
+
+app.get("/api/roblox-gameicon", async (req, res) => {
+  try {
+    const { placeId } = req.query;
+    if (!placeId) return res.status(400).json({ error: 'No placeId' });
+    const response = await fetch('https://thumbnails.roblox.com/v1/places/gameicons?placeIds=' + placeId + '&size=150x150&format=Png&isCircular=false');
+    const data = await response.json();
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: 'Internal Error' }); }
+});
+
+
 export default app;
+
 
 
 
