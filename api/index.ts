@@ -822,7 +822,39 @@ app.get("/api/connection-logs", async (req: any, res: any) => {
 });
 
 
+
+app.get("/api/keys", async (req: any, res: any) => {
+  try {
+    const { data, error } = await supabase
+      .from("keys")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
+
+
+app.get("/api/keys", async (req: any, res: any) => {
+  try {
+    const { data, error } = await supabase
+      .from("keys")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ error: "Internal Error" });
+  }
+});
+
+
 export default app;
+
+
 
 
 
