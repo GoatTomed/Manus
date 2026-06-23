@@ -817,12 +817,8 @@ app.get("/api/connection-logs", async (req: any, res: any) => {
     if (error) throw error;
     res.json(data);
   } catch (e: any) {
-    res.status(500).json({ error: "Internal Error" });
-  }
-});
-
-
-
+    res.status(500).json({ error: e?.message || "Internal Error" });
+  }});
 app.get("/api/keys", async (req: any, res: any) => {
   try {
     const { data, error } = await supabase
@@ -832,12 +828,8 @@ app.get("/api/keys", async (req: any, res: any) => {
     if (error) throw error;
     res.json(data);
   } catch (e: any) {
-    res.status(500).json({ error: "Internal Error" });
-  }
-});
-
-
-
+    res.status(500).json({ error: e?.message || "Internal Error" });
+  }});
 app.get("/api/keys", async (req: any, res: any) => {
   try {
     const { data, error } = await supabase
@@ -853,6 +845,7 @@ app.get("/api/keys", async (req: any, res: any) => {
 
 
 export default app;
+
 
 
 
