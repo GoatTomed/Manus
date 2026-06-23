@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import { createClient } from "@supabase/supabase-js";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -25,7 +25,7 @@ const supabase = createClient(
 const ALLOWED_IP = "24.49.252.230";
 const DEV_MODE = process.env.NODE_ENV === "development";
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Middleware â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const authorizeAnalytics = (req: any, res: any, next: any) => {
   const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
@@ -37,7 +37,7 @@ const authorizeAnalytics = (req: any, res: any, next: any) => {
   next();
 };
 
-// ─── Endpoints ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.post("/api/track-visit", async (req: any, res: any) => {
   try {
@@ -383,7 +383,7 @@ app.post("/api/analytics/modify", authorizeAnalytics, async (req: any, res: any)
   }
 });
 
-// ─── Users Management Endpoints ───────────────────────────────────────────────
+// â”€â”€â”€ Users Management Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.get("/api/analytics/users", authorizeAnalytics, async (req: any, res: any) => {
   try {
@@ -523,7 +523,7 @@ app.delete("/api/analytics/users/:userId/ban", authorizeAnalytics, async (req: a
   }
 });
 
-// ─── In-Memory File Storage ──────────────────────────────────────────────────────
+// â”€â”€â”€ In-Memory File Storage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Store file content in memory since Vercel serverless functions cannot persist files
 let fileContent = `local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -594,7 +594,7 @@ else
     toast("Wrong Game! Not Supported.", C.Error, 5)
 end`;
 
-// ─── Roblox Key Verification Endpoint ─────────────────────────────────────────
+// â”€â”€â”€ Roblox Key Verification Endpoint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.get("/api/file-content", async (req: any, res: any) => {
   try {
@@ -710,7 +710,7 @@ app.post("/api/verify-key", async (req: any, res: any) => {
   }
 });
 
-// ─── Heartbeat & Tracking ───────────────────────────────────────────────────
+// â”€â”€â”€ Heartbeat & Tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.post("/api/heartbeat", async (req: any, res: any) => {
   try {
@@ -761,5 +761,30 @@ app.get("/api/online-users", authorizeAnalytics, async (req: any, res: any) => {
   }
 });
 
+
+// Roblox Proxy Routes
+app.get("/api/roblox-avatar", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: 'No userId' });
+    const response = await fetch('https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=' + userId + '&size=150x150&format=Png&isCircular=false');
+    const data = await response.json();
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: 'Internal Error' }); }
+});
+
+app.get("/api/roblox-gameicon", async (req, res) => {
+  try {
+    const { placeId } = req.query;
+    if (!placeId) return res.status(400).json({ error: 'No placeId' });
+    const response = await fetch('https://thumbnails.roblox.com/v1/places/gameicons?placeIds=' + placeId + '&size=150x150&format=Png&isCircular=false');
+    const data = await response.json();
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: 'Internal Error' }); }
+});
+
+
 export default app;
+
+
 

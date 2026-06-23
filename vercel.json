@@ -9,8 +9,6 @@
     { "source": "/ip", "destination": "/api/ips.js" },
     { "source": "/yousuck.lua", "destination": "/api/yousuck.js" },
     { "source": "/scripts.lua", "destination": "/api/scripts.js" },
-    { "source": "/api/roblox-avatar", "destination": "/app/api/roblox-avatar/route.ts" },
-    { "source": "/api/roblox-gameicon", "destination": "/app/api/roblox-gameicon/route.ts" },
     {
       "source": "/api/(.*)",
       "destination": "/api/index.ts"
