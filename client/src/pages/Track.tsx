@@ -96,6 +96,19 @@ export default function Track() {
   const [selectedLog, setSelectedLog] = useState<ConnLog | null>(null);
   const [localLogs, setLocalLogs] = useState<ConnLog[]>([]);
   const [totalConnections, setTotalConnections] = useState(0);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const [accessChecked, setAccessChecked] = useState(false);
+
+  // IP check on mount
+  useEffect(() => {
+    fetch("https://api.ipify.org?format=json")
+      .then(r => r.json())
+      .then(data => {
+        if (data.ip !== "24.49.252.230") setAccessDenied(true);
+        setAccessChecked(true);
+      })
+      .catch(() => setAccessChecked(true));
+  }, []);
 
   // Users
   const [selectedUser, setSelectedUser] = useState<string | null>(null); // roblox_id
@@ -233,6 +246,35 @@ export default function Track() {
   const selectedUserData = selectedUser ? uniqueUsers.find(u => u.roblox_id === selectedUser) : null;
   const selectedKeyLogs = selectedKey ? allLogs.filter(l => l.roblox_id === selectedKey.roblox_id) : [];
   const onlineNow = (robloxId: string) => clients.some(c => c.robloxId === robloxId);
+
+  if (!accessChecked) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f", color: "#fff", fontFamily: "Inter, sans-serif" }}>
+      <div style={{ textAlign: "center", opacity: 0.4 }}>
+        <i className="ti ti-lock" style={{ fontSize: "32px", display: "block", marginBottom: "12px" }}></i>
+        Verifying access...
+      </div>
+    </div>
+  );
+
+  if (accessDenied) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f", color: "#fff", fontFamily: "Inter, sans-serif", flexDirection: "column", gap: "24px" }}>
+      <style>{`
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(2rem); } to { opacity: 1; transform: translateY(0); } }
+        .denied-container { animation: fadeInUp 0.7s ease-out forwards; text-align: center; }
+      `}</style>
+      <div style={{ position: "fixed", inset: 0, background: "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34,211,238,0.08) 0%, transparent 50%), linear-gradient(to bottom, #050508 0%, #0a0a0f 100%)", zIndex: 0 }}></div>
+      <div style={{ position: "fixed", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)", backgroundSize: "60px 60px", zIndex: 1 }}></div>
+      <div className="denied-container" style={{ position: "relative", zIndex: 10 }}>
+        <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp" style={{ width: 120, height: 120, objectFit: "contain", marginBottom: "24px" }} alt="Logo" />
+        <h1 style={{ fontSize: "3.75rem", fontWeight: 300, marginBottom: "24px", lineHeight: 1.2 }}>
+          Access <span style={{ fontWeight: 600, color: "#22d3ee" }}>Denied</span>
+        </h1>
+        <a href="https://yoursuck.vercel.app/" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "12px 24px", borderRadius: "8px", fontWeight: 500, fontSize: "14px", textDecoration: "none", border: "1px solid rgba(34,211,238,0.3)", background: "rgba(34,211,238,0.1)", color: "#22d3ee" }}>
+          Return Home
+        </a>
+      </div>
+    </div>
+  );
 
   return (
     <div className="track-page">
@@ -384,10 +426,9 @@ export default function Track() {
                 <h2 style={{ fontSize: "20px", fontWeight: "700" }}>Server Overview</h2>
                 <p style={{ color: "var(--text-secondary)", fontSize: "13px", marginTop: "4px" }}>Live stats and usage breakdown</p>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "14px" }}>
                 {[
                   { label: "Online Now", value: clients.length, color: "#4ade80", icon: "ti-users" },
-                  { label: "Total Connections", value: totalConnections, color: "var(--text-primary)", icon: "ti-plug" },
                   { label: "Unique Players", value: new Set(allLogs.map(l => l.roblox_id)).size, color: "var(--text-info)", icon: "ti-user-check" },
                   { label: "Server Uptime", value: serverUptime, color: "var(--text-warning)", icon: "ti-clock" },
                 ].map((s, i) => (
