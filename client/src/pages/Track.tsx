@@ -199,10 +199,8 @@ export default function Track() {
         const res = await fetch('/api/clients');
         if (res.ok) {
           const data: Client[] = await res.json();
-          // Filter: only clients with a lastHeartbeat within 5 min (server already does this but double check)
           setClients(data);
 
-          // Notification dot
           const newIds = new Set(data.map((c: Client) => c.robloxId || c.id));
           if (prevClientIds.size > 0) {
             const hasNew = data.some((c: Client) => !prevClientIds.has(c.robloxId || c.id));
@@ -214,7 +212,6 @@ export default function Track() {
           data.forEach(c => { newUptimes[c.id] = c.uptime || 0; });
           setClientUptimes(prev => ({ ...prev, ...newUptimes }));
 
-          // Update persistent user store
           setStoredUsers(prev => {
             const updated = { ...prev };
             data.forEach(c => {
@@ -238,7 +235,6 @@ export default function Track() {
             return updated;
           });
 
-          // If selected client was kicked / left, go back
           if (selectedClient && !data.find(c => c.robloxId === selectedClient.robloxId)) {
             setInClientMode(false);
           }
@@ -268,7 +264,6 @@ export default function Track() {
     c.place?.toLowerCase().includes(clientQuery.toLowerCase())
   ), [clients, clientQuery]);
 
-  // Merge supabase logs + stored session logs
   const allLogs = useMemo(() => {
     const merged = [...connLogs];
     Object.values(storedUsers).forEach(u => {
@@ -313,7 +308,6 @@ export default function Track() {
   const selectedUserData = selectedUser ? storedUsers[selectedUser] : null;
   const selectedKeyLogs = selectedKey?.roblox_id ? allLogs.filter(l => l.roblox_id === selectedKey.roblox_id) : [];
 
-  // Group snapshots by date for day cards
   const today = new Date().toISOString().split("T")[0];
   const groupedDays = useMemo(() => {
     const map: Record<string, Snapshot[]> = {};
@@ -321,10 +315,25 @@ export default function Track() {
       if (!map[s.date]) map[s.date] = [];
       map[s.date].push(s);
     });
-    // Ensure today always shows even if no data yet
     if (!map[today]) map[today] = [];
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
   }, [allSnapshots, today]);
+
+  // Improved hourly chart data
+  const hourlyData = useMemo(() => {
+    if (!selectedDateSnapshots.length) return Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }));
+
+    const counts = Array.from({ length: 24 }, () => 0);
+    selectedDateSnapshots.forEach(s => {
+      if (s.hour >= 0 && s.hour < 24) counts[s.hour]++;
+    });
+    const maxCount = Math.max(...counts, 1);
+    return counts.map((count, hour) => ({
+      hour,
+      count,
+      height: Math.max((count / maxCount) * 100, count > 0 ? 6 : 2)
+    }));
+  }, [selectedDateSnapshots]);
 
   if (!accessChecked) return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f", color: "#fff" }}>
@@ -824,7 +833,6 @@ export default function Track() {
                         onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border-md)"; (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLDivElement).style.transform = "none"; }}
                       >
-                        {/* Top accent for today */}
                         {isToday && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, #22c55e, #4ade80)" }}></div>}
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
                           <div>
@@ -921,22 +929,133 @@ export default function Track() {
                     ))}
                   </div>
 
-                  {/* Hourly activity bar chart */}
+                  {/* IMPROVED HOURLY ACTIVITY GRAPH (SVG Bar Chart) */}
                   <div style={card({ padding: "24px" })}>
-                    <div style={{ fontSize: "14px", fontWeight: "600", marginBottom: "20px" }}>Hourly Activity</div>
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "80px" }}>
-                      {Array.from({ length: 24 }, (_, h) => {
-                        const count = selectedDateSnapshots.filter(s => s.hour === h).length;
-                        const max = Math.max(...Array.from({ length: 24 }, (_, hh) => selectedDateSnapshots.filter(s => s.hour === hh).length), 1);
-                        const pct = Math.max((count / max) * 100, count > 0 ? 8 : 2);
-                        const isCurrentHour = selectedDate === today && new Date().getUTCHours() === h;
-                        return (
-                          <div key={h} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                            <div style={{ width: "100%", height: `${pct}%`, background: isCurrentHour ? "#22c55e" : count > 0 ? "#4ade80" : "var(--bg-secondary)", borderRadius: "3px 3px 0 0", transition: "height 0.3s", minHeight: "2px" }} title={`${h}:00 — ${count} connections`}></div>
-                            {h % 4 === 0 && <div style={{ fontSize: "9px", color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{String(h).padStart(2, "0")}</div>}
-                          </div>
-                        );
-                      })}
+                    <div style={{ fontSize: "14px", fontWeight: "600", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div>Hourly Activity</div>
+                      <div style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>UTC Time</div>
+                    </div>
+                    
+                    <div style={{ position: "relative", height: "260px", marginBottom: "12px" }}>
+                      <svg width="100%" height="100%" viewBox="0 0 960 240" preserveAspectRatio="xMidYMid meet" style={{ overflow: "visible" }}>
+                        {/* Grid lines */}
+                        {[0, 1, 2, 3, 4].map((level, i) => (
+                          <line 
+                            key={i}
+                            x1="40" 
+                            y1={40 + (i * 40)} 
+                            x2="920" 
+                            y2={40 + (i * 40)} 
+                            stroke="var(--bg-tertiary)" 
+                            strokeWidth="1" 
+                          />
+                        ))}
+                        
+                        {/* Bars */}
+                        {hourlyData.map((d, i) => {
+                          const x = 50 + (i * 36);
+                          const isCurrentHour = selectedDate === today && new Date().getUTCHours() === d.hour;
+                          return (
+                            <g key={i}>
+                              <rect 
+                                x={x} 
+                                y={200 - (d.height * 1.6)} 
+                                width="26" 
+                                height={d.height * 1.6} 
+                                rx="4" 
+                                fill={isCurrentHour ? "#22c55e" : "#4ade80"} 
+                                style={{ transition: "all 0.3s ease" }}
+                              />
+                              {/* Hover highlight */}
+                              <rect 
+                                x={x - 4} 
+                                y="30" 
+                                width="34" 
+                                height="200" 
+                                fill="transparent" 
+                                style={{ cursor: "pointer" }}
+                                onMouseEnter={(e) => {
+                                  const tooltip = document.getElementById(`tooltip-${i}`);
+                                  if (tooltip) tooltip.style.opacity = "1";
+                                }}
+                                onMouseLeave={(e) => {
+                                  const tooltip = document.getElementById(`tooltip-${i}`);
+                                  if (tooltip) tooltip.style.opacity = "0";
+                                }}
+                              />
+                            </g>
+                          );
+                        })}
+
+                        {/* Hour labels */}
+                        {hourlyData.map((d, i) => 
+                          i % 3 === 0 && (
+                            <text 
+                              key={`label-${i}`} 
+                              x={50 + (i * 36) + 13} 
+                              y="228" 
+                              textAnchor="middle" 
+                              fill="var(--text-tertiary)" 
+                              fontSize="11" 
+                              fontFamily="var(--font-mono)"
+                            >
+                              {String(d.hour).padStart(2, '0')}
+                            </text>
+                          )
+                        )}
+
+                        {/* Value labels on top of tallest bars */}
+                        {hourlyData.filter(d => d.count > 0).map((d, i) => {
+                          const x = 50 + (i * 36) + 13;
+                          return (
+                            <text 
+                              key={`value-${i}`} 
+                              x={x} 
+                              y={190 - (d.height * 1.6)} 
+                              textAnchor="middle" 
+                              fill="#fff" 
+                              fontSize="10" 
+                              fontWeight="600"
+                              opacity={d.height > 25 ? "1" : "0"}
+                            >
+                              {d.count}
+                            </text>
+                          );
+                        })}
+                      </svg>
+
+                      {/* Dynamic tooltips (positioned absolutely) */}
+                      {hourlyData.map((d, i) => (
+                        <div 
+                          key={i}
+                          id={`tooltip-${i}`}
+                          style={{
+                            position: "absolute",
+                            left: `calc(5% + ${i * 3.6}%)`,
+                            top: "60px",
+                            background: "var(--bg-primary)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "6px",
+                            padding: "8px 12px",
+                            fontSize: "13px",
+                            pointerEvents: "none",
+                            opacity: 0,
+                            transition: "opacity 0.2s",
+                            zIndex: 100,
+                            whiteSpace: "nowrap",
+                            boxShadow: "0 10px 30px -10px rgba(0,0,0,0.6)"
+                          }}
+                        >
+                          <strong>{String(d.hour).padStart(2, '0')}:00 UTC</strong><br />
+                          {d.count} connection{d.count !== 1 ? 's' : ''}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-tertiary)", marginTop: "8px", padding: "0 20px" }}>
+                      <div>00:00</div>
+                      <div>12:00</div>
+                      <div>23:00</div>
                     </div>
                   </div>
 
