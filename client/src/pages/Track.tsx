@@ -3,10 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Client } from "./trackData";
 import "./Track.css";
 
-type HomeView = "clients" | "server" | "logs" | "users" | "keys";
+type HomeView = "clients" | "server" | "logs" | "scripts" | "users" | "keys";
 
 const homeNav: { id: HomeView; label: string; icon: string }[] = [
   { id: "clients", label: "Clients", icon: "ti-users" },
+  { id: "scripts", label: "Scripts", icon: "ti-file-code" },
   { id: "server", label: "Server", icon: "ti-server" },
   { id: "logs", label: "Logs", icon: "ti-terminal" },
   { id: "users", label: "Users", icon: "ti-user-circle" },
@@ -38,34 +39,8 @@ function RobloxAvatar({ robloxId, size = 40 }: { robloxId: string; size?: number
       .catch(() => {});
   }, [robloxId]);
   return (
-    <a href={`https://www.roblox.com/users/${robloxId}/profile`} target="_blank" rel="noopener noreferrer" style={{ display: "flex", cursor: "pointer", textDecoration: "none" }}>
-      <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "var(--bg-tertiary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {url ? <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-user" style={{ fontSize: size * 0.5 }}></i>}
-      </div>
-    </a>
-  );
-}
-
-function ExecutorStatRow({ executor, count, total }: { executor: string; count: number; total: number }) {
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  useEffect(() => {
-    fetch(`/executors/${encodeURIComponent(executor)}.png`)
-      .then(r => r.ok ? `/executors/${encodeURIComponent(executor)}.png` : null)
-      .then(url => setLogoUrl(url))
-      .catch(() => {});
-  }, [executor]);
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 20px", borderBottom: "1px solid var(--border)" }}>
-      <div style={{ width: 36, height: 36, borderRadius: "8px", background: "var(--bg-secondary)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-        {logoUrl ? <img src={logoUrl} alt={executor} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-terminal" style={{ fontSize: "16px", color: "var(--text-secondary)" }}></i>}
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: "13px", fontWeight: "500" }}>{executor}</div>
-        <div style={{ height: 4, background: "var(--bg-tertiary)", borderRadius: 2, marginTop: 6 }}>
-          <div style={{ height: "100%", width: `${Math.round((count / total) * 100)}%`, background: "#4ade80", borderRadius: 2 }}></div>
-        </div>
-      </div>
-      <div style={{ fontSize: "13px", fontWeight: "600" }}>{count}</div>
+    <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "var(--bg-tertiary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {url ? <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-user" style={{ fontSize: size * 0.5 }}></i>}
     </div>
   );
 }
@@ -80,15 +55,25 @@ function GameIcon({ placeId, size = 72 }: { placeId: string; size?: number }) {
       .catch(() => {});
   }, [placeId]);
   return (
-    <a href={`https://www.roblox.com/games/${placeId}`} target="_blank" rel="noopener noreferrer" style={{ display: "flex", cursor: "pointer", textDecoration: "none" }}>
-      <div style={{ width: size, height: size, borderRadius: size > 80 ? "16px" : "10px", overflow: "hidden", border: "2px solid var(--border)", flexShrink: 0, background: "#1f1f28", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {url ? <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-device-gamepad" style={{ fontSize: size * 0.35, color: "var(--text-tertiary)" }}></i>}
-      </div>
-    </a>
+    <div style={{ width: size, height: size, borderRadius: size > 80 ? "16px" : "10px", overflow: "hidden", border: "2px solid var(--border)", flexShrink: 0, background: "#1f1f28", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {url ? <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-device-gamepad" style={{ fontSize: size * 0.35, color: "var(--text-tertiary)" }}></i>}
+    </div>
   );
 }
 
 type ConnLog = { id: string; roblox_id: string; roblox_name: string; place_id: string; place_name: string; executor: string; connected_at: string; uptime: number; };
+
+const EXECUTOR_LOGOS: Record<string, string> = {
+  "Wave": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f30a.png",
+  "Seliware": "https://scriptblox.com/images/exec/thumbs/Seliware.png",
+  "Velocity": "https://velocityget.com/icon.png",
+  "Bunni": "https://tse2.mm.bing.net/th/id/OIP.w7S9MbhQ_CaXKgnAqFkVJQHaHa?rs=1&pid=ImgDetMain&o=7&rm=3",
+  "Xeno": "https://xeno.now/images/xeno.png",
+  "Solara": "https://avatars.githubusercontent.com/u/208881794?s=200&v=4",
+  "Cryptic": "https://getcryptic.net/logo.png",
+  "Delta": "https://images.sftcdn.net/images/t_app-icon-s/p/ed66733d-2d77-4331-a8d1-97d5ca7924b5/2787774532/delta-executor-Download-Delta-Executor.jpg",
+  "Fluxus": "https://images.dwncdn.net/images/t_app-icon-l/p/69d46195-d1b1-4d4e-9ece-4aac6a27faf7/3398186052/fluxus-executor-logo",
+};
 type KeyRecord = { id: string; key_value: string; is_used: boolean; created_at: string; generated_by: string; roblox_id?: string; used_at?: string; };
 
 // Shared card style
@@ -163,6 +148,7 @@ export default function Track() {
   };
 
   useEffect(() => {
+    if (homeView === "scripts") fetchGames();
     if (homeView === "logs" || homeView === "server" || homeView === "users") fetchLogs();
     if (homeView === "keys") fetchKeys();
   }, [homeView]);
@@ -316,6 +302,46 @@ export default function Track() {
 
         <main className="main-content">
 
+          {/* ── SCRIPTS ── */}
+          {!inClientMode && homeView === "scripts" && (
+            <div className="view active" style={{ padding: "32px", flexDirection: "column", gap: "24px" }}>
+              <div>
+                <h2 style={{ fontSize: "20px", fontWeight: "700" }}>Supported Games</h2>
+                <p style={{ color: "var(--text-secondary)", fontSize: "13px", marginTop: "4px" }}>{Object.keys(allGames).length} games · Click to copy loadstring</p>
+              </div>
+              {gamesLoading ? (
+                <div style={{ textAlign: "center", padding: "80px", color: "var(--text-tertiary)" }}>Loading games...</div>
+              ) : Object.keys(allGames).length === 0 ? (
+                <div style={{ textAlign: "center", padding: "80px", color: "var(--text-tertiary)" }}>No games found</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {Object.entries(allGames).map(([gameId, url]) => (
+                    <div key={gameId} style={{ ...card({ padding: "20px 24px", display: "flex", alignItems: "center", gap: "18px", transition: "border-color 0.15s" }) }}
+                      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border-md)"}
+                      onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"}
+                    >
+                      <GameIcon placeId={gameId} size={56} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "15px", fontWeight: "600", marginBottom: "4px" }}>{gameId}</div>
+                        <div style={{ fontSize: "12px", color: "var(--text-tertiary)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{url}</div>
+                      </div>
+                      {clients.filter(c => c.placeId === gameId).length > 0 && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--bg-success)", borderRadius: "8px", padding: "6px 12px" }}>
+                          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }}></div>
+                          <span style={{ fontSize: "12px", color: "#4ade80", fontWeight: "500" }}>{clients.filter(c => c.placeId === gameId).length} online</span>
+                        </div>
+                      )}
+                      <button style={{ padding: "10px 20px", background: "#22c55e", color: "#000", border: "none", borderRadius: "8px", fontWeight: "600", cursor: "pointer", fontSize: "13px", flexShrink: 0 }}
+                        onClick={() => { const ls = `loadstring(game:HttpGet("${url}"))()`; navigator.clipboard.writeText(ls); alert(`✅ Copied!\n\n${ls}`); }}>
+                        Copy
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── CLIENTS ── */}
           {!inClientMode && homeView === "clients" && (
             <div className="view active">
@@ -393,7 +419,21 @@ export default function Track() {
                   <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", fontSize: "14px", fontWeight: "600" }}>Top Executors</div>
                   {executorStats.length === 0 ? <div style={{ padding: "32px", textAlign: "center", color: "var(--text-tertiary)", fontSize: "13px" }}>No data yet</div>
                     : executorStats.map(([executor, count]) => (
-                      <ExecutorStatRow key={executor} executor={executor} count={count} total={executorStats[0]?.[1] || 1} />
+                      <div key={executor} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 20px", borderBottom: "1px solid var(--border)" }}>
+                        <div style={{ width: 36, height: 36, borderRadius: "8px", background: "var(--bg-secondary)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                          {EXECUTOR_LOGOS[executor]
+                            ? <img src={EXECUTOR_LOGOS[executor]} alt={executor} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }} />
+                            : <i className="ti ti-terminal" style={{ fontSize: "16px", color: "var(--text-secondary)" }}></i>
+                          }
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: "13px", fontWeight: "500" }}>{executor}</div>
+                          <div style={{ height: 4, background: "var(--bg-tertiary)", borderRadius: 2, marginTop: 6 }}>
+                            <div style={{ height: "100%", width: `${Math.round((count / (executorStats[0]?.[1] || 1)) * 100)}%`, background: "#4ade80", borderRadius: 2 }}></div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "13px", fontWeight: "600" }}>{count}</div>
+                      </div>
                     ))}
                 </div>
               </div>
@@ -478,7 +518,7 @@ export default function Track() {
                       <div style={{ color: "var(--text-tertiary)", fontSize: "12px" }}>ID: {u.roblox_id}</div>
                     </div>
                     <div style={{ fontSize: "13px", fontWeight: "600" }}>{u.sessions.length}</div>
-                    <div style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>{onlineNow(u.roblox_id) ? "-" : timeAgo(u.sessions[0].connected_at)}</div>
+                    <div style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>{timeAgo(u.sessions[0].connected_at)}</div>
                     <div style={{ textAlign: "right" }}>
                       {onlineNow(u.roblox_id)
                         ? <span style={{ fontSize: "11px", fontWeight: "600", color: "#4ade80", background: "var(--bg-success)", padding: "3px 8px", borderRadius: "6px" }}>Online</span>
@@ -515,12 +555,10 @@ export default function Track() {
                     <div style={label()}>Sessions</div>
                     <div style={{ fontSize: "28px", fontWeight: "700" }}>{selectedUserData.sessions.length}</div>
                   </div>
-                  {!onlineNow(selectedUserData.roblox_id) && (
-                    <div style={{ textAlign: "center" }}>
-                      <div style={label()}>Last Seen</div>
-                      <div style={{ fontSize: "16px", fontWeight: "600" }}>{timeAgo(selectedUserData.sessions[0].connected_at)}</div>
-                    </div>
-                  )}
+                  <div style={{ textAlign: "center" }}>
+                    <div style={label()}>Last Seen</div>
+                    <div style={{ fontSize: "16px", fontWeight: "600" }}>{timeAgo(selectedUserData.sessions[0].connected_at)}</div>
+                  </div>
                 </div>
               </div>
 
