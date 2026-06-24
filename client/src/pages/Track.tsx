@@ -3,13 +3,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Client } from "./trackData";
 import "./Track.css";
 
-type HomeView = "clients" | "server" | "users" | "keys";
+type HomeView = "clients" | "server" | "users" | "keys" | "stats";
 
 const homeNav: { id: HomeView; label: string; icon: string }[] = [
   { id: "clients", label: "Clients", icon: "ti-users" },
   { id: "server", label: "Server", icon: "ti-server" },
   { id: "users", label: "Users", icon: "ti-user-circle" },
   { id: "keys", label: "Keys", icon: "ti-key" },
+  { id: "stats", label: "Stats", icon: "ti-chart-bar" },
 ];
 
 function formatUptime(seconds: number) {
@@ -60,6 +61,7 @@ function GameIcon({ placeId, size = 72 }: { placeId: string; size?: number }) {
 }
 
 type ConnLog = { id: string; roblox_id: string; roblox_name: string; place_id: string; place_name: string; executor: string; connected_at: string; uptime: number; };
+type Snapshot = { id: string; date: string; hour: number; roblox_id: string; roblox_name: string; place_id: string; place_name: string; executor: string; recorded_at: string; };
 type KeyRecord = { id: string; key_value: string; is_used: boolean; created_at: string; generated_by: string; roblox_id?: string; used_at?: string; };
 
 // Persistent user store — survives refreshes via localStorage
@@ -111,6 +113,14 @@ export default function Track() {
   const [selectedKey, setSelectedKey] = useState<KeyRecord | null>(null);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
 
+  // Stats
+  const [allSnapshots, setAllSnapshots] = useState<Snapshot[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDateSnapshots, setSelectedDateSnapshots] = useState<Snapshot[]>([]);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [dayDetailLoading, setDayDetailLoading] = useState(false);
+  const [dayTimer, setDayTimer] = useState("");
+
   // Persistent user map — never clears on refresh
   const [storedUsers, setStoredUsers] = useState<Record<string, StoredUser>>(loadStoredUsers);
 
@@ -135,6 +145,38 @@ export default function Track() {
     catch (e) {} finally { setKeysLoading(false); }
   };
 
+  const fetchAllSnapshots = async () => {
+    setStatsLoading(true);
+    try {
+      const res = await fetch('/api/daily-snapshots');
+      if (res.ok) setAllSnapshots(await res.json());
+    } catch (e) {} finally { setStatsLoading(false); }
+  };
+
+  const fetchDaySnapshots = async (date: string) => {
+    setDayDetailLoading(true);
+    try {
+      const res = await fetch(`/api/daily-snapshots?date=${date}`);
+      if (res.ok) setSelectedDateSnapshots(await res.json());
+    } catch (e) {} finally { setDayDetailLoading(false); }
+  };
+
+  // Day timer — countdown to midnight UTC
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+      const diff = Math.floor((midnight.getTime() - now.getTime()) / 1000);
+      const h = String(Math.floor(diff / 3600)).padStart(2, "0");
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
+      const s = String(diff % 60).padStart(2, "0");
+      setDayTimer(`${h}:${m}:${s}`);
+    };
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, []);
+
   const deleteKey = async (keyValue: string) => {
     setDeletingKey(keyValue);
     try {
@@ -147,6 +189,7 @@ export default function Track() {
   useEffect(() => {
     if (homeView === "server" || homeView === "users") fetchLogs();
     if (homeView === "keys") fetchKeys();
+    if (homeView === "stats") fetchAllSnapshots();
   }, [homeView]);
 
   // Client polling — only show clients that are actively heartbeating
@@ -269,6 +312,19 @@ export default function Track() {
   const onlineNow = (robloxId: string) => clients.some(c => c.robloxId === robloxId);
   const selectedUserData = selectedUser ? storedUsers[selectedUser] : null;
   const selectedKeyLogs = selectedKey?.roblox_id ? allLogs.filter(l => l.roblox_id === selectedKey.roblox_id) : [];
+
+  // Group snapshots by date for day cards
+  const today = new Date().toISOString().split("T")[0];
+  const groupedDays = useMemo(() => {
+    const map: Record<string, Snapshot[]> = {};
+    allSnapshots.forEach(s => {
+      if (!map[s.date]) map[s.date] = [];
+      map[s.date].push(s);
+    });
+    // Ensure today always shows even if no data yet
+    if (!map[today]) map[today] = [];
+    return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [allSnapshots, today]);
 
   if (!accessChecked) return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f", color: "#fff" }}>
@@ -733,6 +789,195 @@ export default function Track() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ── STATS ── */}
+          {!inClientMode && homeView === "stats" && !selectedDate && (
+            <div className="view active" style={{ padding: "32px", flexDirection: "column", gap: "20px" }}>
+              <div>
+                <h2 style={{ fontSize: "20px", fontWeight: "700" }}>Daily Stats</h2>
+                <p style={{ color: "var(--text-secondary)", fontSize: "13px", marginTop: "4px" }}>Each card = one 24h period · Click to view details</p>
+              </div>
+              {statsLoading ? (
+                <div style={{ textAlign: "center", padding: "80px", color: "var(--text-tertiary)" }}>Loading stats...</div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
+                  {groupedDays.map(([date, snaps]) => {
+                    const isToday = date === today;
+                    const uniquePlayers = new Set(snaps.map(s => s.roblox_id)).size;
+                    const uniqueGames = new Set(snaps.map(s => s.place_id)).size;
+                    const topExec = (() => {
+                      const m: Record<string, number> = {};
+                      snaps.forEach(s => { m[s.executor] = (m[s.executor] || 0) + 1; });
+                      return Object.entries(m).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+                    })();
+                    const topGame = (() => {
+                      const m: Record<string, { name: string; count: number }> = {};
+                      snaps.forEach(s => { if (!m[s.place_id]) m[s.place_id] = { name: s.place_name, count: 0 }; m[s.place_id].count++; });
+                      return Object.entries(m).sort((a, b) => b[1].count - a[1].count)[0];
+                    })();
+                    return (
+                      <div key={date}
+                        onClick={() => { setSelectedDate(date); fetchDaySnapshots(date); }}
+                        style={{ ...card({ padding: "24px", cursor: "pointer", transition: "border-color 0.15s, transform 0.15s" }), position: "relative", overflow: "hidden" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border-md)"; (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLDivElement).style.transform = "none"; }}
+                      >
+                        {/* Top accent for today */}
+                        {isToday && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, #22c55e, #4ade80)" }}></div>}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                          <div>
+                            <div style={{ fontSize: "16px", fontWeight: "700" }}>
+                              {new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                            </div>
+                            <div style={{ fontSize: "11px", color: "var(--text-tertiary)", marginTop: "2px" }}>{date}</div>
+                          </div>
+                          {isToday ? (
+                            <div style={{ textAlign: "right" }}>
+                              <div style={{ fontSize: "10px", color: "#4ade80", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "2px" }}>Live · Resets in</div>
+                              <div style={{ fontFamily: "var(--font-mono)", fontSize: "14px", fontWeight: "700", color: "#4ade80" }}>{dayTimer}</div>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: "11px", fontWeight: "600", padding: "3px 8px", borderRadius: "6px", background: "var(--bg-secondary)", color: "var(--text-tertiary)" }}>Completed</span>
+                          )}
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+                          {[
+                            { label: "Connections", value: snaps.length, color: "var(--text-primary)" },
+                            { label: "Unique Players", value: uniquePlayers, color: "var(--text-info)" },
+                            { label: "Games", value: uniqueGames, color: "var(--text-warning)" },
+                            { label: "Top Executor", value: topExec, color: "var(--text-secondary)" },
+                          ].map((s, i) => (
+                            <div key={i} style={{ background: "var(--bg-secondary)", borderRadius: "8px", padding: "10px 12px" }}>
+                              <div style={{ fontSize: "10px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>{s.label}</div>
+                              <div style={{ fontSize: "15px", fontWeight: "700", color: s.color }}>{s.value}</div>
+                            </div>
+                          ))}
+                        </div>
+                        {topGame && (
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "var(--bg-secondary)", borderRadius: "8px", padding: "10px 12px" }}>
+                            <GameIcon placeId={topGame[0]} size={32} />
+                            <div>
+                              <div style={{ fontSize: "10px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Top Game</div>
+                              <div style={{ fontSize: "13px", fontWeight: "600", marginTop: "2px" }}>{topGame[1].name || topGame[0]}</div>
+                            </div>
+                            <div style={{ marginLeft: "auto", fontSize: "13px", fontWeight: "700", color: "#4ade80" }}>{topGame[1].count}</div>
+                          </div>
+                        )}
+                        {snaps.length === 0 && (
+                          <div style={{ textAlign: "center", padding: "16px", color: "var(--text-tertiary)", fontSize: "13px" }}>No data yet today</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── STATS DAY DETAIL ── */}
+          {!inClientMode && homeView === "stats" && selectedDate && (
+            <div className="view active" style={{ padding: "32px", flexDirection: "column", gap: "20px" }}>
+              <button onClick={() => { setSelectedDate(null); setSelectedDateSnapshots([]); }}
+                style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "13px", padding: 0, marginBottom: "4px" }}>
+                <i className="ti ti-arrow-left"></i> Back to Stats
+              </button>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <h2 style={{ fontSize: "20px", fontWeight: "700" }}>
+                    {new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+                  </h2>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "13px", marginTop: "4px" }}>
+                    {selectedDate === today ? `Live · Resets in ${dayTimer}` : "Completed period"}
+                  </p>
+                </div>
+              </div>
+
+              {dayDetailLoading ? (
+                <div style={{ textAlign: "center", padding: "80px", color: "var(--text-tertiary)" }}>Loading...</div>
+              ) : (
+                <>
+                  {/* Summary cards */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px" }}>
+                    {[
+                      { label: "Total Connections", value: selectedDateSnapshots.length, color: "var(--text-primary)", icon: "ti-plug" },
+                      { label: "Unique Players", value: new Set(selectedDateSnapshots.map(s => s.roblox_id)).size, color: "var(--text-info)", icon: "ti-user-check" },
+                      { label: "Unique Games", value: new Set(selectedDateSnapshots.map(s => s.place_id)).size, color: "var(--text-warning)", icon: "ti-device-gamepad" },
+                      { label: "Peak Hour", value: (() => {
+                        const m: Record<number, number> = {};
+                        selectedDateSnapshots.forEach(s => { m[s.hour] = (m[s.hour] || 0) + 1; });
+                        const peak = Object.entries(m).sort((a, b) => b[1] - a[1])[0];
+                        return peak ? `${peak[0].padStart(2, "0")}:00` : "—";
+                      })(), color: "#4ade80", icon: "ti-clock" },
+                    ].map((s, i) => (
+                      <div key={i} style={card({ padding: "20px" })}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                          <i className={`ti ${s.icon}`} style={{ color: s.color, fontSize: "16px" }}></i>
+                          <span style={lbl()}>{s.label}</span>
+                        </div>
+                        <div style={{ fontSize: "24px", fontWeight: "700", color: s.color, fontFamily: "var(--font-mono)" }}>{s.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Hourly activity bar chart */}
+                  <div style={card({ padding: "24px" })}>
+                    <div style={{ fontSize: "14px", fontWeight: "600", marginBottom: "20px" }}>Hourly Activity</div>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "80px" }}>
+                      {Array.from({ length: 24 }, (_, h) => {
+                        const count = selectedDateSnapshots.filter(s => s.hour === h).length;
+                        const max = Math.max(...Array.from({ length: 24 }, (_, hh) => selectedDateSnapshots.filter(s => s.hour === hh).length), 1);
+                        const pct = Math.max((count / max) * 100, count > 0 ? 8 : 2);
+                        const isCurrentHour = selectedDate === today && new Date().getUTCHours() === h;
+                        return (
+                          <div key={h} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                            <div style={{ width: "100%", height: `${pct}%`, background: isCurrentHour ? "#22c55e" : count > 0 ? "#4ade80" : "var(--bg-secondary)", borderRadius: "3px 3px 0 0", transition: "height 0.3s", minHeight: "2px" }} title={`${h}:00 — ${count} connections`}></div>
+                            {h % 4 === 0 && <div style={{ fontSize: "9px", color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{String(h).padStart(2, "0")}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    {/* Who connected */}
+                    <div style={card({ overflow: "hidden" })}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", fontSize: "14px", fontWeight: "600" }}>Players</div>
+                      {Array.from(new Set(selectedDateSnapshots.map(s => s.roblox_id))).map(rid => {
+                        const snaps = selectedDateSnapshots.filter(s => s.roblox_id === rid);
+                        return (
+                          <div key={rid} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 20px", borderBottom: "1px solid var(--border)" }}>
+                            <RobloxAvatar robloxId={rid} size={32} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: "13px", fontWeight: "500" }}>{snaps[0].roblox_name}</div>
+                              <div style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{snaps.length} session{snaps.length > 1 ? "s" : ""}</div>
+                            </div>
+                            {onlineNow(rid) && <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e" }}></div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Games played */}
+                    <div style={card({ overflow: "hidden" })}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", fontSize: "14px", fontWeight: "600" }}>Games</div>
+                      {Array.from(new Set(selectedDateSnapshots.map(s => s.place_id))).map(pid => {
+                        const snaps = selectedDateSnapshots.filter(s => s.place_id === pid);
+                        return (
+                          <div key={pid} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 20px", borderBottom: "1px solid var(--border)" }}>
+                            <GameIcon placeId={pid} size={36} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: "13px", fontWeight: "500" }}>{snaps[0].place_name || pid}</div>
+                              <div style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{snaps.length} connection{snaps.length > 1 ? "s" : ""}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

@@ -746,6 +746,8 @@ app.post("/api/heartbeat", async (req: any, res: any) => {
       executor: req.body.executor || "Unknown",
     });
 
+    // Record daily snapshot
+    supabase.from("daily_snapshots").select("id").eq("date", new Date().toISOString().split("T")[0]).eq("hour", new Date().getUTCHours()).eq("roblox_id", String(robloxId)).eq("place_id", String(gameId)).limit(1).single().then(({ data: ex }) => { if (!ex) supabase.from("daily_snapshots").insert({ date: new Date().toISOString().split("T")[0], hour: new Date().getUTCHours(), roblox_id: String(robloxId), roblox_name: robloxName, place_id: String(gameId), place_name: gameName, executor: req.body.executor || "Unknown" }); });
     res.json({ success: true });
   } catch (error: any) {
     console.error("Heartbeat error:", error);
@@ -844,7 +846,56 @@ app.get("/api/keys", async (req: any, res: any) => {
 });
 
 
+
+app.post("/api/daily-snapshot", async (req: any, res: any) => {
+  try {
+    const { robloxId, robloxName, gameId, gameName, executor } = req.body;
+    if (!robloxId) return res.status(400).json({ error: "Missing robloxId" });
+    const now = new Date();
+    const date = now.toISOString().split("T")[0];
+    const hour = now.getUTCHours();
+    // Only insert once per hour per user per game
+    const { data: existing } = await supabase
+      .from("daily_snapshots")
+      .select("id")
+      .eq("date", date)
+      .eq("hour", hour)
+      .eq("roblox_id", String(robloxId))
+      .eq("place_id", String(gameId))
+      .limit(1)
+      .single();
+    if (!existing) {
+      await supabase.from("daily_snapshots").insert({
+        date, hour,
+        roblox_id: String(robloxId),
+        roblox_name: robloxName,
+        place_id: String(gameId),
+        place_name: gameName,
+        executor: executor || "Unknown",
+      });
+    }
+    res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "Internal Error" });
+  }
+});
+
+app.get("/api/daily-snapshots", async (req: any, res: any) => {
+  try {
+    const { date } = req.query;
+    let query = supabase.from("daily_snapshots").select("*").order("recorded_at", { ascending: true });
+    if (date) query = query.eq("date", String(date));
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "Internal Error" });
+  }
+});
+
 export default app;
+
+
 
 
 
