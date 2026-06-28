@@ -64,14 +64,9 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
     const secretToken = generateToken();
     const expiresAt = new Date(Date.now() + SESSION_EXPIRY_MINUTES * 60000).toISOString();
 
-    const { error: sessionError } = await supabase.rpc('start_new_session', {
-      p_id: sessionId,
-      p_visitor_id: visitorId,
-      p_ip_address: getClientIp(req),
-      p_step: 'started',
-      p_secret_token: secretToken,
-      p_expires_at: expiresAt
-    });
+    // Use raw SQL via exec_sql to bypass schema cache
+    const sql = `INSERT INTO auth_sessions (id, visitor_id, ip_address, step, secret_token, expires_at) VALUES ('${sessionId}', '${visitorId}', '${getClientIp(req)}', 'started', '${secretToken}', '${expiresAt}')`;
+    const { error: sessionError } = await supabase.rpc('exec_sql', { cmd: sql });
 
     if (sessionError) return res.status(500).json({ error: `DB Error: ${sessionError.message}` });
 
@@ -106,7 +101,9 @@ app.get("/api/get-key/verify", async (req: any, res: any) => {
       redirectUrl += `?completed=true&session=${session}`;
     }
 
-    await supabase.from('auth_sessions').update({ step: nextStep, secret_token: generateToken() }).eq('id', session);
+    const sql = `UPDATE auth_sessions SET step = '${nextStep}', secret_token = '${generateToken()}' WHERE id = '${session}'`;
+    await supabase.rpc('exec_sql', { cmd: sql });
+    
     res.redirect(redirectUrl);
   } catch (e: any) {
     res.status(500).send("Verify Error");
@@ -151,15 +148,19 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
     const { data: existingKey } = await supabase.from("keys").select("*").eq("visitor_id", visitorId).single();
 
     if (existingKey) {
-      const { data: updatedKey } = await supabase.from("keys").update({ created_at: new Date().toISOString(), is_used: false }).eq("id", existingKey.id).select().single();
-      return res.json({ key: updatedKey.key_value, expiresAt: new Date(Date.now() + 86400000).toISOString() });
+      const sql = `UPDATE keys SET created_at = now(), is_used = false WHERE id = '${existingKey.id}'`;
+      await supabase.rpc('exec_sql', { cmd: sql });
+      return res.json({ key: existingKey.key_value, expiresAt: new Date(Date.now() + 86400000).toISOString() });
     }
 
     const newKeyVal = `YS-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
-    const { data: newKey } = await supabase.from("keys").insert([{ key_value: newKeyVal, visitor_id: visitorId, is_used: false }]).select().single();
+    const sqlInsert = `INSERT INTO keys (key_value, visitor_id, is_used) VALUES ('${newKeyVal}', '${visitorId}', false)`;
+    await supabase.rpc('exec_sql', { cmd: sqlInsert });
     
-    await supabase.from('auth_sessions').delete().eq('id', sessionId);
-    res.json({ key: newKey.key_value, expiresAt: new Date(Date.now() + 86400000).toISOString() });
+    const sqlDel = `DELETE FROM auth_sessions WHERE id = '${sessionId}'`;
+    await supabase.rpc('exec_sql', { cmd: sqlDel });
+    
+    res.json({ key: newKeyVal, expiresAt: new Date(Date.now() + 86400000).toISOString() });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -171,11 +172,9 @@ app.post("/api/admin/generate-key", authorizeAdmin, async (req: any, res: any) =
     if (!visitorId) return res.status(400).json({ error: "Missing visitorId" });
 
     const keyValue = `YS-ADMIN-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+    const sql = `INSERT INTO keys (key_value, visitor_id, is_used) VALUES ('${keyValue}', '${visitorId}', false)`;
     
-    const { error } = await supabase.rpc('admin_generate_key', {
-      p_key_value: keyValue,
-      p_visitor_id: visitorId
-    });
+    const { error } = await supabase.rpc('exec_sql', { cmd: sql });
 
     if (error) return res.status(500).json({ error: `DB Error: ${error.message}` });
     res.json({ key_value: keyValue });
