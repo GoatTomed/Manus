@@ -64,7 +64,6 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
     const secretToken = generateToken();
     const expiresAt = new Date(Date.now() + SESSION_EXPIRY_MINUTES * 60000).toISOString();
 
-    console.log("Attempting RPC create_auth_session with:", { sessionId, visitorId, expiresAt });
     const { error: sessionError } = await supabase.rpc('start_new_session', {
       p_id: sessionId,
       p_visitor_id: visitorId,
@@ -169,9 +168,17 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
 app.post("/api/admin/generate-key", authorizeAdmin, async (req: any, res: any) => {
   try {
     const { visitorId } = req.body;
+    if (!visitorId) return res.status(400).json({ error: "Missing visitorId" });
+
     const keyValue = `YS-ADMIN-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-    const { data } = await supabase.from("keys").insert([{ key_value: keyValue, visitor_id: visitorId, is_used: false }]).select().single();
-    res.json(data);
+    
+    const { error } = await supabase.rpc('admin_generate_key', {
+      p_key_value: keyValue,
+      p_visitor_id: visitorId
+    });
+
+    if (error) return res.status(500).json({ error: `DB Error: ${error.message}` });
+    res.json({ key_value: keyValue });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
