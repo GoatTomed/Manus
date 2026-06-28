@@ -76,7 +76,10 @@ app.post("/api/get-key/start", sessionLimiter, async (req: any, res: any) => {
       expires_at: expiresAt
     }]);
 
-    if (sessionError) throw sessionError;
+    if (sessionError) {
+      console.error("Supabase Session Insert Error:", sessionError);
+      return res.status(500).json({ error: `Database error: ${sessionError.message}` });
+    }
 
     // Create EarnPaste link wrapping our callback
     // This callback is what prevents bypass: it must be called by the browser after locker completion
@@ -90,7 +93,8 @@ app.post("/api/get-key/start", sessionLimiter, async (req: any, res: any) => {
     });
 
     if (!epResponse.data.url) {
-      return res.status(500).json({ error: "Failed to generate locker link" });
+      console.error("EarnPaste API Response Error:", epResponse.data);
+      return res.status(500).json({ error: "Failed to generate locker link from EarnPaste" });
     }
 
     res.json({ earnPasteUrl: epResponse.data.url, sessionId });
