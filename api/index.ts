@@ -22,23 +22,11 @@ const DEV_MODE = process.env.NODE_ENV === "development";
 const globalLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 1000,
-  message: { error: "Too many requests, please try again later." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const sessionLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: "Too many session attempts. Please wait 15 minutes." },
+  message: { error: "Too many requests" },
 });
 
 app.use(globalLimiter);
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
-}));
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 // --- Supabase Setup ---
@@ -49,35 +37,29 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // --- Helpers ---
 const getClientIp = (req: any) => {
   const forwarded = req.headers["x-forwarded-for"];
-  const actualIp = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
-  return actualIp;
+  return typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
 };
 
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 
-// --- Middleware: Admin Authorization ---
 const authorizeAdmin = (req: any, res: any, next: any) => {
   const ip = getClientIp(req);
-  if (!DEV_MODE && ip !== ALLOWED_IP) {
-    return res.status(403).json({ error: "Access Denied" });
-  }
+  if (!DEV_MODE && ip !== ALLOWED_IP) return res.status(403).json({ error: "Access Denied" });
   next();
 };
 
-// --- Routes ---
+// --- CLEAN ROUTES ---
 
-// Admin Access Check
 app.get("/api/check-access", authorizeAdmin, (req: any, res: any) => {
   res.json({ allowed: true });
 });
 
 // 1. START FLOW
-app.post("/api/get-key/start", sessionLimiter, async (req: any, res: any) => {
+app.post("/api/get-key/start", async (req: any, res: any) => {
   try {
     const { visitorId } = req.body;
     if (!visitorId) return res.status(400).json({ error: "Missing visitorId" });
 
-    const ip = getClientIp(req);
     const sessionId = crypto.randomUUID();
     const secretToken = generateToken();
     const expiresAt = new Date(Date.now() + SESSION_EXPIRY_MINUTES * 60000).toISOString();
@@ -85,35 +67,22 @@ app.post("/api/get-key/start", sessionLimiter, async (req: any, res: any) => {
     const { error: sessionError } = await supabase.from('sessions').insert([{
       id: sessionId,
       visitor_id: visitorId,
-      ip_address: ip,
+      ip_address: getClientIp(req),
       step: 'started',
       secret_token: secretToken,
       expires_at: expiresAt
     }]);
 
-    if (sessionError) {
-      console.error("Supabase Session Insert Error:", sessionError);
-      return res.status(500).json({ error: `Database error: ${sessionError.message}` });
-    }
+    if (sessionError) return res.status(500).json({ error: `DB Error: ${sessionError.message}` });
 
     const callbackUrl = `${BASE_URL}/api/get-key/verify?session=${sessionId}&token=${secretToken}&step=1`;
-    
-    const epResponse = await axios.post(EARNPASTE_API_URL, {
-      targetUrl: callbackUrl,
-      timer: 15
-    }, {
+    const epResponse = await axios.post(EARNPASTE_API_URL, { targetUrl: callbackUrl, timer: 15 }, {
       headers: { "X-API-Key": EARNPASTE_API_KEY }
     });
 
-    if (!epResponse.data.url) {
-      console.error("EarnPaste API Response Error:", epResponse.data);
-      return res.status(500).json({ error: "Failed to generate locker link from EarnPaste" });
-    }
-
     res.json({ earnPasteUrl: epResponse.data.url, sessionId });
   } catch (e: any) {
-    console.error("Start Error:", e.message);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -121,21 +90,10 @@ app.post("/api/get-key/start", sessionLimiter, async (req: any, res: any) => {
 app.get("/api/get-key/verify", async (req: any, res: any) => {
   try {
     const { session, token, step } = req.query;
-
     const { data: sessionData, error: fetchError } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('id', session)
-      .eq('secret_token', token)
-      .single();
+      .from('sessions').select('*').eq('id', session).eq('secret_token', token).single();
 
-    if (fetchError || !sessionData) {
-      return res.status(403).send("Invalid or expired verification session.");
-    }
-
-    if (new Date(sessionData.expires_at) < new Date()) {
-      return res.status(403).send("Session expired. Please restart.");
-    }
+    if (fetchError || !sessionData) return res.status(403).send("Invalid Session");
 
     let nextStep = sessionData.step;
     let redirectUrl = `/get-key`;
@@ -148,51 +106,32 @@ app.get("/api/get-key/verify", async (req: any, res: any) => {
       redirectUrl += `?completed=true&session=${session}`;
     }
 
-    const { error: updateError } = await supabase
-      .from('sessions')
-      .update({ step: nextStep, secret_token: generateToken() })
-      .eq('id', session);
-
-    if (updateError) throw updateError;
-
+    await supabase.from('sessions').update({ step: nextStep, secret_token: generateToken() }).eq('id', session);
     res.redirect(redirectUrl);
   } catch (e: any) {
-    res.status(500).send("Verification Error");
+    res.status(500).send("Verify Error");
   }
 });
 
 // 3. STEP 2
-app.post("/api/get-key/step2", sessionLimiter, async (req: any, res: any) => {
+app.post("/api/get-key/step2", async (req: any, res: any) => {
   try {
     const { sessionId } = req.body;
-    if (!sessionId) return res.status(400).json({ error: "Missing sessionId" });
-
     const { data: sessionData, error: fetchError } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('id', sessionId)
-      .single();
+      .from('sessions').select('*').eq('id', sessionId).single();
 
     if (fetchError || !sessionData || sessionData.step !== 'step1_verified') {
-      return res.status(403).json({ error: "Please complete Step 1 first." });
-    }
-
-    if (new Date(sessionData.expires_at) < new Date()) {
-      return res.status(403).json({ error: "Session expired." });
+      return res.status(403).json({ error: "Step 1 not verified" });
     }
 
     const callbackUrl = `${BASE_URL}/api/get-key/verify?session=${sessionId}&token=${sessionData.secret_token}&step=2`;
-    
-    const epResponse = await axios.post(EARNPASTE_API_URL, {
-      targetUrl: callbackUrl,
-      timer: 15
-    }, {
+    const epResponse = await axios.post(EARNPASTE_API_URL, { targetUrl: callbackUrl, timer: 15 }, {
       headers: { "X-API-Key": EARNPASTE_API_KEY }
     });
 
     res.json({ earnPasteUrl: epResponse.data.url });
   } catch (e: any) {
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -203,87 +142,50 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
     const { visitorId } = req.query;
 
     const { data: sessionData, error: sessionError } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('id', sessionId)
-      .single();
+      .from('sessions').select('*').eq('id', sessionId).single();
 
     if (sessionError || !sessionData || sessionData.step !== 'completed') {
-      return res.status(403).json({ error: "Verification incomplete or bypassed." });
-    }
-
-    if (sessionData.visitor_id !== visitorId) {
-      return res.status(403).json({ error: "Visitor ID mismatch." });
+      return res.status(403).json({ error: "Incomplete" });
     }
 
     const { data: existingKey } = await supabase.from("keys").select("*").eq("visitor_id", visitorId).single();
 
     if (existingKey) {
-      const { data: updatedKey, error } = await supabase
-        .from("keys")
-        .update({ created_at: new Date().toISOString(), is_used: false })
-        .eq("id", existingKey.id)
-        .select()
-        .single();
-      
-      if (error) return res.status(500).json({ error: error.message });
-      return res.json({ key: updatedKey.key_value, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
+      const { data: updatedKey } = await supabase.from("keys").update({ created_at: new Date().toISOString(), is_used: false }).eq("id", existingKey.id).select().single();
+      return res.json({ key: updatedKey.key_value, expiresAt: new Date(Date.now() + 86400000).toISOString() });
     }
 
-    const newKeyValue = `YS-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
-    const { data: newKey, error } = await supabase
-      .from("keys")
-      .insert([{ key_value: newKeyValue, visitor_id: visitorId, is_used: false }])
-      .select()
-      .single();
-
-    if (error) return res.status(500).json({ error: error.message });
+    const newKeyVal = `YS-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
+    const { data: newKey } = await supabase.from("keys").insert([{ key_value: newKeyVal, visitor_id: visitorId, is_used: false }]).select().single();
     
     await supabase.from('sessions').delete().eq('id', sessionId);
-
-    res.json({ key: newKey.key_value, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
+    res.json({ key: newKey.key_value, expiresAt: new Date(Date.now() + 86400000).toISOString() });
   } catch (e: any) {
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: e.message });
   }
 });
 
-// Admin: Generate Key
 app.post("/api/admin/generate-key", authorizeAdmin, async (req: any, res: any) => {
   try {
     const { visitorId } = req.body;
-    if (!visitorId) return res.status(400).json({ error: "Missing visitorId" });
-
     const keyValue = `YS-ADMIN-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-    const { data, error } = await supabase
-      .from("keys")
-      .insert([{ key_value: keyValue, visitor_id: visitorId, is_used: false }])
-      .select()
-      .single();
-
-    if (error) return res.status(500).json({ error: error.message });
+    const { data } = await supabase.from("keys").insert([{ key_value: keyValue, visitor_id: visitorId, is_used: false }]).select().single();
     res.json(data);
   } catch (e: any) {
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: e.message });
   }
 });
 
-// Key Check Route
 app.get("/api/get-key/check", async (req: any, res: any) => {
   try {
     const { visitorId } = req.query;
-    if (!visitorId) return res.json({ hasKey: false });
-    
     const { data } = await supabase.from("keys").select("*").eq("visitor_id", visitorId).single();
     if (data) {
-      const expiry = new Date(new Date(data.created_at).getTime() + 24 * 60 * 60 * 1000);
-      if (expiry > new Date()) {
-        return res.json({ hasKey: true, key: data.key_value, expiresAt: expiry.toISOString() });
-      }
+      const expiry = new Date(new Date(data.created_at).getTime() + 86400000);
+      if (expiry > new Date()) return res.json({ hasKey: true, key: data.key_value, expiresAt: expiry.toISOString() });
     }
     res.json({ hasKey: false });
-  } catch (e) {
-    res.json({ hasKey: false });
-  }
+  } catch (e) { res.json({ hasKey: false }); }
 });
 
 const PORT = process.env.PORT || 3000;
