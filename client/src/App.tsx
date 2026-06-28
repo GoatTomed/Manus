@@ -11,6 +11,7 @@ import VerificationError from "./pages/VerificationError";
 import KeyAdmin from "./pages/KeyAdmin";
 import Executors from "./pages/Executors";
 import Track from "./pages/Track";
+import AICoding from "./pages/AICoding";
 import { useEffect } from "react";
 import { nanoid } from "nanoid";
 
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/key-admin" component={KeyAdmin} />
       <Route path="/executors" component={Executors} />
       <Route path="/track" component={Track} />
+      <Route path="/ai" component={AICoding} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
