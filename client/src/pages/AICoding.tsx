@@ -22,7 +22,22 @@ const robloxConnectScript = `local HttpService = game:GetService("HttpService")
 
 local API_URL = "https://yoursuck.vercel.app/api/ai"
 local SESSION_ID = HttpService:GenerateGUID(false)
+local HEARTBEAT_INTERVAL = 10 -- seconds
 
+-- Function to send heartbeat
+function _G.sendHeartbeat()
+    local success, response = pcall(function()
+        return HttpService:GetAsync(API_URL .. "/chat?sessionId=" .. SESSION_ID .. "&heartbeat=true")
+    end)
+    
+    if success then
+        local data = HttpService:JSONDecode(response)
+        return data.result.data.isConnected
+    end
+    return false
+end
+
+-- Function to ask AI for exploit code
 function _G.askAI(question)
     if not question or question == "" then
         warn("Please provide a question")
@@ -54,8 +69,13 @@ function _G.askAI(question)
     return nil
 end
 
+-- Send initial heartbeat
+_G.sendHeartbeat()
+
 print("AI Exploit Generator Ready")
-print("Use: _G.askAI('your question')")`;
+print("Session ID: " .. SESSION_ID)
+print("Use: _G.askAI('your question')")
+print("Status: " .. (_G.sendHeartbeat() and "CONNECTED" or "OFFLINE"))`;
 
 export default function AICoding() {
   const [view, setView] = useState<AIView>("chat");
@@ -92,7 +112,7 @@ export default function AICoding() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentSession?.messages]);
 
-  // Check connection status periodically
+  // Check connection status and listen for heartbeats
   useEffect(() => {
     const checkConnection = async () => {
       try {
@@ -108,7 +128,7 @@ export default function AICoding() {
     };
 
     checkConnection();
-    const interval = setInterval(checkConnection, 5000);
+    const interval = setInterval(checkConnection, 3000); // Check every 3 seconds
     return () => clearInterval(interval);
   }, [currentSession?.id]);
 
@@ -301,7 +321,7 @@ export default function AICoding() {
               {robloxConnected && (
                 <div className="roblox-status">
                   <span className="status-dot roblox"></span>
-                  <span>Connected</span>
+                  <span>Roblox Connected</span>
                 </div>
               )}
             </div>

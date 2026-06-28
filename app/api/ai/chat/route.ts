@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// In-memory store for active connections (in production, use Redis or database)
-const activeConnections = new Set<string>();
+// In-memory store for active connections with timestamps
+const activeConnections = new Map<string, { timestamp: number; isRoblox: boolean }>();
+
+// Cleanup old connections every 30 seconds
+setInterval(() => {
+  const now = Date.now();
+  const TIMEOUT = 60000; // 60 seconds
+  
+  for (const [sessionId, data] of activeConnections.entries()) {
+    if (now - data.timestamp > TIMEOUT) {
+      activeConnections.delete(sessionId);
+    }
+  }
+}, 30000);
 
 /**
  * AI Chat Endpoint
@@ -21,11 +33,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Track Roblox connections
-    if (isRoblox && sessionId) {
-      activeConnections.add(sessionId);
-      // Clean up after 5 minutes of inactivity
-      setTimeout(() => activeConnections.delete(sessionId), 5 * 60 * 1000);
+    // Register connection with heartbeat
+    if (sessionId) {
+      activeConnections.set(sessionId, {
+        timestamp: Date.now(),
+        isRoblox: isRoblox || false,
+      });
     }
 
     // Call Claude API for AI response
@@ -39,14 +52,14 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: "claude-3-5-sonnet-20241022",
         max_tokens: 1024,
-        system: `You are an expert Roblox Lua scripting assistant. You help developers write Lua code for Roblox games.
+        system: `You are an expert Roblox Lua scripting assistant. You help developers write Lua code for Roblox games and test security vulnerabilities.
         
 You have deep knowledge of:
 - Roblox Lua API and services (Players, Workspace, RunService, RemoteEvents, etc.)
 - Lua programming best practices
 - Common Roblox patterns and anti-patterns
 - Performance optimization
-- Security considerations
+- Security considerations and vulnerability testing
 
 When answering:
 1. Provide clear, concise Lua code examples
@@ -80,7 +93,8 @@ Always format code in markdown with \`\`\`lua blocks.`,
             response: `I'm having trouble connecting to the AI service right now. Please try again in a moment.\n\nError: ${response.status}`,
             sessionId,
             timestamp: new Date().toISOString(),
-            isConnected: false,
+            isConnected: true,
+            isRobloxConnected: isRoblox && activeConnections.has(sessionId),
           },
         },
       });
@@ -96,7 +110,7 @@ Always format code in markdown with \`\`\`lua blocks.`,
           sessionId,
           timestamp: new Date().toISOString(),
           isConnected: true,
-          isRobloxConnected: isRoblox ? activeConnections.has(sessionId) : false,
+          isRobloxConnected: isRoblox && activeConnections.has(sessionId),
         },
       },
     });
@@ -113,10 +127,11 @@ Always format code in markdown with \`\`\`lua blocks.`,
 }
 
 /**
- * GET endpoint to check connection status
+ * GET endpoint to check connection status and register heartbeat
  */
 export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get("sessionId");
+  const heartbeat = request.nextUrl.searchParams.get("heartbeat");
   
   if (!sessionId) {
     return NextResponse.json(
@@ -125,14 +140,25 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const isConnected = activeConnections.has(sessionId);
+  // Register heartbeat
+  if (heartbeat === "true") {
+    activeConnections.set(sessionId, {
+      timestamp: Date.now(),
+      isRoblox: true,
+    });
+  }
+
+  const connection = activeConnections.get(sessionId);
+  const isConnected = connection !== undefined;
   
   return NextResponse.json({
     result: {
       data: {
         sessionId,
         isConnected,
+        isRobloxConnected: isConnected && connection?.isRoblox,
         activeConnections: activeConnections.size,
+        timestamp: new Date().toISOString(),
       },
     },
   });
