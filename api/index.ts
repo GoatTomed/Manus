@@ -79,6 +79,20 @@ app.post("/api/ai/chat", async (req: any, res: any) => {
     let aiResponse = "No response generated";
 
     try {
+      // Check if task exists first if we have an ID
+      if (manusTaskId) {
+        try {
+          const checkRes = await axios.get(`https://api.manus.ai/v2/task.get?task_id=${manusTaskId}`, {
+            headers: { "x-manus-api-key": MANUS_API_KEY }
+          });
+          if (!checkRes.data.ok || checkRes.data.task?.status === "expired") {
+            manusTaskId = null;
+          }
+        } catch (e) {
+          manusTaskId = null;
+        }
+      }
+
       if (!manusTaskId) {
         const systemPrompt = `You are an expert Roblox Lua scripting assistant and database integration expert. You help developers write Lua code for Roblox games and connect to databases using LuaSQL.
 
@@ -227,14 +241,16 @@ app.get("/api/ai/chat", async (req: any, res: any) => {
     .eq('session_id', sessionId)
     .single();
   
-  const isConnected = sessionData !== null;
+  // If we can reach this endpoint, the API is "Online"
+  const sessionExists = sessionData !== null;
   
   res.json({
     result: {
       data: {
         sessionId,
-        isConnected,
-        isRobloxConnected: isConnected && sessionData?.is_roblox,
+        isConnected: true, // API is reachable
+        sessionExists,
+        isRobloxConnected: sessionExists && sessionData?.is_roblox,
         timestamp: new Date().toISOString(),
       },
     },

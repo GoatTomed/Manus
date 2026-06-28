@@ -25,6 +25,8 @@ export default function AICoding() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
   const [robloxConnected, setRobloxConnected] = useState(false);
+  const [streamingCode, setStreamingCode] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ status: string; percent: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load sessions from localStorage
@@ -102,6 +104,8 @@ export default function AICoding() {
     };
 
     setLoading(true);
+    setProgress({ status: "Analyzing request...", percent: 10 });
+    setStreamingCode(null);
     const userInput = input;
     setInput("");
 
@@ -114,6 +118,14 @@ export default function AICoding() {
       };
       setCurrentSession(updated);
       setSessions(sessions.map(s => s.id === currentSession.id ? updated : s));
+
+      // Simulate progress for better UX
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (!prev || prev.percent >= 90) return prev;
+          return { ...prev, percent: prev.percent + 5 };
+        });
+      }, 1000);
 
       // If Roblox is connected, send to Roblox
       if (robloxConnected) {
@@ -143,11 +155,22 @@ export default function AICoding() {
         }),
       });
 
+      clearInterval(progressInterval);
+      setProgress({ status: "Generating Lua code...", percent: 95 });
+
       const data = await response.json();
+      const responseText = data.result?.data?.response || "Error: No response from AI";
+      
+      // Extract Lua code for live display
+      const luaMatch = responseText.match(/```lua\n([\s\S]*?)```/);
+      if (luaMatch && luaMatch[1]) {
+        setStreamingCode(luaMatch[1]);
+      }
+
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.result?.data?.response || "Error: No response from AI",
+        content: responseText,
         timestamp: new Date(),
       };
 
@@ -166,7 +189,9 @@ export default function AICoding() {
           s.id === currentSession.id ? { ...s, title: newTitle } : s
         ));
       }
+      setProgress(null);
     } catch (error) {
+      setProgress(null);
       console.error("Error:", error);
       const errorMessage: ChatMessage = {
         id: (Date.now() + 2).toString(),
@@ -299,7 +324,7 @@ export default function AICoding() {
             ) : (
               <>
                 <div className="messages-area">
-                  {currentSession.messages.length === 0 ? (
+                  {currentSession.messages.length === 0 && !loading ? (
                     <div className="welcome-message">
                       <div className="welcome-icon">
                         <i className="ti ti-code"></i>
@@ -308,28 +333,65 @@ export default function AICoding() {
                       <p>Generate Lua code for security testing and vulnerability patching.</p>
                     </div>
                   ) : (
-                    currentSession.messages.map(msg => (
-                      <div key={msg.id} className={`message ${msg.role}`}>
-                        <div className="message-content">
-                          {msg.role === "assistant" ? (
-                            <>
+                    <>
+                      {currentSession.messages.map(msg => (
+                        <div key={msg.id} className={`message ${msg.role}`}>
+                          <div className="message-content">
+                            {msg.role === "assistant" ? (
+                              <>
+                                <div className="message-text">{msg.content}</div>
+                                <button
+                                  className="copy-btn"
+                                  onClick={() => copyToClipboard(msg.content)}
+                                  title="Copy to clipboard"
+                                >
+                                  <i className="ti ti-copy"></i>
+                                  <span>Copy</span>
+                                </button>
+                              </>
+                            ) : (
                               <div className="message-text">{msg.content}</div>
-                              <button
-                                className="copy-btn"
-                                onClick={() => copyToClipboard(msg.content)}
-                                title="Copy to clipboard"
-                              >
-                                <i className="ti ti-copy"></i>
-                                <span>Copy</span>
-                              </button>
-                            </>
-                          ) : (
-                            <div className="message-text">{msg.content}</div>
-                          )}
+                            )}
+                          </div>
+                          <div className="message-time">{formatTime(msg.timestamp)}</div>
                         </div>
-                        <div className="message-time">{formatTime(msg.timestamp)}</div>
-                      </div>
-                    ))
+                      ))}
+
+                      {/* Live Coding Progress */}
+                      {loading && (
+                        <div className="message assistant loading-state">
+                          <div className="message-content">
+                            <div className="project-progress-panel">
+                              <div className="progress-header">
+                                <div className="status-group">
+                                  <i className="ti ti-loader spin"></i>
+                                  <span>{progress?.status || "Processing..."}</span>
+                                </div>
+                                <span className="percent">{progress?.percent || 0}%</span>
+                              </div>
+                              <div className="progress-bar-bg">
+                                <div 
+                                  className="progress-bar-fill" 
+                                  style={{ width: `${progress?.percent || 0}%` }}
+                                ></div>
+                              </div>
+                              
+                              {streamingCode && (
+                                <div className="live-code-container">
+                                  <div className="script-header">
+                                    <span>LIVE LUA OUTPUT</span>
+                                    <div className="pulse-dot"></div>
+                                  </div>
+                                  <pre className="script-content">
+                                    <code>{streamingCode}</code>
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                   <div ref={messagesEndRef} />
                 </div>
