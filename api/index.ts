@@ -40,20 +40,8 @@ const authorizeAdmin = (req: any, res: any, next: any) => {
 // --- MANUS AI INTEGRATION ---
 const MANUS_API_KEY = process.env.MANUS_API_KEY || '';
 
-// In-memory stores for AI chat
-const activeConnections = new Map<string, { timestamp: number; isRoblox: boolean; manusTaskId?: string }>();
+// In-memory stores for fallback and message queue
 const pendingMessages = new Map<string, string[]>();
-
-// Cleanup old connections
-setInterval(() => {
-  const now = Date.now();
-  const TIMEOUT = 60000;
-  for (const [sessionId, data] of activeConnections.entries()) {
-    if (now - data.timestamp > TIMEOUT) {
-      activeConnections.delete(sessionId);
-    }
-  }
-}, 30000);
 
 app.post("/api/ai/chat", async (req: any, res: any) => {
   try {
@@ -65,17 +53,26 @@ app.post("/api/ai/chat", async (req: any, res: any) => {
 
     let manusTaskId;
 
+    // Try to get session from Supabase
     if (sessionId) {
-      const conn = activeConnections.get(sessionId);
-      if (conn) {
-         manusTaskId = conn.manusTaskId;
-         conn.timestamp = Date.now();
-         conn.isRoblox = isRoblox || false;
+      const { data: sessionData } = await supabase
+        .from('ai_sessions')
+        .select('manus_task_id')
+        .eq('session_id', sessionId)
+        .single();
+      
+      if (sessionData) {
+        manusTaskId = sessionData.manus_task_id;
+        // Update last activity
+        await supabase
+          .from('ai_sessions')
+          .update({ last_activity: new Date().toISOString(), is_roblox: isRoblox || false })
+          .eq('session_id', sessionId);
       } else {
-         activeConnections.set(sessionId, {
-           timestamp: Date.now(),
-           isRoblox: isRoblox || false,
-         });
+        // Create new session record
+        await supabase
+          .from('ai_sessions')
+          .insert([{ session_id: sessionId, is_roblox: isRoblox || false }]);
       }
     }
 
@@ -110,8 +107,10 @@ User Message: ${message}`;
         if (createRes.data.ok) {
            manusTaskId = createRes.data.task_id;
            if (sessionId) {
-              const conn = activeConnections.get(sessionId);
-              if (conn) conn.manusTaskId = manusTaskId;
+              await supabase
+                .from('ai_sessions')
+                .update({ manus_task_id: manusTaskId })
+                .eq('session_id', sessionId);
            }
         } else {
            throw new Error(createRes.data.error?.message || "Failed to create task");
@@ -123,7 +122,33 @@ User Message: ${message}`;
          }, {
            headers: { "x-manus-api-key": MANUS_API_KEY, "Content-Type": "application/json" }
          });
-         if (!sendRes.data.ok) throw new Error(sendRes.data.error?.message || "Failed to send message");
+         
+         if (!sendRes.data.ok) {
+           // If task not found, try creating a new one
+           if (sendRes.data.error?.code === "task_not_found") {
+              const createRes = await axios.post("https://api.manus.ai/v2/task.create", {
+                message: { content: message },
+                title: "Roblox Lua Coding Session (Recovered)",
+                interactive_mode: false
+              }, {
+                headers: { "x-manus-api-key": MANUS_API_KEY, "Content-Type": "application/json" }
+              });
+              
+              if (createRes.data.ok) {
+                manusTaskId = createRes.data.task_id;
+                if (sessionId) {
+                   await supabase
+                     .from('ai_sessions')
+                     .update({ manus_task_id: manusTaskId })
+                     .eq('session_id', sessionId);
+                }
+              } else {
+                throw new Error(createRes.data.error?.message || "Failed to recreate task");
+              }
+           } else {
+             throw new Error(sendRes.data.error?.message || "Failed to send message");
+           }
+         }
       }
 
       if (manusTaskId) {
@@ -175,7 +200,7 @@ User Message: ${message}`;
           sessionId,
           timestamp: new Date().toISOString(),
           isConnected: true,
-          isRobloxConnected: isRoblox && activeConnections.has(sessionId),
+          isRobloxConnected: isRoblox && sessionId ? true : false,
         },
       },
     });
@@ -184,32 +209,32 @@ User Message: ${message}`;
   }
 });
 
-app.get("/api/ai/chat", (req: any, res: any) => {
+app.get("/api/ai/chat", async (req: any, res: any) => {
   const sessionId = req.query.sessionId;
   const heartbeat = req.query.heartbeat;
   
   if (!sessionId) return res.status(400).json({ error: "sessionId required" });
 
   if (heartbeat === "true") {
-    const conn = activeConnections.get(sessionId);
-    if (conn) {
-      conn.timestamp = Date.now();
-      conn.isRoblox = true;
-    } else {
-      activeConnections.set(sessionId, { timestamp: Date.now(), isRoblox: true });
-    }
+    await supabase
+      .from('ai_sessions')
+      .upsert({ session_id: sessionId, last_activity: new Date().toISOString(), is_roblox: true }, { onConflict: 'session_id' });
   }
 
-  const connection = activeConnections.get(sessionId);
-  const isConnected = connection !== undefined;
+  const { data: sessionData } = await supabase
+    .from('ai_sessions')
+    .select('*')
+    .eq('session_id', sessionId)
+    .single();
+  
+  const isConnected = sessionData !== null;
   
   res.json({
     result: {
       data: {
         sessionId,
         isConnected,
-        isRobloxConnected: isConnected && connection?.isRoblox,
-        activeConnections: activeConnections.size,
+        isRobloxConnected: isConnected && sessionData?.is_roblox,
         timestamp: new Date().toISOString(),
       },
     },
@@ -249,15 +274,13 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
     if (!visitorId) return res.status(400).json({ error: "Missing visitorId" });
 
     // Use the 'keys' table as a temporary session store
-    // We'll use a special format for key_value to identify sessions
     const sessionId = crypto.randomUUID();
     const secretToken = crypto.randomBytes(16).toString('hex');
     
-    // Store session info in a special key record
     const sessionKey = `SESS1_${secretToken}`;
     const { error } = await supabase.from('keys').insert([{
       key_value: sessionKey,
-      visitor_id: sessionId, // Using correct column
+      visitor_id: sessionId,
       is_used: true,
       generated_by: visitorId
     }]);
@@ -280,7 +303,6 @@ app.get("/api/get-key/verify", async (req: any, res: any) => {
   try {
     const { session, token, step } = req.query;
     
-    // Find the session record in 'keys' table
     const { data: sessionData, error } = await supabase
       .from('keys')
       .select('*')
@@ -352,10 +374,8 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
 
     if (error || !sessionData) return res.status(403).json({ error: "Incomplete" });
 
-    // Clean up the session record
     await supabase.from('keys').delete().eq('id', sessionData.id);
 
-    // Generate or refresh real key
     const { data: existingKey } = await supabase.from("keys").select("*").eq("visitor_id", visitorId).eq("is_used", false).single();
 
     if (existingKey) {
