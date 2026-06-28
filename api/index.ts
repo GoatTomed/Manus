@@ -55,13 +55,12 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
     const secretToken = crypto.randomBytes(16).toString('hex');
     
     // Store session info in a special key record
-    // Using 'redeemed_by' instead of 'visitor_id' because 'visitor_id' column is missing from cache
     const sessionKey = `SESS1_${secretToken}`;
     const { error } = await supabase.from('keys').insert([{
       key_value: sessionKey,
-      redeemed_by: sessionId, // Store sessionId here
-      is_used: true, // Mark as used so it doesn't show up as a real key
-      generated_by: visitorId // Temporarily store visitorId here if needed
+      visitor_id: sessionId, // Using correct column
+      is_used: true,
+      generated_by: visitorId
     }]);
 
     if (error) return res.status(500).json({ error: `DB Error: ${error.message}` });
@@ -86,7 +85,7 @@ app.get("/api/get-key/verify", async (req: any, res: any) => {
     const { data: sessionData, error } = await supabase
       .from('keys')
       .select('*')
-      .eq('redeemed_by', session)
+      .eq('visitor_id', session)
       .like('key_value', `SESS%_${token}`)
       .single();
 
@@ -121,7 +120,7 @@ app.post("/api/get-key/step2", async (req: any, res: any) => {
     const { data: sessionData, error } = await supabase
       .from('keys')
       .select('*')
-      .eq('redeemed_by', sessionId)
+      .eq('visitor_id', sessionId)
       .like('key_value', 'SESS2_%')
       .single();
 
@@ -148,7 +147,7 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
     const { data: sessionData, error } = await supabase
       .from('keys')
       .select('*')
-      .eq('redeemed_by', sessionId)
+      .eq('visitor_id', sessionId)
       .like('key_value', 'COMPLETED_%')
       .single();
 
@@ -158,8 +157,7 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
     await supabase.from('keys').delete().eq('id', sessionData.id);
 
     // Generate or refresh real key
-    // Using 'redeemed_by' instead of 'visitor_id'
-    const { data: existingKey } = await supabase.from("keys").select("*").eq("redeemed_by", visitorId).eq("is_used", false).single();
+    const { data: existingKey } = await supabase.from("keys").select("*").eq("visitor_id", visitorId).eq("is_used", false).single();
 
     if (existingKey) {
       return res.json({ key: existingKey.key_value, expiresAt: new Date(new Date(existingKey.created_at).getTime() + 86400000).toISOString() });
@@ -168,7 +166,7 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
     const newKeyVal = `YS-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
     const { data: newKey, error: insertError } = await supabase.from("keys").insert([{ 
       key_value: newKeyVal, 
-      redeemed_by: visitorId, 
+      visitor_id: visitorId, 
       is_used: false 
     }]).select().single();
     
@@ -186,7 +184,7 @@ app.post("/api/admin/generate-key", authorizeAdmin, async (req: any, res: any) =
     const keyValue = `YS-ADMIN-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
     const { data, error } = await supabase.from("keys").insert([{ 
       key_value: keyValue, 
-      redeemed_by: visitorId, 
+      visitor_id: visitorId, 
       is_used: false 
     }]).select().single();
     
@@ -200,8 +198,7 @@ app.post("/api/admin/generate-key", authorizeAdmin, async (req: any, res: any) =
 app.get("/api/get-key/check", async (req: any, res: any) => {
   try {
     const { visitorId } = req.query;
-    // Using 'redeemed_by' instead of 'visitor_id'
-    const { data } = await supabase.from("keys").select("*").eq("redeemed_by", visitorId).eq("is_used", false).single();
+    const { data } = await supabase.from("keys").select("*").eq("visitor_id", visitorId).eq("is_used", false).single();
     if (data) {
       const expiry = new Date(new Date(data.created_at).getTime() + 86400000);
       if (expiry > new Date()) return res.json({ hasKey: true, key: data.key_value, expiresAt: expiry.toISOString() });
