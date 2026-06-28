@@ -6,9 +6,8 @@
     }
   },
   "rewrites": [
-    { "source": "/ip", "destination": "/api/ips.js" },
-    { "source": "/yousuck.lua", "destination": "/api/yousuck.js" },
-    { "source": "/scripts.lua", "destination": "/api/scripts.js" },
+    { "source": "/api/track-visit", "destination": "/api/index.ts" },
+    { "source": "/api/get-key/(.*)", "destination": "/api/index.ts" },
     {
       "source": "/api/(.*)",
       "destination": "/api/index.ts"
