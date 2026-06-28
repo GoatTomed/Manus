@@ -13,19 +13,10 @@ const app = express();
 // --- Configuration ---
 const EARNPASTE_API_KEY = "ep_1fc0807b695b99c7f244b4d0dd6ac65bd49085dc6a6a2cd2";
 const EARNPASTE_API_URL = "https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste";
-const SESSION_EXPIRY_MINUTES = 30;
 const BASE_URL = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
 const ALLOWED_IP = "24.49.252.230";
 const DEV_MODE = process.env.NODE_ENV === "development";
 
-// --- Rate Limiting ---
-const globalLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 1000,
-  message: { error: "Too many requests" },
-});
-
-app.use(globalLimiter);
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
@@ -40,15 +31,13 @@ const getClientIp = (req: any) => {
   return typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
 };
 
-const generateToken = () => crypto.randomBytes(32).toString('hex');
-
 const authorizeAdmin = (req: any, res: any, next: any) => {
   const ip = getClientIp(req);
   if (!DEV_MODE && ip !== ALLOWED_IP) return res.status(403).json({ error: "Access Denied" });
   next();
 };
 
-// --- CLEAN ROUTES ---
+// --- ROUTES USING ONLY 'keys' TABLE TO AVOID CACHE ISSUES ---
 
 app.get("/api/check-access", authorizeAdmin, (req: any, res: any) => {
   res.json({ allowed: true });
@@ -60,15 +49,21 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
     const { visitorId } = req.body;
     if (!visitorId) return res.status(400).json({ error: "Missing visitorId" });
 
+    // Use the 'keys' table as a temporary session store
+    // We'll use a special format for key_value to identify sessions
     const sessionId = crypto.randomUUID();
-    const secretToken = generateToken();
-    const expiresAt = new Date(Date.now() + SESSION_EXPIRY_MINUTES * 60000).toISOString();
+    const secretToken = crypto.randomBytes(16).toString('hex');
+    
+    // Store session info in a special key record
+    const sessionKey = `SESS1_${secretToken}`;
+    const { error } = await supabase.from('keys').insert([{
+      key_value: sessionKey,
+      visitor_id: visitorId,
+      is_used: true, // Mark as used so it doesn't show up as a real key
+      redeemed_by: sessionId // Store sessionId here
+    }]);
 
-    // Use raw SQL via exec_sql to bypass schema cache
-    const sql = `INSERT INTO auth_sessions (id, visitor_id, ip_address, step, secret_token, expires_at) VALUES ('${sessionId}', '${visitorId}', '${getClientIp(req)}', 'started', '${secretToken}', '${expiresAt}')`;
-    const { error: sessionError } = await supabase.rpc('exec_sql', { cmd: sql });
-
-    if (sessionError) return res.status(500).json({ error: `DB Error: ${sessionError.message}` });
+    if (error) return res.status(500).json({ error: `DB Error: ${error.message}` });
 
     const callbackUrl = `${BASE_URL}/api/get-key/verify?session=${sessionId}&token=${secretToken}&step=1`;
     const epResponse = await axios.post(EARNPASTE_API_URL, { targetUrl: callbackUrl, timer: 15 }, {
@@ -85,25 +80,33 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
 app.get("/api/get-key/verify", async (req: any, res: any) => {
   try {
     const { session, token, step } = req.query;
-    const { data: sessionData, error: fetchError } = await supabase
-      .from('auth_sessions').select('*').eq('id', session).eq('secret_token', token).single();
+    
+    // Find the session record in 'keys' table
+    const { data: sessionData, error } = await supabase
+      .from('keys')
+      .select('*')
+      .eq('redeemed_by', session)
+      .like('key_value', `SESS%_${token}`)
+      .single();
 
-    if (fetchError || !sessionData) return res.status(403).send("Invalid Session");
+    if (error || !sessionData) return res.status(403).send("Invalid Session");
 
-    let nextStep = sessionData.step;
+    let nextStep = step === '1' ? '2' : 'COMPLETED';
+    let newToken = crypto.randomBytes(16).toString('hex');
     let redirectUrl = `/get-key`;
 
-    if (step === '1' && sessionData.step === 'started') {
-      nextStep = 'step1_verified';
+    if (step === '1') {
+      await supabase.from('keys').update({ 
+        key_value: `SESS2_${newToken}` 
+      }).eq('id', sessionData.id);
       redirectUrl += `?step=2&session=${session}`;
-    } else if (step === '2' && sessionData.step === 'step1_verified') {
-      nextStep = 'completed';
+    } else {
+      await supabase.from('keys').update({ 
+        key_value: `COMPLETED_${newToken}` 
+      }).eq('id', sessionData.id);
       redirectUrl += `?completed=true&session=${session}`;
     }
 
-    const sql = `UPDATE auth_sessions SET step = '${nextStep}', secret_token = '${generateToken()}' WHERE id = '${session}'`;
-    await supabase.rpc('exec_sql', { cmd: sql });
-    
     res.redirect(redirectUrl);
   } catch (e: any) {
     res.status(500).send("Verify Error");
@@ -114,14 +117,17 @@ app.get("/api/get-key/verify", async (req: any, res: any) => {
 app.post("/api/get-key/step2", async (req: any, res: any) => {
   try {
     const { sessionId } = req.body;
-    const { data: sessionData, error: fetchError } = await supabase
-      .from('auth_sessions').select('*').eq('id', sessionId).single();
+    const { data: sessionData, error } = await supabase
+      .from('keys')
+      .select('*')
+      .eq('redeemed_by', sessionId)
+      .like('key_value', 'SESS2_%')
+      .single();
 
-    if (fetchError || !sessionData || sessionData.step !== 'step1_verified') {
-      return res.status(403).json({ error: "Step 1 not verified" });
-    }
+    if (error || !sessionData) return res.status(403).json({ error: "Step 1 not verified" });
 
-    const callbackUrl = `${BASE_URL}/api/get-key/verify?session=${sessionId}&token=${sessionData.secret_token}&step=2`;
+    const secretToken = sessionData.key_value.split('_')[1];
+    const callbackUrl = `${BASE_URL}/api/get-key/verify?session=${sessionId}&token=${secretToken}&step=2`;
     const epResponse = await axios.post(EARNPASTE_API_URL, { targetUrl: callbackUrl, timer: 15 }, {
       headers: { "X-API-Key": EARNPASTE_API_KEY }
     });
@@ -138,29 +144,33 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
     const { sessionId } = req.params;
     const { visitorId } = req.query;
 
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('auth_sessions').select('*').eq('id', sessionId).single();
+    const { data: sessionData, error } = await supabase
+      .from('keys')
+      .select('*')
+      .eq('redeemed_by', sessionId)
+      .like('key_value', 'COMPLETED_%')
+      .single();
 
-    if (sessionError || !sessionData || sessionData.step !== 'completed') {
-      return res.status(403).json({ error: "Incomplete" });
-    }
+    if (error || !sessionData) return res.status(403).json({ error: "Incomplete" });
 
-    const { data: existingKey } = await supabase.from("keys").select("*").eq("visitor_id", visitorId).single();
+    // Clean up the session record
+    await supabase.from('keys').delete().eq('id', sessionData.id);
+
+    // Generate or refresh real key
+    const { data: existingKey } = await supabase.from("keys").select("*").eq("visitor_id", visitorId).eq("is_used", false).single();
 
     if (existingKey) {
-      const sql = `UPDATE keys SET created_at = now(), is_used = false WHERE id = '${existingKey.id}'`;
-      await supabase.rpc('exec_sql', { cmd: sql });
       return res.json({ key: existingKey.key_value, expiresAt: new Date(Date.now() + 86400000).toISOString() });
     }
 
     const newKeyVal = `YS-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
-    const sqlInsert = `INSERT INTO keys (key_value, visitor_id, is_used) VALUES ('${newKeyVal}', '${visitorId}', false)`;
-    await supabase.rpc('exec_sql', { cmd: sqlInsert });
+    const { data: newKey } = await supabase.from("keys").insert([{ 
+      key_value: newKeyVal, 
+      visitor_id: visitorId, 
+      is_used: false 
+    }]).select().single();
     
-    const sqlDel = `DELETE FROM auth_sessions WHERE id = '${sessionId}'`;
-    await supabase.rpc('exec_sql', { cmd: sqlDel });
-    
-    res.json({ key: newKeyVal, expiresAt: new Date(Date.now() + 86400000).toISOString() });
+    res.json({ key: newKey.key_value, expiresAt: new Date(Date.now() + 86400000).toISOString() });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -169,15 +179,15 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
 app.post("/api/admin/generate-key", authorizeAdmin, async (req: any, res: any) => {
   try {
     const { visitorId } = req.body;
-    if (!visitorId) return res.status(400).json({ error: "Missing visitorId" });
-
     const keyValue = `YS-ADMIN-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-    const sql = `INSERT INTO keys (key_value, visitor_id, is_used) VALUES ('${keyValue}', '${visitorId}', false)`;
+    const { data, error } = await supabase.from("keys").insert([{ 
+      key_value: keyValue, 
+      visitor_id: visitorId, 
+      is_used: false 
+    }]).select().single();
     
-    const { error } = await supabase.rpc('exec_sql', { cmd: sql });
-
-    if (error) return res.status(500).json({ error: `DB Error: ${error.message}` });
-    res.json({ key_value: keyValue });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -186,7 +196,7 @@ app.post("/api/admin/generate-key", authorizeAdmin, async (req: any, res: any) =
 app.get("/api/get-key/check", async (req: any, res: any) => {
   try {
     const { visitorId } = req.query;
-    const { data } = await supabase.from("keys").select("*").eq("visitor_id", visitorId).single();
+    const { data } = await supabase.from("keys").select("*").eq("visitor_id", visitorId).eq("is_used", false).single();
     if (data) {
       const expiry = new Date(new Date(data.created_at).getTime() + 86400000);
       if (expiry > new Date()) return res.json({ hasKey: true, key: data.key_value, expiresAt: expiry.toISOString() });
