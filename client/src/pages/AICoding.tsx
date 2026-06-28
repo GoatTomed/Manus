@@ -20,20 +20,46 @@ interface ChatSession {
 
 const robloxConnectScript = `local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 -- Configuration
 local API_URL = "https://yoursuck.vercel.app/api/ai"
 local SESSION_ID = HttpService:GenerateGUID(false)
+local HEARTBEAT_INTERVAL = 30 -- seconds
+
+-- Connection status
+local isConnected = false
+local lastHeartbeat = 0
+
+-- Function to check connection status
+function _G.checkAIConnection()
+    local success, response = pcall(function()
+        return HttpService:GetAsync(API_URL .. "/chat?sessionId=" .. SESSION_ID)
+    end)
+    
+    if success then
+        local data = HttpService:JSONDecode(response)
+        isConnected = data.result.data.isConnected
+        return isConnected
+    end
+    return false
+end
 
 -- Function to ask AI
 function _G.askAI(question)
+    if not question or question == "" then
+        warn("Please provide a question")
+        return nil
+    end
+    
     local success, response = pcall(function()
         return HttpService:PostAsync(
             API_URL .. "/chat",
             HttpService:JSONEncode({
                 sessionId = SESSION_ID,
                 message = question,
-                conversationHistory = {}
+                conversationHistory = {},
+                isRoblox = true
             }),
             Enum.HttpContentType.ApplicationJson
         )
@@ -42,18 +68,42 @@ function _G.askAI(question)
     if success then
         local data = HttpService:JSONDecode(response)
         if data.result and data.result.data then
-            print("AI Response:", data.result.data.response)
+            print("✅ AI Response:", data.result.data.response)
             return data.result.data.response
         end
     else
-        warn("Error:", response)
+        warn("❌ Error:", response)
     end
+    return nil
 end
 
--- Example usage:
--- _G.askAI("How do I get the player character?")
--- _G.askAI("How do I create a RemoteEvent?")
-print("AI Assistant ready! Use _G.askAI('your question')")`;
+-- Heartbeat to keep connection alive
+RunService.Heartbeat:Connect(function()
+    local now = tick()
+    if now - lastHeartbeat > HEARTBEAT_INTERVAL then
+        lastHeartbeat = now
+        _G.checkAIConnection()
+        if isConnected then
+            print("🟢 AI Connected")
+        else
+            print("🔴 AI Disconnected")
+        end
+    end
+end)
+
+-- Initialize
+print("🚀 AI Assistant initialized!")
+print("Session ID:", SESSION_ID)
+print("Status: " .. (isConnected and "🟢 Connected" or "🔴 Disconnected"))
+print("")
+print("Commands:")
+print("  _G.askAI('your question') - Ask the AI")
+print("  _G.checkAIConnection() - Check connection status")
+print("")
+print("Examples:")
+print("  _G.askAI('How do I get the player character?')")
+print("  _G.askAI('How do I create a RemoteEvent?')")
+print("  _G.askAI('What is the best way to handle player input?')")`;
 
 export default function AICoding() {
   const [view, setView] = useState<AIView>("chat");
@@ -62,6 +112,8 @@ export default function AICoding() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
+  const [robloxConnected, setRobloxConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load sessions from localStorage
@@ -87,6 +139,26 @@ export default function AICoding() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentSession?.messages]);
+
+  // Check connection status periodically
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await fetch("/api/ai/chat?sessionId=" + (currentSession?.id || "test"));
+        if (response.ok) {
+          const data = await response.json();
+          setIsConnected(data.result?.data?.isConnected || false);
+          setRobloxConnected(data.result?.data?.isRobloxConnected || false);
+        }
+      } catch (error) {
+        setIsConnected(false);
+      }
+    };
+
+    checkConnection();
+    const interval = setInterval(checkConnection, 5000);
+    return () => clearInterval(interval);
+  }, [currentSession?.id]);
 
   const createNewSession = () => {
     const newSession: ChatSession = {
@@ -139,6 +211,7 @@ export default function AICoding() {
           sessionId: currentSession.id,
           message: input,
           conversationHistory: currentSession.messages,
+          isRoblox: false,
         }),
       });
 
@@ -146,7 +219,7 @@ export default function AICoding() {
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.result?.data?.response || "Error: No response",
+        content: data.result?.data?.response || "Error: No response from AI",
         timestamp: new Date(),
       };
 
@@ -157,8 +230,26 @@ export default function AICoding() {
       };
       setCurrentSession(finalUpdate);
       setSessions(sessions.map(s => s.id === currentSession.id ? finalUpdate : s));
+      
+      // Update session title if it's still "New Chat"
+      if (currentSession.title === "New Chat") {
+        const newTitle = input.substring(0, 50) + (input.length > 50 ? "..." : "");
+        setSessions(sessions.map(s => 
+          s.id === currentSession.id ? { ...s, title: newTitle } : s
+        ));
+      }
     } catch (error) {
       console.error("Error:", error);
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 2).toString(),
+        role: "assistant",
+        content: "Error: Failed to get response from AI. Please try again.",
+        timestamp: new Date(),
+      };
+      setCurrentSession({
+        ...currentSession,
+        messages: [...currentSession.messages, userMessage, errorMessage],
+      });
     } finally {
       setLoading(false);
     }
@@ -186,6 +277,10 @@ export default function AICoding() {
             <div className="sidebar-title">
               <i className="ti ti-code"></i>
               <span>AI Lua</span>
+            </div>
+            <div className={`connection-badge ${isConnected ? "connected" : "disconnected"}`}>
+              <span className="status-dot"></span>
+              {isConnected ? "Connected" : "Offline"}
             </div>
           </div>
 
@@ -245,6 +340,18 @@ export default function AICoding() {
                 <h1>AI Lua Coding</h1>
                 <p>Roblox Studio Assistant</p>
               </div>
+            </div>
+            <div className="header-status">
+              <div className={`status-indicator ${isConnected ? "online" : "offline"}`}>
+                <span className="status-dot"></span>
+                <span>{isConnected ? "API Online" : "API Offline"}</span>
+              </div>
+              {robloxConnected && (
+                <div className="roblox-status">
+                  <span className="status-dot roblox"></span>
+                  <span>Roblox Connected</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -368,6 +475,7 @@ export default function AICoding() {
                   <li>Open the Command Bar (View → Command Bar)</li>
                   <li>Paste and execute the script</li>
                   <li>Use <code>_G.askAI("your question")</code> to query the assistant</li>
+                  <li>Use <code>_G.checkAIConnection()</code> to check connection status</li>
                 </ol>
               </div>
 

@@ -36,7 +36,50 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
+}
+
+.connection-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.connection-badge.connected {
+  background: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
+}
+
+.connection-badge.disconnected {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse 2s infinite;
+}
+
+.connection-badge.connected .status-dot {
+  background: #4ade80;
+}
+
+.connection-badge.disconnected .status-dot {
+  background: #ef4444;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .sidebar-title {
@@ -268,6 +311,58 @@
   font-size: 12px;
   color: #71717a;
   margin: 0;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
+}
+
+.status-indicator,
+.roblox-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-indicator.online {
+  background: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
+}
+
+.status-indicator.offline {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.roblox-status {
+  background: rgba(0, 171, 255, 0.1);
+  color: #00ABFF;
+}
+
+.status-indicator .status-dot,
+.roblox-status .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-indicator.online .status-dot {
+  background: #4ade80;
+}
+
+.status-indicator.offline .status-dot {
+  background: #ef4444;
+}
+
+.roblox-status .status-dot.roblox {
+  background: #00ABFF;
 }
 
 /* ===== TAB NAVIGATION ===== */
