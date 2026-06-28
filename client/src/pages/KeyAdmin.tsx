@@ -1,29 +1,17 @@
-<<<<<<< HEAD
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-=======
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
->>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import axios from "axios";
 import { Loader2, Key, Lock, Copy, Check } from "lucide-react";
 
 export default function KeyAdmin() {
-<<<<<<< HEAD
   const [accessChecked, setAccessChecked] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
-=======
-  const [password, setPassword] = useState("");
-  const [isAuthorized, setIsAuthorized] = useState(false);
->>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
   const [generatedKey, setGeneratedKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-<<<<<<< HEAD
   useEffect(() => {
     axios
       .get("/api/check-access")
@@ -38,25 +26,6 @@ export default function KeyAdmin() {
     try {
       const res = await axios.post("/api/admin/generate-key", { visitorId });
       setGeneratedKey(res.data.key_value);
-=======
-  const handleLogin = () => {
-    if (password === "YouSuckTocson") {
-      setIsAuthorized(true);
-    } else {
-      toast.error("Invalid Password");
-    }
-  };
-
-  const handleGenerate = async () => {
-    setIsLoading(true);
-    const visitorId = localStorage.getItem('ys_visitor_id');
-    try {
-      const res = await axios.post("/api/admin/generate-key", {
-        password,
-        visitorId
-      });
-      setGeneratedKey(res.data.key);
->>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
       toast.success("Key generated successfully!");
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to generate key");
@@ -72,19 +41,14 @@ export default function KeyAdmin() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-<<<<<<< HEAD
   if (!accessChecked) return null;
 
   if (accessDenied) {
-=======
-  if (!isAuthorized) {
->>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-<<<<<<< HEAD
               <Lock className="w-6 h-6 text-destructive" />
             </div>
             <CardTitle>Access Denied</CardTitle>
@@ -93,23 +57,6 @@ export default function KeyAdmin() {
             <p className="text-center text-sm text-muted-foreground">
               Your IP address is not authorized to access this panel.
             </p>
-=======
-              <Lock className="w-6 h-6 text-primary" />
-            </div>
-            <CardTitle>Admin Key Generator</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Input
-              type="password"
-              placeholder="Enter Admin Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-            />
-            <Button className="w-full" onClick={handleLogin}>
-              Access
-            </Button>
->>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
           </CardContent>
         </Card>
       </div>
@@ -127,15 +74,9 @@ export default function KeyAdmin() {
         </CardHeader>
         <CardContent className="space-y-6">
           {!generatedKey ? (
-<<<<<<< HEAD
             <Button
               className="w-full h-12 text-lg"
               onClick={handleGenerate}
-=======
-            <Button 
-              className="w-full h-12 text-lg" 
-              onClick={handleGenerate} 
->>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
               disabled={isLoading}
             >
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
@@ -161,8 +102,4 @@ export default function KeyAdmin() {
       </Card>
     </div>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7

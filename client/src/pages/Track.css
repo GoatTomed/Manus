@@ -119,7 +119,6 @@
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-<<<<<<< HEAD
   white-space: nowrap;
 }
 
@@ -131,8 +130,6 @@
 .status-badge.used {
   background: rgba(255, 255, 255, 0.05);
   color: #71717a;
-=======
->>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
 }
 
 .badge-success {
@@ -194,13 +191,10 @@
   cursor: pointer;
 }
 
-<<<<<<< HEAD
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.06);
 }
 
-=======
->>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
 /* Console Styling */
 .console-textarea {
   flex: 1;
@@ -220,7 +214,6 @@
 .console-textarea:focus {
   border-color: rgba(74, 222, 128, 0.2);
 }
-<<<<<<< HEAD
 
 /* ───────────────────────────────────────────
    Added rules below — these classes were used
@@ -474,5 +467,3 @@
     padding-right: 40px;
   }
 }
-=======
->>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
