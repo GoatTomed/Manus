@@ -6,6 +6,8 @@ import axios from "axios";
 import { Loader2, Key, Copy, Check } from "lucide-react";
 import { Link } from "wouter";
 
+const ALLOWED_IP = "24.49.252.230";
+
 export default function KeyAdmin() {
   const [accessChecked, setAccessChecked] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
