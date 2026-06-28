@@ -64,6 +64,7 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
     const secretToken = generateToken();
     const expiresAt = new Date(Date.now() + SESSION_EXPIRY_MINUTES * 60000).toISOString();
 
+    console.log("Attempting RPC create_auth_session with:", { sessionId, visitorId, expiresAt });
     const { error: sessionError } = await supabase.rpc('create_auth_session', {
       p_id: sessionId,
       p_visitor_id: visitorId,
