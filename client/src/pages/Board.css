@@ -1,0 +1,135 @@
+.board-container {
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.board-search-floating {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 320px;
+}
+
+.board-search-floating input {
+  width: 100%;
+  padding: 10px 20px;
+  background: rgba(15, 15, 15, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  color: white;
+  font-size: 13px;
+  outline: none;
+  backdrop-filter: blur(20px);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.board-search-floating input:focus {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(20, 20, 20, 0.9);
+}
+
+.premium-card {
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 180px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.premium-card:hover {
+  border-color: #333;
+  background: #0f0f0f;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.player-node {
+  border-left: 3px solid #3b82f6;
+}
+
+.key-node {
+  border-left: 3px solid #10b981;
+}
+
+.card-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: #444;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #eee;
+  margin-bottom: 2px;
+}
+
+.card-title.monospace {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px;
+}
+
+.card-subtitle {
+  font-size: 11px;
+  color: #555;
+}
+
+.card-status {
+  font-size: 10px;
+  font-weight: 600;
+  color: #10b981;
+  margin-top: 8px;
+  display: inline-block;
+}
+
+.card-footer {
+  font-size: 10px;
+  color: #333;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #151515;
+}
+
+.access-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #000;
+  color: white;
+}
+
+/* React Flow Overrides */
+.react-flow__handle {
+  width: 6px;
+  height: 6px;
+  background: #333;
+  border: none;
+}
+
+.react-flow__edge-path {
+  stroke: #222;
+  stroke-width: 1.5;
+}
+
+.react-flow__attribution {
+  display: none !important;
+}
+
+.react-flow__node {
+  cursor: default !important;
+}

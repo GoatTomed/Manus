@@ -1,0 +1,144 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: 'Space Grotesk', 'Geist', system-ui, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --radius: 12px;
+  --background: #080808;
+  --foreground: #ffffff;
+  --card: #0f0f0f;
+  --card-foreground: #ffffff;
+  --popover: #0f0f0f;
+  --popover-foreground: #ffffff;
+  --primary: #00ABFF;
+  --primary-foreground: #ffffff;
+  --secondary: #141414;
+  --secondary-foreground: #a1a1aa;
+  --muted: #141414;
+  --muted-foreground: #71717a;
+  --accent: #141414;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.06);
+  --input: rgba(255, 255, 255, 0.06);
+  --ring: #00ABFF;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+  body {
+    background-color: var(--background);
+    background-image: 
+      radial-gradient(circle at 50% -20%, rgba(0, 171, 255, 0.08), transparent 50%),
+      linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+    min-height: 100vh;
+    @apply text-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  .dot-grid-bg {
+    background-color: var(--background);
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .navbar {
+    background: rgba(8, 8, 8, 0.7);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .glass-card {
+    background: rgba(15, 15, 15, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  .snap-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.625rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+  
+  .snap-button-primary {
+    background-color: #00ABFF;
+    color: white;
+  }
+  
+  .snap-button-primary:hover {
+    background-color: #0099EE;
+    box-shadow: 0 0 20px rgba(0, 171, 255, 0.3);
+  }
+  
+  .snap-button-primary:active {
+    transform: scale(0.97);
+  }
+
+  .snap-button-secondary {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+  
+  .snap-button-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .snap-button-secondary:active {
+    transform: scale(0.97);
+  }
+
+  @keyframes progress-loading {
+    0% { width: 0%; }
+    100% { width: 100%; }
+  }
+
+  .animate-progress-loading {
+    animation: progress-loading 2.5s ease-in-out forwards;
+  }
+}

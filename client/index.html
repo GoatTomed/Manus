@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=1.0" />
+    <title>YouSuck</title>
+    <link rel="icon" type="image/webp" href="https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- Analytics script loaded dynamically if configured -->
+    <script>
+      (function() {
+        const endpoint = '%VITE_ANALYTICS_ENDPOINT%';
+        const websiteId = '%VITE_ANALYTICS_WEBSITE_ID%';
+        if (endpoint && endpoint !== '%VITE_ANALYTICS_ENDPOINT%' && websiteId && websiteId !== '%VITE_ANALYTICS_WEBSITE_ID%') {
+          const script = document.createElement('script');
+          script.defer = true;
+          script.src = endpoint + '/umami';
+          script.setAttribute('data-website-id', websiteId);
+          document.body.appendChild(script);
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/ip", "destination": "/api/ips.js" },
+    { "source": "/yousuck.lua", "destination": "/api/yousuck.js" },
+    { "source": "/scripts.lua", "destination": "/api/scripts.js" },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.ts"
+    },
+    {
+      "source": "/((?!.*\\.).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

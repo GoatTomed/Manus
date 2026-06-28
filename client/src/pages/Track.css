@@ -1,0 +1,478 @@
+/* Track.css */
+.track-page {
+  width: 100vw;
+  height: 100vh;
+  background: #080808;
+  color: white;
+  overflow: hidden;
+  display: flex;
+  font-family: 'Space Grotesk', 'Geist', system-ui, sans-serif;
+}
+
+.layout.no-padding {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.fixed-sidebar {
+  width: 260px;
+  height: 100vh;
+  background: #0a0a0a;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.main-content.has-fixed-sidebar {
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 40px;
+  background: radial-gradient(circle at 50% 0%, rgba(0, 171, 255, 0.02) 0%, transparent 70%);
+}
+
+.sidebar-nav {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  color: #a1a1aa;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar-item i {
+  font-size: 18px;
+  color: #52525b;
+}
+
+.sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: white;
+}
+
+.sidebar-item.active {
+  background: rgba(0, 171, 255, 0.1);
+  color: #00ABFF;
+}
+
+.sidebar-item.active i {
+  color: #00ABFF;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.table-header {
+  display: grid;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.01);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #71717a;
+}
+
+.table-row {
+  display: grid;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  align-items: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.table-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+<<<<<<< HEAD
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
+}
+
+.status-badge.used {
+  background: rgba(255, 255, 255, 0.05);
+  color: #71717a;
+=======
+>>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
+}
+
+.badge-success {
+  background: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
+}
+
+.badge-neutral {
+  background: rgba(255, 255, 255, 0.05);
+  color: #71717a;
+}
+
+.badge-error {
+  background: rgba(248, 113, 113, 0.1);
+  color: #f87171;
+}
+
+.search-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: white;
+  font-size: 14px;
+  width: 280px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  border-color: #00ABFF;
+}
+
+.btn-primary {
+  background: #00ABFF;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: #0099EE;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.03);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+<<<<<<< HEAD
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+=======
+>>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
+/* Console Styling */
+.console-textarea {
+  flex: 1;
+  background: #0c0c0c;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin: 20px;
+  border-radius: 12px;
+  padding: 24px;
+  color: #4ade80;
+  font-family: 'Geist Mono', monospace;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  line-height: 1.6;
+}
+
+.console-textarea:focus {
+  border-color: rgba(74, 222, 128, 0.2);
+}
+<<<<<<< HEAD
+
+/* ───────────────────────────────────────────
+   Added rules below — these classes were used
+   in Track.tsx but had no styles defined, which
+   is why the layout looked broken/unstyled.
+   ─────────────────────────────────────────── */
+
+.view-container {
+  position: relative;
+  max-width: 1400px;
+}
+
+.view.active {
+  display: block;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.25s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 16px;
+  width: 280px;
+}
+
+.search-container input {
+  background: none;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 14px;
+  width: 100%;
+}
+
+.search-container input::placeholder {
+  color: #52525b;
+}
+
+.search-container:focus-within {
+  border-color: #00ABFF;
+}
+
+.client-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.client-grid .glass-card {
+  padding: 20px;
+  cursor: pointer;
+}
+
+.card-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.executor-badge {
+  background: rgba(255, 255, 255, 0.05);
+  color: #a1a1aa;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.profile-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.btn-action {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: white;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.btn-action:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.btn-action.danger {
+  border-color: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.06);
+}
+
+.btn-action.danger:hover {
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.btn-execute {
+  background: #00ABFF;
+  color: white;
+  border: none;
+  height: 36px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-execute:hover {
+  background: #0099EE;
+}
+
+.btn-execute:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.user-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.user-row.active {
+  border-color: rgba(0, 171, 255, 0.4);
+  background: rgba(0, 171, 255, 0.06);
+}
+
+.logs-table {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.logs-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.logs-table thead th {
+  text-align: left;
+  padding: 14px 24px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #71717a;
+}
+
+.logs-table tbody td {
+  padding: 14px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+}
+
+.logs-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.logs-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.btn-delete {
+  background: rgba(248, 113, 113, 0.08);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.15);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-delete:hover {
+  background: rgba(248, 113, 113, 0.16);
+}
+
+/* ── THE MAIN FIX ──
+   .profile-sidebar is the right-hand detail panel used for
+   both "Key Details" and "Game History" (selectedUserData / selectedKey).
+   It had NO positioning rules at all before, so it rendered
+   inline with no width/background/elevation, which is why it
+   looked broken/overlapping in your screenshots. */
+.profile-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100vh;
+  background: #0a0a0a;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: -20px 0 40px rgba(0, 0, 0, 0.4);
+  padding: 32px 24px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.main-content.has-fixed-sidebar:has(~ .profile-sidebar) {
+  padding-right: 420px;
+}
+
+@media (max-width: 900px) {
+  .profile-sidebar {
+    width: 100%;
+    border-left: none;
+  }
+  .main-content.has-fixed-sidebar:has(~ .profile-sidebar) {
+    padding-right: 40px;
+  }
+}
+=======
+>>>>>>> 8b8a372c405c400df42484fb07ea7c9bf08015a7
