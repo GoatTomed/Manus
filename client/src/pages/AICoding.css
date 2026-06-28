@@ -566,20 +566,34 @@
 }
 
 .copy-btn {
-  background: transparent;
-  border: none;
-  color: #a1a1aa;
+  background: rgba(0, 171, 255, 0.1);
+  border: 1px solid rgba(0, 171, 255, 0.3);
+  color: #00ABFF;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
   transition: all 0.2s;
   flex-shrink: 0;
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .copy-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: rgba(0, 171, 255, 0.2);
+  border-color: rgba(0, 171, 255, 0.5);
+  color: #00CCFF;
+}
+
+.copy-btn:active {
+  transform: scale(0.95);
+}
+
+.copy-btn i {
+  font-size: 14px;
 }
 
 .message-time {

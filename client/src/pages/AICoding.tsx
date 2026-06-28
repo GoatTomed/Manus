@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import "./AICoding.css";
 
-type AIView = "chat" | "connect";
-
 interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -18,67 +16,7 @@ interface ChatSession {
   updatedAt: Date;
 }
 
-const robloxConnectScript = `local HttpService = game:GetService("HttpService")
-
-local API_URL = "https://yoursuck.vercel.app/api/ai"
-local SESSION_ID = HttpService:GenerateGUID(false)
-local HEARTBEAT_INTERVAL = 10 -- seconds
-
--- Function to send heartbeat
-function _G.sendHeartbeat()
-    local success, response = pcall(function()
-        return HttpService:GetAsync(API_URL .. "/chat?sessionId=" .. SESSION_ID .. "&heartbeat=true")
-    end)
-    
-    if success then
-        local data = HttpService:JSONDecode(response)
-        return data.result.data.isConnected
-    end
-    return false
-end
-
--- Function to ask AI for exploit code
-function _G.askAI(question)
-    if not question or question == "" then
-        warn("Please provide a question")
-        return nil
-    end
-    
-    local success, response = pcall(function()
-        return HttpService:PostAsync(
-            API_URL .. "/chat",
-            HttpService:JSONEncode({
-                sessionId = SESSION_ID,
-                message = question,
-                conversationHistory = {},
-                isRoblox = true
-            }),
-            Enum.HttpContentType.ApplicationJson
-        )
-    end)
-    
-    if success then
-        local data = HttpService:JSONDecode(response)
-        if data.result and data.result.data then
-            print(data.result.data.response)
-            return data.result.data.response
-        end
-    else
-        warn("Error:", response)
-    end
-    return nil
-end
-
--- Send initial heartbeat
-_G.sendHeartbeat()
-
-print("AI Exploit Generator Ready")
-print("Session ID: " .. SESSION_ID)
-print("Use: _G.askAI('your question')")
-print("Status: " .. (_G.sendHeartbeat() and "CONNECTED" or "OFFLINE"))`;
-
 export default function AICoding() {
-  const [view, setView] = useState<AIView>("chat");
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [input, setInput] = useState("");
@@ -112,7 +50,7 @@ export default function AICoding() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentSession?.messages]);
 
-  // Check connection status and listen for heartbeats
+  // Check connection status
   useEffect(() => {
     const checkConnection = async () => {
       try {
@@ -128,7 +66,7 @@ export default function AICoding() {
     };
 
     checkConnection();
-    const interval = setInterval(checkConnection, 3000); // Check every 3 seconds
+    const interval = setInterval(checkConnection, 3000);
     return () => clearInterval(interval);
   }, [currentSession?.id]);
 
@@ -163,6 +101,7 @@ export default function AICoding() {
     };
 
     setLoading(true);
+    const userInput = input;
     setInput("");
 
     try {
@@ -175,15 +114,31 @@ export default function AICoding() {
       setCurrentSession(updated);
       setSessions(sessions.map(s => s.id === currentSession.id ? updated : s));
 
-      // Call API
+      // If Roblox is connected, send to Roblox
+      if (robloxConnected) {
+        try {
+          await fetch("/api/ai/send-to-roblox", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sessionId: currentSession.id,
+              message: userInput,
+            }),
+          });
+        } catch (e) {
+          console.error("Failed to send to Roblox:", e);
+        }
+      }
+
+      // Call AI API
       const response = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId: currentSession.id,
-          message: input,
+          message: userInput,
           conversationHistory: currentSession.messages,
-          isRoblox: false,
+          isRoblox: robloxConnected,
         }),
       });
 
@@ -205,7 +160,7 @@ export default function AICoding() {
       
       // Update session title if it's still "New Chat"
       if (currentSession.title === "New Chat") {
-        const newTitle = input.substring(0, 50) + (input.length > 50 ? "..." : "");
+        const newTitle = userInput.substring(0, 50) + (userInput.length > 50 ? "..." : "");
         setSessions(sessions.map(s => 
           s.id === currentSession.id ? { ...s, title: newTitle } : s
         ));
@@ -327,114 +282,74 @@ export default function AICoding() {
             </div>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="tab-nav">
-            <button
-              className={`tab-btn ${view === "chat" ? "active" : ""}`}
-              onClick={() => setView("chat")}
-            >
-              <i className="ti ti-message-circle"></i>
-              <span>AI Coding Lua</span>
-            </button>
-            <button
-              className={`tab-btn ${view === "connect" ? "active" : ""}`}
-              onClick={() => setView("connect")}
-            >
-              <i className="ti ti-plug"></i>
-              <span>Connect</span>
-            </button>
-          </div>
-
           {/* Chat View */}
-          {view === "chat" && (
-            <div className="chat-container">
-              {!currentSession ? (
-                <div className="empty-chat">
-                  <i className="ti ti-message-circle-off"></i>
-                  <h2>No conversation selected</h2>
-                  <p>Create a new chat to get started</p>
-                  <button className="create-btn" onClick={createNewSession}>
-                    <i className="ti ti-plus"></i>
-                    Start New Chat
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="messages-area">
-                    {currentSession.messages.length === 0 ? (
-                      <div className="welcome-message">
-                        <div className="welcome-icon">
-                          <i className="ti ti-code"></i>
-                        </div>
-                        <h2>Welcome to AI Lua Coding</h2>
-                        <p>Generate Lua code for security testing and vulnerability patching.</p>
-                      </div>
-                    ) : (
-                      currentSession.messages.map(msg => (
-                        <div key={msg.id} className={`message ${msg.role}`}>
-                          <div className="message-content">
-                            {msg.role === "assistant" ? (
-                              <>
-                                <div className="message-text">{msg.content}</div>
-                                <button
-                                  className="copy-btn"
-                                  onClick={() => copyToClipboard(msg.content)}
-                                  title="Copy to clipboard"
-                                >
-                                  <i className="ti ti-copy"></i>
-                                </button>
-                              </>
-                            ) : (
-                              <div className="message-text">{msg.content}</div>
-                            )}
-                          </div>
-                          <div className="message-time">{formatTime(msg.timestamp)}</div>
-                        </div>
-                      ))
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
-
-                  <div className="input-area">
-                    <div className="input-wrapper">
-                      <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                        placeholder="Ask about Lua scripting..."
-                        disabled={loading}
-                      />
-                      <button onClick={sendMessage} disabled={loading || !input.trim()} className="send-btn">
-                        <i className={`ti ti-${loading ? "loader" : "send"}`}></i>
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Connect View */}
-          {view === "connect" && (
-            <div className="connect-container">
-              <div className="script-box">
-                <div className="script-header">
-                  <span>Exploit Script</span>
-                  <button
-                    className="copy-script-btn"
-                    onClick={() => copyToClipboard(robloxConnectScript)}
-                  >
-                    <i className="ti ti-copy"></i>
-                    Copy Script
-                  </button>
-                </div>
-                <pre className="script-content">
-                  <code>{robloxConnectScript}</code>
-                </pre>
+          <div className="chat-container">
+            {!currentSession ? (
+              <div className="empty-chat">
+                <i className="ti ti-message-circle-off"></i>
+                <h2>No conversation selected</h2>
+                <p>Create a new chat to get started</p>
+                <button className="create-btn" onClick={createNewSession}>
+                  <i className="ti ti-plus"></i>
+                  Start New Chat
+                </button>
               </div>
-            </div>
-          )}
+            ) : (
+              <>
+                <div className="messages-area">
+                  {currentSession.messages.length === 0 ? (
+                    <div className="welcome-message">
+                      <div className="welcome-icon">
+                        <i className="ti ti-code"></i>
+                      </div>
+                      <h2>Welcome to AI Lua Coding</h2>
+                      <p>Generate Lua code for security testing and vulnerability patching.</p>
+                    </div>
+                  ) : (
+                    currentSession.messages.map(msg => (
+                      <div key={msg.id} className={`message ${msg.role}`}>
+                        <div className="message-content">
+                          {msg.role === "assistant" ? (
+                            <>
+                              <div className="message-text">{msg.content}</div>
+                              <button
+                                className="copy-btn"
+                                onClick={() => copyToClipboard(msg.content)}
+                                title="Copy to clipboard"
+                              >
+                                <i className="ti ti-copy"></i>
+                                <span>Copy</span>
+                              </button>
+                            </>
+                          ) : (
+                            <div className="message-text">{msg.content}</div>
+                          )}
+                        </div>
+                        <div className="message-time">{formatTime(msg.timestamp)}</div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <div className="input-area">
+                  <div className="input-wrapper">
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                      placeholder="Ask about Lua scripting..."
+                      disabled={loading}
+                    />
+                    <button onClick={sendMessage} disabled={loading || !input.trim()} className="send-btn">
+                      <i className={`ti ti-${loading ? "loader" : "send"}`}></i>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
