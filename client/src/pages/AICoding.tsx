@@ -19,33 +19,10 @@ interface ChatSession {
 }
 
 const robloxConnectScript = `local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 
--- Configuration
 local API_URL = "https://yoursuck.vercel.app/api/ai"
 local SESSION_ID = HttpService:GenerateGUID(false)
-local HEARTBEAT_INTERVAL = 30 -- seconds
 
--- Connection status
-local isConnected = false
-local lastHeartbeat = 0
-
--- Function to check connection status
-function _G.checkAIConnection()
-    local success, response = pcall(function()
-        return HttpService:GetAsync(API_URL .. "/chat?sessionId=" .. SESSION_ID)
-    end)
-    
-    if success then
-        local data = HttpService:JSONDecode(response)
-        isConnected = data.result.data.isConnected
-        return isConnected
-    end
-    return false
-end
-
--- Function to ask AI
 function _G.askAI(question)
     if not question or question == "" then
         warn("Please provide a question")
@@ -68,42 +45,17 @@ function _G.askAI(question)
     if success then
         local data = HttpService:JSONDecode(response)
         if data.result and data.result.data then
-            print("✅ AI Response:", data.result.data.response)
+            print(data.result.data.response)
             return data.result.data.response
         end
     else
-        warn("❌ Error:", response)
+        warn("Error:", response)
     end
     return nil
 end
 
--- Heartbeat to keep connection alive
-RunService.Heartbeat:Connect(function()
-    local now = tick()
-    if now - lastHeartbeat > HEARTBEAT_INTERVAL then
-        lastHeartbeat = now
-        _G.checkAIConnection()
-        if isConnected then
-            print("🟢 AI Connected")
-        else
-            print("🔴 AI Disconnected")
-        end
-    end
-end)
-
--- Initialize
-print("🚀 AI Assistant initialized!")
-print("Session ID:", SESSION_ID)
-print("Status: " .. (isConnected and "🟢 Connected" or "🔴 Disconnected"))
-print("")
-print("Commands:")
-print("  _G.askAI('your question') - Ask the AI")
-print("  _G.checkAIConnection() - Check connection status")
-print("")
-print("Examples:")
-print("  _G.askAI('How do I get the player character?')")
-print("  _G.askAI('How do I create a RemoteEvent?')")
-print("  _G.askAI('What is the best way to handle player input?')")`;
+print("AI Exploit Generator Ready")
+print("Use: _G.askAI('your question')")`;
 
 export default function AICoding() {
   const [view, setView] = useState<AIView>("chat");
@@ -338,7 +290,7 @@ export default function AICoding() {
               <i className="ti ti-code"></i>
               <div>
                 <h1>AI Lua Coding</h1>
-                <p>Roblox Studio Assistant</p>
+                <p>Security Testing Tool</p>
               </div>
             </div>
             <div className="header-status">
@@ -349,7 +301,7 @@ export default function AICoding() {
               {robloxConnected && (
                 <div className="roblox-status">
                   <span className="status-dot roblox"></span>
-                  <span>Roblox Connected</span>
+                  <span>Connected</span>
                 </div>
               )}
             </div>
@@ -394,8 +346,8 @@ export default function AICoding() {
                         <div className="welcome-icon">
                           <i className="ti ti-code"></i>
                         </div>
-                        <h2>Welcome to AI Lua Coding Assistant</h2>
-                        <p>Ask questions about Roblox Lua scripting, get code examples, and learn best practices.</p>
+                        <h2>Welcome to AI Lua Coding</h2>
+                        <p>Generate Lua code for security testing and vulnerability patching.</p>
                       </div>
                     ) : (
                       currentSession.messages.map(msg => (
@@ -430,7 +382,7 @@ export default function AICoding() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                        placeholder="Ask about Roblox Lua scripting..."
+                        placeholder="Ask about Lua scripting..."
                         disabled={loading}
                       />
                       <button onClick={sendMessage} disabled={loading || !input.trim()} className="send-btn">
@@ -446,14 +398,9 @@ export default function AICoding() {
           {/* Connect View */}
           {view === "connect" && (
             <div className="connect-container">
-              <div className="connect-header">
-                <h2>Roblox Studio Connection</h2>
-                <p>Copy this script into Roblox Studio to connect with the AI assistant</p>
-              </div>
-
               <div className="script-box">
                 <div className="script-header">
-                  <span>Lua Script</span>
+                  <span>Exploit Script</span>
                   <button
                     className="copy-script-btn"
                     onClick={() => copyToClipboard(robloxConnectScript)}
@@ -465,36 +412,6 @@ export default function AICoding() {
                 <pre className="script-content">
                   <code>{robloxConnectScript}</code>
                 </pre>
-              </div>
-
-              <div className="usage-guide">
-                <h3>How to Use</h3>
-                <ol>
-                  <li>Copy the script above</li>
-                  <li>Open Roblox Studio</li>
-                  <li>Open the Command Bar (View → Command Bar)</li>
-                  <li>Paste and execute the script</li>
-                  <li>Use <code>_G.askAI("your question")</code> to query the assistant</li>
-                  <li>Use <code>_G.checkAIConnection()</code> to check connection status</li>
-                </ol>
-              </div>
-
-              <div className="features-grid">
-                <div className="feature-card">
-                  <i className="ti ti-code"></i>
-                  <h4>Lua Syntax Highlighting</h4>
-                  <p>All code snippets include proper Lua syntax highlighting</p>
-                </div>
-                <div className="feature-card">
-                  <i className="ti ti-history"></i>
-                  <h4>Persistent History</h4>
-                  <p>Your chat history is saved automatically for future reference</p>
-                </div>
-                <div className="feature-card">
-                  <i className="ti ti-plug"></i>
-                  <h4>Direct Integration</h4>
-                  <p>Query the AI directly from Roblox Studio via HttpService</p>
-                </div>
               </div>
             </div>
           )}
