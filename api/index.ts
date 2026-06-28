@@ -37,6 +37,200 @@ const authorizeAdmin = (req: any, res: any, next: any) => {
   next();
 };
 
+// --- MANUS AI INTEGRATION ---
+const MANUS_API_KEY = process.env.MANUS_API_KEY || '';
+
+// In-memory stores for AI chat
+const activeConnections = new Map<string, { timestamp: number; isRoblox: boolean; manusTaskId?: string }>();
+const pendingMessages = new Map<string, string[]>();
+
+// Cleanup old connections
+setInterval(() => {
+  const now = Date.now();
+  const TIMEOUT = 60000;
+  for (const [sessionId, data] of activeConnections.entries()) {
+    if (now - data.timestamp > TIMEOUT) {
+      activeConnections.delete(sessionId);
+    }
+  }
+}, 30000);
+
+app.post("/api/ai/chat", async (req: any, res: any) => {
+  try {
+    const { sessionId, message, conversationHistory, isRoblox } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    let manusTaskId;
+
+    if (sessionId) {
+      const conn = activeConnections.get(sessionId);
+      if (conn) {
+         manusTaskId = conn.manusTaskId;
+         conn.timestamp = Date.now();
+         conn.isRoblox = isRoblox || false;
+      } else {
+         activeConnections.set(sessionId, {
+           timestamp: Date.now(),
+           isRoblox: isRoblox || false,
+         });
+      }
+    }
+
+    let aiResponse = "No response generated";
+
+    try {
+      if (!manusTaskId) {
+        // Create new Manus task
+        const systemPrompt = `You are an expert Roblox Lua scripting assistant and database integration expert. You help developers write Lua code for Roblox games and connect to databases using LuaSQL.
+
+You have deep knowledge of:
+- Roblox Lua API and services (Players, Workspace, RunService, RemoteEvents, etc.)
+- LuaSQL documentation and database connectivity (ODBC, Oracle, MySQL, SQLite, PostgreSQL)
+- Using luasql.env() to create environments, env:connect() for connections, and conn:execute() for queries.
+- Handling LuaSQL cursor objects and fetching results row-by-row.
+
+When answering:
+1. Provide clear, concise Lua code examples.
+2. If the user asks about databases, use LuaSQL correctly.
+3. Explain what the code does and include comments.
+4. Format code in markdown with \`\`\`lua blocks.
+
+User Message: ${message}`;
+
+        const createRes = await axios.post("https://api.manus.ai/v2/task.create", {
+          message: {
+             text: systemPrompt
+          },
+          title: "Roblox Lua Coding Session",
+          interactive_mode: false
+        }, {
+          headers: {
+            "x-manus-api-key": MANUS_API_KEY,
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (createRes.data.ok) {
+           manusTaskId = createRes.data.task_id;
+           if (sessionId) {
+              const conn = activeConnections.get(sessionId);
+              if (conn) conn.manusTaskId = manusTaskId;
+           }
+        }
+      } else {
+         // Send message to existing task
+         await axios.post("https://api.manus.ai/v2/task.sendMessage", {
+           task_id: manusTaskId,
+           message: {
+              text: message
+           }
+         }, {
+           headers: {
+             "x-manus-api-key": MANUS_API_KEY,
+             "Content-Type": "application/json"
+           }
+         });
+      }
+
+      // Poll for response (simplified polling for immediate response if possible)
+      if (manusTaskId) {
+         let attempts = 0;
+         while (attempts < 10) {
+            const listRes = await axios.get(`https://api.manus.ai/v2/task.listMessages?task_id=${manusTaskId}&order=desc&limit=10`, {
+               headers: { "x-manus-api-key": MANUS_API_KEY }
+            });
+            
+            if (listRes.data.ok && listRes.data.events) {
+               const stoppedEvent = listRes.data.events.find((e: any) => e.type === "status_update" && e.status_update?.agent_status === "stopped");
+               if (stoppedEvent) {
+                  const assistantMsg = listRes.data.events.find((e: any) => e.type === "assistant_message");
+                  if (assistantMsg && assistantMsg.assistant_message?.text) {
+                     aiResponse = assistantMsg.assistant_message.text;
+                  }
+                  break;
+               }
+            }
+            await new Promise(r => setTimeout(r, 2000));
+            attempts++;
+         }
+      }
+
+    } catch (apiError: any) {
+      console.error("Manus API Error:", apiError.response?.data || apiError.message);
+      aiResponse = `I'm having trouble connecting to the AI service right now. Please try again in a moment.`;
+    }
+
+    res.json({
+      result: {
+        data: {
+          response: aiResponse,
+          sessionId,
+          timestamp: new Date().toISOString(),
+          isConnected: true,
+          isRobloxConnected: isRoblox && activeConnections.has(sessionId),
+        },
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: "Internal server error", details: error.message });
+  }
+});
+
+app.get("/api/ai/chat", (req: any, res: any) => {
+  const sessionId = req.query.sessionId;
+  const heartbeat = req.query.heartbeat;
+  
+  if (!sessionId) return res.status(400).json({ error: "sessionId required" });
+
+  if (heartbeat === "true") {
+    const conn = activeConnections.get(sessionId);
+    if (conn) {
+      conn.timestamp = Date.now();
+      conn.isRoblox = true;
+    } else {
+      activeConnections.set(sessionId, { timestamp: Date.now(), isRoblox: true });
+    }
+  }
+
+  const connection = activeConnections.get(sessionId);
+  const isConnected = connection !== undefined;
+  
+  res.json({
+    result: {
+      data: {
+        sessionId,
+        isConnected,
+        isRobloxConnected: isConnected && connection?.isRoblox,
+        activeConnections: activeConnections.size,
+        timestamp: new Date().toISOString(),
+      },
+    },
+  });
+});
+
+app.post("/api/ai/send-to-roblox", (req: any, res: any) => {
+  const { sessionId, message } = req.body;
+  if (!sessionId || !message) return res.status(400).json({ error: "sessionId and message required" });
+
+  if (!pendingMessages.has(sessionId)) pendingMessages.set(sessionId, []);
+  pendingMessages.get(sessionId)!.push(message);
+
+  res.json({ result: { data: { success: true, sessionId, messageQueued: true } } });
+});
+
+app.get("/api/ai/send-to-roblox", (req: any, res: any) => {
+  const sessionId = req.query.sessionId;
+  if (!sessionId) return res.status(400).json({ error: "sessionId required" });
+
+  const messages = pendingMessages.get(sessionId) || [];
+  if (messages.length > 0) pendingMessages.delete(sessionId);
+
+  res.json({ result: { data: { sessionId, messages, hasMessages: messages.length > 0 } } });
+});
+
 // --- ROUTES USING ONLY 'keys' TABLE TO AVOID CACHE ISSUES ---
 
 app.get("/api/check-access", authorizeAdmin, (req: any, res: any) => {
