@@ -64,14 +64,14 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
     const secretToken = generateToken();
     const expiresAt = new Date(Date.now() + SESSION_EXPIRY_MINUTES * 60000).toISOString();
 
-    const { error: sessionError } = await supabase.from('auth_sessions').insert([{
-      id: sessionId,
-      visitor_id: visitorId,
-      ip_address: getClientIp(req),
-      step: 'started',
-      secret_token: secretToken,
-      expires_at: expiresAt
-    }]);
+    const { error: sessionError } = await supabase.rpc('create_auth_session', {
+      p_id: sessionId,
+      p_visitor_id: visitorId,
+      p_ip_address: getClientIp(req),
+      p_step: 'started',
+      p_secret_token: secretToken,
+      p_expires_at: expiresAt
+    });
 
     if (sessionError) return res.status(500).json({ error: `DB Error: ${sessionError.message}` });
 
