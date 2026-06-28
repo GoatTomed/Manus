@@ -64,7 +64,7 @@ app.post("/api/get-key/start", async (req: any, res: any) => {
     const secretToken = generateToken();
     const expiresAt = new Date(Date.now() + SESSION_EXPIRY_MINUTES * 60000).toISOString();
 
-    const { error: sessionError } = await supabase.from('sessions').insert([{
+    const { error: sessionError } = await supabase.from('auth_sessions').insert([{
       id: sessionId,
       visitor_id: visitorId,
       ip_address: getClientIp(req),
@@ -91,7 +91,7 @@ app.get("/api/get-key/verify", async (req: any, res: any) => {
   try {
     const { session, token, step } = req.query;
     const { data: sessionData, error: fetchError } = await supabase
-      .from('sessions').select('*').eq('id', session).eq('secret_token', token).single();
+      .from('auth_sessions').select('*').eq('id', session).eq('secret_token', token).single();
 
     if (fetchError || !sessionData) return res.status(403).send("Invalid Session");
 
@@ -106,7 +106,7 @@ app.get("/api/get-key/verify", async (req: any, res: any) => {
       redirectUrl += `?completed=true&session=${session}`;
     }
 
-    await supabase.from('sessions').update({ step: nextStep, secret_token: generateToken() }).eq('id', session);
+    await supabase.from('auth_sessions').update({ step: nextStep, secret_token: generateToken() }).eq('id', session);
     res.redirect(redirectUrl);
   } catch (e: any) {
     res.status(500).send("Verify Error");
@@ -118,7 +118,7 @@ app.post("/api/get-key/step2", async (req: any, res: any) => {
   try {
     const { sessionId } = req.body;
     const { data: sessionData, error: fetchError } = await supabase
-      .from('sessions').select('*').eq('id', sessionId).single();
+      .from('auth_sessions').select('*').eq('id', sessionId).single();
 
     if (fetchError || !sessionData || sessionData.step !== 'step1_verified') {
       return res.status(403).json({ error: "Step 1 not verified" });
@@ -142,7 +142,7 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
     const { visitorId } = req.query;
 
     const { data: sessionData, error: sessionError } = await supabase
-      .from('sessions').select('*').eq('id', sessionId).single();
+      .from('auth_sessions').select('*').eq('id', sessionId).single();
 
     if (sessionError || !sessionData || sessionData.step !== 'completed') {
       return res.status(403).json({ error: "Incomplete" });
@@ -158,7 +158,7 @@ app.get("/api/get-key/result/:sessionId", async (req: any, res: any) => {
     const newKeyVal = `YS-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
     const { data: newKey } = await supabase.from("keys").insert([{ key_value: newKeyVal, visitor_id: visitorId, is_used: false }]).select().single();
     
-    await supabase.from('sessions').delete().eq('id', sessionId);
+    await supabase.from('auth_sessions').delete().eq('id', sessionId);
     res.json({ key: newKey.key_value, expiresAt: new Date(Date.now() + 86400000).toISOString() });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
