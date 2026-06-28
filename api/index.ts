@@ -100,7 +100,7 @@ When answering:
 User Message: ${message}`;
 
         const createRes = await axios.post("https://api.manus.ai/v2/task.create", {
-          message: { text: systemPrompt },
+          message: { content: systemPrompt },
           title: "Roblox Lua Coding Session",
           interactive_mode: false
         }, {
@@ -119,7 +119,7 @@ User Message: ${message}`;
       } else {
          const sendRes = await axios.post("https://api.manus.ai/v2/task.sendMessage", {
            task_id: manusTaskId,
-           message: { text: message }
+           message: { content: message }
          }, {
            headers: { "x-manus-api-key": MANUS_API_KEY, "Content-Type": "application/json" }
          });
