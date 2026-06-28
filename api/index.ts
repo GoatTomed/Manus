@@ -83,7 +83,6 @@ app.post("/api/ai/chat", async (req: any, res: any) => {
 
     try {
       if (!manusTaskId) {
-        // Create new Manus task
         const systemPrompt = `You are an expert Roblox Lua scripting assistant and database integration expert. You help developers write Lua code for Roblox games and connect to databases using LuaSQL.
 
 You have deep knowledge of:
@@ -101,16 +100,11 @@ When answering:
 User Message: ${message}`;
 
         const createRes = await axios.post("https://api.manus.ai/v2/task.create", {
-          message: {
-             text: systemPrompt
-          },
+          message: { text: systemPrompt },
           title: "Roblox Lua Coding Session",
           interactive_mode: false
         }, {
-          headers: {
-            "x-manus-api-key": MANUS_API_KEY,
-            "Content-Type": "application/json"
-          }
+          headers: { "x-manus-api-key": MANUS_API_KEY, "Content-Type": "application/json" }
         });
 
         if (createRes.data.ok) {
@@ -119,48 +113,59 @@ User Message: ${message}`;
               const conn = activeConnections.get(sessionId);
               if (conn) conn.manusTaskId = manusTaskId;
            }
+        } else {
+           throw new Error(createRes.data.error?.message || "Failed to create task");
         }
       } else {
-         // Send message to existing task
-         await axios.post("https://api.manus.ai/v2/task.sendMessage", {
+         const sendRes = await axios.post("https://api.manus.ai/v2/task.sendMessage", {
            task_id: manusTaskId,
-           message: {
-              text: message
-           }
+           message: { text: message }
          }, {
-           headers: {
-             "x-manus-api-key": MANUS_API_KEY,
-             "Content-Type": "application/json"
-           }
+           headers: { "x-manus-api-key": MANUS_API_KEY, "Content-Type": "application/json" }
          });
+         if (!sendRes.data.ok) throw new Error(sendRes.data.error?.message || "Failed to send message");
       }
 
-      // Poll for response (simplified polling for immediate response if possible)
       if (manusTaskId) {
          let attempts = 0;
-         while (attempts < 10) {
+         const maxAttempts = 15; // 30 seconds total
+         while (attempts < maxAttempts) {
             const listRes = await axios.get(`https://api.manus.ai/v2/task.listMessages?task_id=${manusTaskId}&order=desc&limit=10`, {
                headers: { "x-manus-api-key": MANUS_API_KEY }
             });
             
             if (listRes.data.ok && listRes.data.events) {
-               const stoppedEvent = listRes.data.events.find((e: any) => e.type === "status_update" && e.status_update?.agent_status === "stopped");
-               if (stoppedEvent) {
-                  const assistantMsg = listRes.data.events.find((e: any) => e.type === "assistant_message");
-                  if (assistantMsg && assistantMsg.assistant_message?.text) {
-                     aiResponse = assistantMsg.assistant_message.text;
-                  }
+               const events = listRes.data.events;
+               const errorMsg = events.find((e: any) => e.type === "error_message");
+               if (errorMsg) {
+                  aiResponse = `Manus Error: ${errorMsg.error_message?.message || "Unknown agent error"}`;
+                  break;
+               }
+
+               const assistantMsg = events.find((e: any) => e.type === "assistant_message");
+               if (assistantMsg && assistantMsg.assistant_message?.text) {
+                  aiResponse = assistantMsg.assistant_message.text;
+                  break;
+               }
+
+               const statusUpdate = events.find((e: any) => e.type === "status_update");
+               if (statusUpdate && statusUpdate.status_update?.agent_status === "stopped" && !assistantMsg) {
+                  aiResponse = "Agent stopped without producing a response.";
                   break;
                }
             }
             await new Promise(r => setTimeout(r, 2000));
             attempts++;
          }
+         if (attempts >= maxAttempts && aiResponse === "No response generated") {
+            aiResponse = "Response timeout: The agent is still working. Please try refreshing or sending another message.";
+         }
       }
 
     } catch (apiError: any) {
-      console.error("Manus API Error:", apiError.response?.data || apiError.message);
-      aiResponse = `I'm having trouble connecting to the AI service right now. Please try again in a moment.`;
+      const errorDetail = apiError.response?.data?.error?.message || apiError.message;
+      console.error("Manus API Error:", errorDetail);
+      aiResponse = `API Error: ${errorDetail}`;
     }
 
     res.json({

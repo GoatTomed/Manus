@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import "./AICoding.css";
 
 interface ChatMessage {
@@ -184,6 +185,7 @@ export default function AICoding() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+    toast.success("Message copied to clipboard!");
   };
 
   const formatTime = (date: Date) => {
