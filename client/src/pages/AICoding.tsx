@@ -7,6 +7,8 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  logs?: string[];
+  results?: any[];
 }
 
 interface ChatSession {
@@ -21,11 +23,11 @@ type AIView = "chat" | "search" | "knowledge";
 
 const aiNav: { id: AIView; label: string; icon: string }[] = [
   { id: "chat", label: "Chat", icon: "ti-message-circle" },
-  { id: "search", label: "Web Search", icon: "ti-search" },
-  { id: "knowledge", label: "Knowledge Base", icon: "ti-book" },
+  { id: "search", label: "Web Search", icon: "ti-world" },
+  { id: "knowledge", label: "Knowledge", icon: "ti-database" },
 ];
 
-const labelStyle = { color: "#71717a", fontSize: "11px", textTransform: "uppercase" as const, letterSpacing: "0.08em", fontWeight: "700", marginBottom: "8px" };
+const labelStyle = { color: "#71717a", fontSize: "11px", textTransform: "uppercase" as const, letterSpacing: "0.08em", fontWeight: "700", marginBottom: "12px" };
 
 export default function AICoding() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -34,37 +36,28 @@ export default function AICoding() {
   const [loading, setLoading] = useState(false);
   const [aiView, setAIView] = useState<AIView>("chat");
   const [sessionQuery, setSessionQuery] = useState("");
-  const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
-  const [progress, setProgress] = useState<{ status: string; percent: number } | null>(null);
+  const [liveLogs, setLiveLogs] = useState<string[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load sessions from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("ai_sessions");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         setSessions(parsed);
-        if (parsed.length > 0) {
-          setCurrentSession(parsed[0]);
-        }
-      } catch (e) {
-        console.error("Failed to load sessions:", e);
-      }
+        if (parsed.length > 0) setCurrentSession(parsed[0]);
+      } catch (e) { console.error(e); }
     }
   }, []);
 
-  // Save sessions to localStorage
   useEffect(() => {
-    if (sessions.length > 0) {
-      localStorage.setItem("ai_sessions", JSON.stringify(sessions));
-    }
+    if (sessions.length > 0) localStorage.setItem("ai_sessions", JSON.stringify(sessions));
   }, [sessions]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [currentSession?.messages]);
+  }, [currentSession?.messages, liveLogs]);
 
   const createNewSession = () => {
     const newSession: ChatSession = {
@@ -76,14 +69,13 @@ export default function AICoding() {
     };
     setSessions([newSession, ...sessions]);
     setCurrentSession(newSession);
+    setAIView("chat");
   };
 
   const deleteSession = (id: string) => {
     const filtered = sessions.filter(s => s.id !== id);
     setSessions(filtered);
-    if (currentSession?.id === id) {
-      setCurrentSession(filtered[0] || null);
-    }
+    if (currentSession?.id === id) setCurrentSession(filtered[0] || null);
   };
 
   const sendMessage = async () => {
@@ -97,50 +89,39 @@ export default function AICoding() {
     };
 
     setLoading(true);
-    setProgress({ status: "Analyzing your question...", percent: 10 });
+    setLiveLogs(["Initializing Manus agent...", "Analyzing intent..."]);
     const userInput = input;
     setInput("");
 
+    const updated = {
+      ...currentSession,
+      messages: [...currentSession.messages, userMessage],
+      updatedAt: new Date(),
+    };
+    setCurrentSession(updated);
+    setSessions(sessions.map(s => s.id === currentSession.id ? updated : s));
+
     try {
-      // Update UI with user message
-      const updated = {
-        ...currentSession,
-        messages: [...currentSession.messages, userMessage],
-        updatedAt: new Date(),
-      };
-      setCurrentSession(updated);
-      setSessions(sessions.map(s => s.id === currentSession.id ? updated : s));
-
-      // Simulate progress for better UX
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          if (!prev || prev.percent >= 90) return prev;
-          return { ...prev, percent: prev.percent + 5 };
-        });
-      }, 1000);
-
-      // Call AI API (backend will handle search + knowledge base)
       const response = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: currentSession.id,
-          message: userInput,
-          conversationHistory: currentSession.messages,
-        }),
+        body: JSON.stringify({ sessionId: currentSession.id, message: userInput }),
       });
 
-      clearInterval(progressInterval);
-      setProgress({ status: "Generating response...", percent: 95 });
-
       const data = await response.json();
-      const responseText = data.result?.data?.response || "Error: No response from AI";
+      const res = data.result?.data;
+      
+      if (res?.thoughtLogs) {
+        setLiveLogs(prev => [...prev, ...res.thoughtLogs]);
+      }
 
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: responseText,
+        content: res?.response || "Error: No response",
         timestamp: new Date(),
+        logs: res?.thoughtLogs,
+        results: res?.searchResults,
       };
 
       const finalUpdate = {
@@ -148,267 +129,163 @@ export default function AICoding() {
         messages: [...updated.messages, aiMessage],
         updatedAt: new Date(),
       };
+      
+      if (currentSession.title === "New Chat") {
+        finalUpdate.title = userInput.substring(0, 40) + (userInput.length > 40 ? "..." : "");
+      }
+
       setCurrentSession(finalUpdate);
       setSessions(sessions.map(s => s.id === currentSession.id ? finalUpdate : s));
-
-      // Update session title if it's still "New Chat"
-      if (currentSession.title === "New Chat") {
-        const newTitle = userInput.substring(0, 50) + (userInput.length > 50 ? "..." : "");
-        setSessions(sessions.map(s =>
-          s.id === currentSession.id ? { ...s, title: newTitle } : s
-        ));
-      }
-      setProgress(null);
     } catch (error) {
-      setProgress(null);
-      console.error("Error:", error);
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 2).toString(),
-        role: "assistant",
-        content: "Error: Failed to get response from AI. Please try again.",
-        timestamp: new Date(),
-      };
-      setCurrentSession({
-        ...currentSession,
-        messages: [...currentSession.messages, userMessage, errorMessage],
-      });
+      toast.error("Failed to get response");
     } finally {
       setLoading(false);
+      setLiveLogs([]);
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Message copied to clipboard!");
-  };
-
-  const formatTime = (date: Date) => {
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - new Date(date).getTime()) / 1000);
-    if (diff < 60) return "just now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
-  };
-
-  const filteredSessions = useMemo(() =>
-    sessions.filter(s =>
-      s.title.toLowerCase().includes(sessionQuery.toLowerCase()) ||
-      s.messages.some(m => m.content.toLowerCase().includes(sessionQuery.toLowerCase()))
-    ),
-    [sessions, sessionQuery]
-  );
-
   return (
-    <div className="track-page">
-      {/* ── LEFT SIDEBAR ── */}
-      <aside className="fixed-sidebar">
-        <nav className="sidebar-nav">
-          {aiNav.map(item => (
-            <button
-              key={item.id}
-              className={`sidebar-item ${aiView === item.id ? "active" : ""}`}
-              onClick={() => { setAIView(item.id); setSelectedMessage(null); }}
-            >
-              <i className={`ti ${item.icon}`}></i>
-              {item.label}
-            </button>
+    <div className="manus-layout">
+      {/* ── SIDEBAR (HISTORY) ── */}
+      <aside className={`manus-sidebar ${sidebarOpen ? "" : "collapsed"}`}>
+        <div className="sidebar-top">
+          <button className="new-chat-large" onClick={createNewSession}>
+            <i className="ti ti-plus"></i> New Chat
+          </button>
+          <div className="search-sessions">
+            <i className="ti ti-search"></i>
+            <input placeholder="Search chats..." value={sessionQuery} onChange={e => setSessionQuery(e.target.value)} />
+          </div>
+        </div>
+        <div className="sessions-list-manus">
+          {sessions.filter(s => s.title.toLowerCase().includes(sessionQuery.toLowerCase())).map(session => (
+            <div key={session.id} className={`session-row-manus ${currentSession?.id === session.id ? "active" : ""}`} onClick={() => setCurrentSession(session)}>
+              <i className="ti ti-message"></i>
+              <span className="title">{session.title}</span>
+              <button className="del" onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}><i className="ti ti-trash"></i></button>
+            </div>
           ))}
-        </nav>
+        </div>
       </aside>
 
-      {/* ── MAIN CONTENT ── */}
-      <main className="main-content has-fixed-sidebar">
-        <div className="view-container">
-          {aiView === "chat" && (
-            <div className="view active animate-slide-in">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "40px" }}>
-                <h1 style={{ fontSize: "32px", fontWeight: "900" }}>AI Chat</h1>
-                <button className="btn-primary" onClick={createNewSession}>
-                  <i className="ti ti-plus"></i> New Chat
-                </button>
-              </div>
+      {/* ── MAIN CHAT AREA ── */}
+      <main className="manus-main">
+        <header className="manus-header">
+          <button className="toggle-sidebar-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <i className={`ti ti-layout-sidebar-${sidebarOpen ? "left" : "right"}`}></i>
+          </button>
+          <div className="view-tabs">
+            {aiNav.map(n => (
+              <button key={n.id} className={`tab-btn-manus ${aiView === n.id ? "active" : ""}`} onClick={() => setAIView(n.id)}>
+                <i className={n.icon}></i> {n.label}
+              </button>
+            ))}
+          </div>
+        </header>
 
+        <div className="chat-content-manus">
+          {aiView === "chat" && (
+            <div className="chat-scroller">
               {!currentSession ? (
-                <div style={{ textAlign: "center", color: "#71717a", padding: "60px 20px" }}>
-                  <i className="ti ti-message-circle-off" style={{ fontSize: "48px", marginBottom: "16px", display: "block" }}></i>
-                  <h2 style={{ fontSize: "20px", fontWeight: "700", color: "white", marginBottom: "8px" }}>No conversation selected</h2>
-                  <p>Create a new chat to get started</p>
+                <div className="empty-manus">
+                  <div className="logo-placeholder">M</div>
+                  <h1>How can I help you today?</h1>
+                  <p>I can search the web, write code, and solve complex problems.</p>
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "40px" }}>
-                  <div>
-                    <div className="glass-card" style={{ padding: "24px", marginBottom: "24px", maxHeight: "600px", overflowY: "auto" }}>
-                      <div style={labelStyle}>Chat Messages</div>
-                      {currentSession.messages.length === 0 && !loading ? (
-                        <div style={{ textAlign: "center", color: "#71717a", padding: "40px 20px" }}>
-                          <i className="ti ti-message-circle-off" style={{ fontSize: "32px", marginBottom: "8px", display: "block" }}></i>
-                          <p>Start a conversation by asking a question</p>
-                        </div>
-                      ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                          {currentSession.messages.map(msg => (
-                            <div
-                              key={msg.id}
-                              style={{
-                                padding: "12px 16px",
-                                borderRadius: "10px",
-                                background: msg.role === "user" ? "rgba(0, 171, 255, 0.1)" : "rgba(255, 255, 255, 0.03)",
-                                border: `1px solid ${msg.role === "user" ? "rgba(0, 171, 255, 0.2)" : "rgba(255, 255, 255, 0.05)"}`,
-                                cursor: "pointer",
-                                transition: "all 0.2s",
-                              }}
-                              onClick={() => setSelectedMessage(msg)}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background = msg.role === "user" ? "rgba(0, 171, 255, 0.15)" : "rgba(255, 255, 255, 0.05)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background = msg.role === "user" ? "rgba(0, 171, 255, 0.1)" : "rgba(255, 255, 255, 0.03)";
-                              }}
-                            >
-                              <div style={{ fontSize: "12px", color: msg.role === "user" ? "#00ABFF" : "#a1a1aa", fontWeight: "700", marginBottom: "4px" }}>
-                                {msg.role === "user" ? "You" : "AI"}
-                              </div>
-                              <div style={{ fontSize: "13px", color: "white", lineHeight: "1.4" }}>
-                                {msg.content.substring(0, 100)}{msg.content.length > 100 ? "..." : ""}
-                              </div>
-                              <div style={{ fontSize: "11px", color: "#52525b", marginTop: "8px" }}>{formatTime(msg.timestamp)}</div>
-                            </div>
-                          ))}
-                          {loading && (
-                            <div style={{ padding: "12px 16px", borderRadius: "10px", background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                                <i className="ti ti-loader" style={{ fontSize: "14px", animation: "spin 1s linear infinite" }}></i>
-                                <span style={{ fontSize: "12px", color: "#a1a1aa" }}>{progress?.status || "Processing..."}</span>
-                              </div>
-                              <div style={{ background: "rgba(255, 255, 255, 0.05)", height: "4px", borderRadius: "2px", overflow: "hidden" }}>
-                                <div style={{ background: "#00ABFF", height: "100%", width: `${progress?.percent || 0}%`, transition: "width 0.3s" }}></div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <div ref={messagesEndRef} />
-                    </div>
-
-                    <div className="glass-card" style={{ padding: "0", overflow: "hidden" }}>
-                      <div style={{ padding: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <h3 style={{ fontSize: "16px", fontWeight: "800", margin: 0 }}>Ask a Question</h3>
-                        <button className="btn-execute" style={{ width: "auto", padding: "8px 24px" }} onClick={sendMessage} disabled={loading}>
-                          Send
-                        </button>
-                      </div>
-                      <textarea
-                        className="console-textarea"
-                        style={{ margin: "0", border: "none", width: "100%", height: "120px" }}
-                        placeholder="Ask anything... I'll search the web and my knowledge base for answers."
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                            sendMessage();
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* ── RIGHT SIDEBAR (Sessions List) ── */}
-                  <div className="profile-card">
-                    <div style={labelStyle}>Sessions</div>
-                    <div className="user-list">
-                      {filteredSessions.map(session => (
-                        <div
-                          key={session.id}
-                          className={`user-row ${currentSession?.id === session.id ? "active" : ""}`}
-                          onClick={() => setCurrentSession(session)}
-                        >
-                          <i className="ti ti-message-circle" style={{ fontSize: "20px", color: "#00ABFF" }}></i>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: "14px", fontWeight: "800" }}>{session.title}</div>
-                            <div style={{ fontSize: "11px", color: "#71717a" }}>{session.messages.length} messages</div>
+                <div className="messages-list-manus">
+                  {currentSession.messages.map(msg => (
+                    <div key={msg.id} className={`msg-container ${msg.role}`}>
+                      <div className="msg-avatar">{msg.role === "user" ? "U" : "M"}</div>
+                      <div className="msg-body">
+                        <div className="msg-content">{msg.content}</div>
+                        {msg.results && msg.results.length > 0 && (
+                          <div className="search-results-mini">
+                            {msg.results.slice(0, 3).map((r: any, i: number) => (
+                              <a key={i} href={r.url} target="_blank" rel="noreferrer" className="res-link">
+                                <i className="ti ti-link"></i> {r.title}
+                              </a>
+                            ))}
                           </div>
-                          <button
-                            className="btn-delete"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteSession(session.id);
-                            }}
-                          >
-                            <i className="ti ti-trash"></i>
-                          </button>
-                        </div>
-                      ))}
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ))}
+                  {loading && (
+                    <div className="msg-container assistant loading">
+                      <div className="msg-avatar">M</div>
+                      <div className="msg-body">
+                        <div className="live-progress-manus">
+                          <div className="spinner-manus"></div>
+                          <div className="logs-manus">
+                            {liveLogs.map((log, i) => (
+                              <div key={i} className="log-line animate-fade-in">{log}</div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </div>
           )}
 
           {aiView === "search" && (
-            <div className="view active animate-slide-in">
-              <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Web Search</h1>
-              <div className="glass-card" style={{ padding: "40px", textAlign: "center" }}>
-                <i className="ti ti-search" style={{ fontSize: "48px", color: "#00ABFF", marginBottom: "16px", display: "block" }}></i>
-                <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "8px" }}>Search the Web</h2>
-                <p style={{ color: "#71717a", marginBottom: "24px" }}>Use the chat to ask questions and I'll search the web for the most current information.</p>
-                <button className="btn-primary" onClick={() => { setAIView("chat"); createNewSession(); }}>
-                  <i className="ti ti-plus"></i> Start a Chat
-                </button>
+            <div className="search-view-manus">
+              <div className="search-hero">
+                <i className="ti ti-world"></i>
+                <h1>Live Web Search</h1>
+                <p>Real-time browsing and data extraction in a secure sandbox.</p>
+                <div className="search-bar-manus">
+                  <input placeholder="Enter URL or search query..." value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === "Enter" && sendMessage()} />
+                  <button onClick={sendMessage}><i className="ti ti-arrow-right"></i></button>
+                </div>
               </div>
             </div>
           )}
 
           {aiView === "knowledge" && (
-            <div className="view active animate-slide-in">
-              <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Knowledge Base</h1>
-              <div className="glass-card" style={{ padding: "40px", textAlign: "center" }}>
-                <i className="ti ti-book" style={{ fontSize: "48px", color: "#00ABFF", marginBottom: "16px", display: "block" }}></i>
-                <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "8px" }}>AI Knowledge Base</h2>
-                <p style={{ color: "#71717a", marginBottom: "24px" }}>I have access to a comprehensive knowledge base covering programming, technology, science, and more. Ask me anything!</p>
-                <button className="btn-primary" onClick={() => { setAIView("chat"); createNewSession(); }}>
-                  <i className="ti ti-plus"></i> Start a Chat
-                </button>
+            <div className="knowledge-view-manus">
+              <div className="knowledge-grid">
+                <div className="k-card">
+                  <i className="ti ti-code"></i>
+                  <h3>Programming</h3>
+                  <p>Expertise in Lua, Python, JS, and 20+ other languages.</p>
+                </div>
+                <div className="k-card">
+                  <i className="ti ti-search"></i>
+                  <h3>Web Intelligence</h3>
+                  <p>Deep search across news, docs, and academic papers.</p>
+                </div>
+                <div className="k-card">
+                  <i className="ti ti-brain"></i>
+                  <h3>Reasoning</h3>
+                  <p>Complex problem solving and logical analysis.</p>
+                </div>
+                <div className="k-card">
+                  <i className="ti ti-database"></i>
+                  <h3>Data Processing</h3>
+                  <p>Analyze, visualize and transform any dataset.</p>
+                </div>
               </div>
             </div>
           )}
         </div>
-      </main>
 
-      {/* ── RIGHT SIDEBAR (Message Details) ── */}
-      {selectedMessage && (
-        <div className="profile-sidebar animate-slide-in">
-          <button className="btn-secondary" style={{ marginBottom: "32px" }} onClick={() => setSelectedMessage(null)}>Close</button>
-          <div className="profile-card" style={{ textAlign: "center", marginBottom: "32px" }}>
-            <h2 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "16px" }}>
-              {selectedMessage.role === "user" ? "Your Question" : "AI Response"}
-            </h2>
-            <span className={`status-badge ${selectedMessage.role === "user" ? "active" : "used"}`}>
-              {selectedMessage.role === "user" ? "Question" : "Response"}
-            </span>
-          </div>
-          <div style={labelStyle}>Full Message</div>
-          <div className="glass-card" style={{ padding: "16px", marginBottom: "24px", maxHeight: "400px", overflowY: "auto" }}>
-            <p style={{ fontSize: "13px", lineHeight: "1.6", color: "white", margin: 0 }}>
-              {selectedMessage.content}
-            </p>
-          </div>
-          <button
-            className="btn-execute"
-            style={{ width: "100%", padding: "12px 24px" }}
-            onClick={() => copyToClipboard(selectedMessage.content)}
-          >
-            <i className="ti ti-copy"></i> Copy to Clipboard
-          </button>
-          <div style={{ marginTop: "24px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-            <div style={labelStyle}>Timestamp</div>
-            <div style={{ fontSize: "13px", color: "#a1a1aa" }}>
-              {selectedMessage.timestamp.toLocaleString()}
+        {aiView === "chat" && (
+          <footer className="manus-input-area">
+            <div className="input-box-manus">
+              <textarea placeholder="Message Manus..." value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} />
+              <button className={`send-btn ${input.trim() ? "active" : ""}`} onClick={sendMessage} disabled={!input.trim() || loading}>
+                <i className={`ti ti-arrow-up ${loading ? "spin" : ""}`}></i>
+              </button>
             </div>
-          </div>
-        </div>
-      )}
+            <div className="input-footer">Manus can make mistakes. Check important info.</div>
+          </footer>
+        )}
+      </main>
     </div>
   );
 }

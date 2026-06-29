@@ -76,98 +76,78 @@ app.post("/api/ai/chat", async (req: any, res: any) => {
     }
 
     let aiResponse = "I'm processing your question...";
+    let thoughtLogs: any[] = [];
+    let searchResults: any[] = [];
 
     try {
-      // System prompt for the AI
-      const systemPrompt = `You are an intelligent AI assistant with access to real-time web search and a comprehensive knowledge base.
-Answer the user's question accurately. If you need current information, search the web.
-Be helpful, clear, and concise.
-
+      const systemPrompt = `You are an intelligent AI assistant (Manus Clone).
+Answer the user's question accurately using web search and your knowledge.
 User Question: ${message}`;
 
-      // 1. Create the task
       const createRes = await axios.post("https://api.manus.ai/v2/task.create", {
         message: { content: systemPrompt },
-        title: "AI Chat Query",
+        title: "Manus AI Session",
         interactive_mode: false
       }, {
         headers: { "x-manus-api-key": MANUS_API_KEY, "Content-Type": "application/json" }
       });
 
-      if (!createRes.data.ok) {
-        throw new Error(createRes.data.error?.message || "Failed to create AI task");
-      }
+      if (!createRes.data.ok) throw new Error(createRes.data.error?.message || "Failed to create AI task");
 
       const manusTaskId = createRes.data.task_id;
-      if (!manusTaskId) {
-        throw new Error("No task_id returned from Manus API");
-      }
-
-      // 2. Poll for the response
       let attempts = 0;
-      const maxAttempts = 30; // 60 seconds total for better reliability
+      const maxAttempts = 30;
       
       while (attempts < maxAttempts) {
         try {
-          const listRes = await axios.get(`https://api.manus.ai/v2/task.listMessages?task_id=${manusTaskId}&order=desc&limit=20`, {
+          const listRes = await axios.get(`https://api.manus.ai/v2/task.listMessages?task_id=${manusTaskId}&order=asc&limit=50`, {
             headers: { "x-manus-api-key": MANUS_API_KEY }
           });
           
           if (listRes.data.ok && listRes.data.events) {
             const events = listRes.data.events;
             
-            // Check for assistant response first (most important)
+            // Collect logs for progress display
+            events.forEach((e: any) => {
+              if (e.type === "thought_log" && e.thought_log?.thought) {
+                thoughtLogs.push(e.thought_log.thought);
+              }
+              if (e.type === "tool_call" && e.tool_call?.name === "web_search") {
+                thoughtLogs.push(`Searching web for: ${e.tool_call.arguments?.query || "information"}`);
+              }
+              if (e.type === "tool_output" && e.tool_output?.output) {
+                try {
+                  const out = JSON.parse(e.tool_output.output);
+                  if (out.results) searchResults.push(...out.results);
+                } catch(err) {}
+              }
+            });
+
             const assistantMsg = events.find((e: any) => e.type === "assistant_message");
             if (assistantMsg && assistantMsg.assistant_message?.text) {
               aiResponse = assistantMsg.assistant_message.text;
               break;
             }
 
-            // Check for error messages from the agent
-            const errorMsg = events.find((e: any) => e.type === "error_message");
-            if (errorMsg) {
-              aiResponse = `AI Error: ${errorMsg.error_message?.message || "An internal error occurred"}`;
-              break;
-            }
-
-            // Check if the agent has stopped
             const statusUpdate = events.find((e: any) => e.type === "status_update");
-            if (statusUpdate && statusUpdate.status_update?.agent_status === "stopped") {
-              // Re-check for assistant message one last time
-              if (!assistantMsg) {
-                aiResponse = "The AI finished processing but didn't provide a text response. Please try asking again.";
-              }
-              break;
-            }
+            if (statusUpdate && statusUpdate.status_update?.agent_status === "stopped") break;
           }
         } catch (pollError: any) {
-          console.error("Polling error:", pollError.message);
-          // If the task specifically isn't found during polling, we should break and report
-          if (pollError.response?.data?.error?.code === "task_not_found") {
-            aiResponse = "Error: The AI task was lost. Please try again.";
-            break;
-          }
-          // For other errors, we can try to continue polling
+          if (pollError.response?.data?.error?.code === "task_not_found") break;
         }
-        
         await new Promise(r => setTimeout(r, 2000));
         attempts++;
       }
-      
-      if (attempts >= maxAttempts && aiResponse === "I'm processing your question...") {
-        aiResponse = "The AI is still thinking. Please try refreshing in a moment or ask again.";
-      }
-
     } catch (apiError: any) {
-      const errorDetail = apiError.response?.data?.error?.message || apiError.message;
-      console.error("AI API Error:", errorDetail);
-      aiResponse = `Error: ${errorDetail}. Please try again.`;
+      aiResponse = `Error: ${apiError.message}`;
     }
 
     res.json({
       result: {
         data: {
           response: aiResponse,
+          thoughtLogs: [...new Set(thoughtLogs)], // Unique logs
+          searchResults,
           sessionId,
           timestamp: new Date().toISOString(),
           isConnected: true,
