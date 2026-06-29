@@ -1,31 +1,32 @@
-import express from "express";
-import axios from "axios";
+import express, { Request, Response } from "express";
 import dotenv from "dotenv";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const KB_PATH = path.join(__dirname, "../shared/lua_kb_v2.json");
-let KB: any = {};
-try {
-  if (fs.existsSync(KB_PATH)) {
-    KB = JSON.parse(fs.readFileSync(KB_PATH, "utf-8"));
-  }
-} catch (e) {
-  console.error("KB Load Error", e);
-}
 
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 3001;
+// ── YOUSUCK OMNISCIENT ENGINE ──
 
-// ── YOUSUCK OMNISCIENT SYNTHESIS ──
+interface ChatRequest {
+  message: string;
+  sessionId?: string;
+}
+
+interface ChatResponse {
+  result: {
+    data: {
+      response: string;
+      thoughtLogs: string[];
+      searchResults: any[];
+      currentStep: number;
+      totalSteps: number;
+      sessionId?: string;
+      timestamp: string;
+      isConnected: boolean;
+    };
+  };
+}
 
 function generateManusLevelScript(topic: string): string {
   const t = topic.toLowerCase();
@@ -41,9 +42,19 @@ function generateManusLevelScript(topic: string): string {
   return `I am the YouSuck Omniscient Engine. I can generate any complex Lua script for Roblox executors.\n\n\`\`\`lua\n-- Engine Online\nprint("Awaiting complex instructions...")\n\`\`\``;
 }
 
-app.post("/api/ai/chat", async (req, res) => {
+// Health check
+app.get("/health", (req: Request, res: Response) => {
+  res.json({ status: "ok", engine: "YouSuck Omniscient" });
+});
+
+// Main chat endpoint
+app.post("/api/ai/chat", async (req: Request, res: Response) => {
   try {
-    const { message, sessionId } = req.body;
+    const { message, sessionId } = req.body as ChatRequest;
+    
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "Invalid message" });
+    }
     
     let thoughtLogs = [
       "Accessing Omniscient Knowledge Base...",
@@ -53,11 +64,11 @@ app.post("/api/ai/chat", async (req, res) => {
 
     const response = generateManusLevelScript(message);
     
-    // Simulate thinking time for "Manus" feel
+    // Simulate thinking time
     await new Promise(r => setTimeout(r, 1500));
     thoughtLogs.push("Verification successful. Outputting high-fidelity result.");
 
-    return res.json({
+    const chatResponse: ChatResponse = {
       result: {
         data: {
           response: response,
@@ -70,12 +81,18 @@ app.post("/api/ai/chat", async (req, res) => {
           isConnected: true,
         },
       },
-    });
+    };
+
+    return res.json(chatResponse);
   } catch (error: any) {
-    return res.status(500).json({ error: "Engine Error", details: error.message });
+    console.error("Chat API Error:", error);
+    return res.status(500).json({ error: "Engine Error", details: error.message || "Unknown error" });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`YouSuck Omniscient Engine running on port ${PORT}`);
+// Catch-all for undefined routes
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ error: "Not Found" });
 });
+
+export default app;
