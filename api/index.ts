@@ -1,8 +1,20 @@
 import express from "express";
 import axios from "axios";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
+
+const LUA_KB_PATH = path.join(__dirname, "../shared/lua_kb.json");
+let LUA_KB = { knowledge: { GUI: { patterns: {} } } };
+try {
+  if (fs.existsSync(LUA_KB_PATH)) {
+    LUA_KB = JSON.parse(fs.readFileSync(LUA_KB_PATH, "utf-8"));
+  }
+} catch (e) {
+  console.error("Failed to load Lua KB", e);
+}
 
 const app = express();
 app.use(express.json());
@@ -30,13 +42,17 @@ const YOUSUCK_KNOWLEDGE = {
 };
 
 function generateLuaScript(topic: string) {
+  const guiPatterns = (LUA_KB as any).knowledge?.GUI?.patterns || {};
+  
+  if (topic.includes("gui") || topic.includes("interface") || topic.includes("ui")) {
+    return `Here is a modern Roblox GUI script using TweenService and UICorners:\n\n\`\`\`lua\n-- YouSuck Modern GUI System\nlocal Players = game:GetService("Players")\nlocal TS = game:GetService("TweenService")\nlocal player = Players.LocalPlayer\nlocal playerGui = player:WaitForChild("PlayerGui")\n\n-- Create Main UI\nlocal screenGui = Instance.new("ScreenGui")\nscreenGui.Name = "YouSuckMainUI"\nscreenGui.ResetOnSpawn = false\nscreenGui.Parent = playerGui\n\n-- Main Frame\nlocal mainFrame = Instance.new("Frame")\nmainFrame.Name = "MainFrame"\nmainFrame.Size = UDim2.new(0, 300, 0, 400)\nmainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)\nmainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)\nmainFrame.BorderSizePixel = 0\nmainFrame.Parent = screenGui\n\nlocal corner = Instance.new("UICorner")\ncorner.CornerRadius = UDim.new(0, 12)\ncorner.Parent = mainFrame\n\n-- Title\nlocal title = Instance.new("TextLabel")\ntitle.Size = UDim2.new(1, 0, 0, 50)\ntitle.BackgroundTransparency = 1\ntitle.Text = "YOUSUCK ENGINE"\ntitle.TextColor3 = Color3.fromRGB(255, 255, 255)\ntitle.TextSize = 20\ntitle.Font = Enum.Font.GothamBold\ntitle.Parent = mainFrame\n\n-- Close Button\nlocal closeBtn = Instance.new("TextButton")\ncloseBtn.Size = UDim2.new(0, 30, 0, 30)\ncloseBtn.Position = UDim2.new(1, -40, 0, 10)\ncloseBtn.Text = "X"\ncloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)\ncloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)\ncloseBtn.Parent = mainFrame\n\nInstance.new("UICorner", closeBtn).CornerRadius = UDim.new(1, 0)\n\ncloseBtn.MouseButton1Click:Connect(function()\n    local info = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)\n    local tween = TS:Create(mainFrame, info, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1})\n    tween:Play()\n    tween.Completed:Wait()\n    screenGui:Destroy()\nend)\n\nprint("YouSuck GUI Loaded successfully.")\n\`\`\``;
+  }
+
   if (topic.includes("fly")) {
     return "Here is your Lua Fly script:\n\n```lua\n-- YouSuck Fly Script\nlocal player = game.Players.LocalPlayer\nlocal mouse = player:GetMouse()\nlocal speed = 50\nlocal flying = false\n\nmouse.KeyDown:Connect(function(key)\n    if key:lower() == \"f\" then\n        flying = not flying\n        if flying then\n            local bv = Instance.new(\"BodyVelocity\", player.Character.HumanoidRootPart)\n            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)\n            while flying do\n                bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * speed\n                task.wait()\n            end\n            bv:Destroy()\n        end\n    end\nend)\n```";
   }
-  if (topic.includes("aimbot")) {
-    return "Here is your Lua Aimbot base:\n\n```lua\n-- YouSuck Aimbot Base\nlocal Players = game:GetService(\"Players\")\nlocal LocalPlayer = Players.LocalPlayer\nlocal Camera = workspace.CurrentCamera\n\nlocal function getClosestPlayer()\n    local closest = nil\n    local dist = math.huge\n    for _, p in pairs(Players:GetPlayers()) do\n        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild(\"Head\") then\n            local pos, onScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)\n            if onScreen then\n                local d = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude\n                if d < dist then\n                    dist = d\n                    closest = p\n                end\n            end\n        end\n    end\n    return closest\nend\n```";
-  }
-  return "Expert Lua engine ready.\n\n```lua\n-- YouSuck Lua Template\nprint('Ready.')\n```";
+  
+  return "Expert Lua engine ready. How can I assist with your Roblox project?\n\n```lua\n-- YouSuck Lua Knowledge Base Active\nprint('System Online')\n```";
 }
 
 async function autonomousSearch(query: string) {

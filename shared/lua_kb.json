@@ -1,0 +1,49 @@
+{
+  "version": "1.1",
+  "engine": "YouSuck Autonomous Luau Engine",
+  "docs_source": "https://www.lua.org/manual/5.4/ & Roblox DevForum",
+  "knowledge": {
+    "GUI": {
+      "services": [
+        "StarterGui",
+        "PlayerGui",
+        "TweenService"
+      ],
+      "classes": [
+        "ScreenGui",
+        "Frame",
+        "TextLabel",
+        "TextButton",
+        "ImageLabel",
+        "ScrollingFrame",
+        "UIListLayout",
+        "UICorner"
+      ],
+      "patterns": {
+        "basic_frame": "local screenGui = Instance.new(\"ScreenGui\")\nscreenGui.Name = \"YouSuckGui\"\nscreenGui.Parent = game.Players.LocalPlayer:WaitForChild(\"PlayerGui\")\n\nlocal frame = Instance.new(\"Frame\")\nframe.Size = UDim2.new(0, 200, 0, 100)\nframe.Position = UDim2.new(0.5, -100, 0.5, -50)\nframe.BackgroundColor3 = Color3.fromRGB(30, 30, 30)\nframe.BorderSizePixel = 0\nframe.Parent = screenGui\n\nlocal corner = Instance.new(\"UICorner\")\ncorner.CornerRadius = UDim.new(0, 8)\ncorner.Parent = frame",
+        "button_click": "button.MouseButton1Click:Connect(function()\n    print(\"Button Clicked!\")\nend)",
+        "tween_ui": "local TS = game:GetService(\"TweenService\")\nlocal info = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)\nlocal tween = TS:Create(frame, info, {Position = UDim2.new(0.5, -100, 0.2, 0)})\ntween:Play()"
+      }
+    },
+    "Events": {
+      "methods": [
+        "Connect",
+        "Wait",
+        "Once",
+        "Disconnect"
+      ],
+      "types": [
+        "RBXScriptSignal",
+        "RBXScriptConnection"
+      ],
+      "example": "local connection\nconnection = part.Touched:Connect(function(hit)\n    print(\"Touched by\", hit.Name)\n    connection:Disconnect() -- Only once\nend)"
+    },
+    "BestPractices": [
+      "Use task.wait() instead of wait()",
+      "Use task.spawn() or task.defer() for threading",
+      "Always use game:GetService()",
+      "Prefer local variables for performance",
+      "Use UDim2 for UI positioning and sizing"
+    ]
+  }
+}
