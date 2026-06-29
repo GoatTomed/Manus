@@ -603,3 +603,149 @@
   margin-right: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* ── MESSAGE COPY BUTTON ── */
+.msg-copy-btn {
+  position: absolute;
+  top: -25px;
+  right: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #888;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  opacity: 0;
+}
+
+.msg-body:hover .msg-copy-btn {
+  opacity: 1;
+}
+
+.msg-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.msg-body {
+  position: relative;
+}
+
+/* ── FLOATING PROGRESS BADGE ── */
+.floating-progress-badge {
+  background: rgba(30, 30, 30, 0.95);
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.badge-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.badge-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.badge-timer {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+}
+
+.badge-status {
+  font-size: 13px;
+  color: #a1a1aa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge-expand-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #666;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.badge-expand-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.step-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+}
+
+.badge-expanded-logs {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #333;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.badge-log-line {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.4;
+}
+
+.badge-log-line:last-child {
+  margin-bottom: 0;
+}
+
+/* ── CODE LANG BADGE IMPROVEMENTS ── */
+.code-lang-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.code-lang-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.code-lang {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}

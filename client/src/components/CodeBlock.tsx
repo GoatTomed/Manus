@@ -31,10 +31,30 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language }) => {
     }
   };
 
+  const getLangColor = (lang: string): string => {
+    const colors: { [key: string]: string } = {
+      lua: '#51a0cf',
+      javascript: '#f7df1e',
+      typescript: '#3178c6',
+      python: '#3776ab',
+      bash: '#4eaa25',
+      json: '#f5f5f5',
+      html: '#e34c26',
+      css: '#563d7c',
+    };
+    return colors[lang.toLowerCase()] || '#888';
+  };
+
   return (
     <div className="code-card-manus">
       <div className="code-card-header">
-        <span className="code-lang">{language || 'code'}</span>
+        <div className="code-lang-badge">
+          <span 
+            className="code-lang-dot" 
+            style={{ backgroundColor: getLangColor(language) }}
+          ></span>
+          <span className="code-lang">{language || 'code'}</span>
+        </div>
         <button className="copy-btn-manus" onClick={copyToClipboard}>
           {copied ? (
             <>

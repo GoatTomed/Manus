@@ -249,6 +249,18 @@ export default function AICoding() {
                         <img src={msg.role === "user" ? LOGO_URL : MANUS_LOGO} alt="Avatar" style={{ borderRadius: msg.role === "user" ? "8px" : "50%" }} />
                       </div>
                       <div className="msg-body">
+                        {msg.role === "user" && (
+                          <button 
+                            className="msg-copy-btn"
+                            onClick={() => {
+                              navigator.clipboard.writeText(msg.content);
+                              toast.success("Message copied!");
+                            }}
+                            title="Copy message"
+                          >
+                            <i className="ti ti-copy"></i>
+                          </button>
+                        )}
                         <div className="msg-content">
                           <ReactMarkdown
                             components={{
@@ -340,6 +352,30 @@ export default function AICoding() {
 
         {aiView === "chat" && (
           <footer className="manus-input-area">
+            {loading && (
+              <div className="floating-progress-badge">
+                <div className="badge-content">
+                  <div className="badge-left">
+                    <span className="badge-timer">{elapsedTime.toFixed(1)}s</span>
+                    <span className="badge-status">{liveLogs[liveLogs.length - 1] || "Processing..."}</span>
+                  </div>
+                  <button 
+                    className={`badge-expand-btn ${logsExpanded ? "expanded" : ""}`}
+                    onClick={() => setLogsExpanded(!logsExpanded)}
+                  >
+                    <span className="step-badge">{liveLogs.length > 2 ? "2 / 3" : "1 / 3"}</span>
+                    <i className={`ti ti-chevron-${logsExpanded ? "up" : "down"}`}></i>
+                  </button>
+                </div>
+                {logsExpanded && (
+                  <div className="badge-expanded-logs">
+                    {liveLogs.map((log, i) => (
+                      <div key={i} className="badge-log-line">{log}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="input-box-manus">
               <textarea 
                 placeholder="Message Manus..." 
