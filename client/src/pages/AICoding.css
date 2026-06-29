@@ -592,3 +592,14 @@
 .code-card-body::-webkit-scrollbar-thumb:hover {
   background: #444;
 }
+
+.timer-badge {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #fff;
+  margin-right: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}

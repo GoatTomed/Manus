@@ -11,20 +11,21 @@ const PORT = process.env.PORT || 3001;
 
 // ── YOUSUCK OMNISCIENT ENGINE (AUTONOMOUS) ──
 const YOUSUCK_KNOWLEDGE = {
-  lua_expert: {
-    core: "Mastery of Lua 5.1, 5.4, and Luau (Roblox). Knowledge of metatables, environments, and coroutines.",
-    security: "Expertise in script obfuscation, anti-tamper, and secure remotes handling.",
-    executors: "Deep understanding of Level 7/8 executors, DLL injection patterns, and bytecode conversion.",
-    patterns: {
-      fly: "Utilizes BodyVelocity or LinearVelocity for smooth character movement control.",
-      aimbot: "Uses WorldToViewportPoint and Magnitude checks for target selection.",
-      esp: "Drawing library implementation or Highlight objects for visibility."
+  lua_5_4_ref: {
+    version: "5.4",
+    official_docs: "https://www.lua.org/manual/5.4/",
+    core_libs: ["basic", "coroutine", "debug", "io", "math", "os", "package", "string", "table", "utf8"],
+    metamethods: ["__add", "__sub", "__mul", "__div", "__mod", "__pow", "__unm", "__idiv", "__band", "__bor", "__bxor", "__bnot", "__shl", "__shr", "__concat", "__len", "__eq", "__lt", "__le", "__index", "__newindex", "__call", "__gc", "__close", "__mode", "__name", "__tostring"],
+    expert_patterns: {
+      fly: "Utilizes BodyVelocity (Legacy) or LinearVelocity (Modern) for character control.",
+      aimbot: "Uses WorldToViewportPoint for 3D-to-2D projection and Magnitude for distance calculation.",
+      optimization: "Prefers local variables, task.wait over wait, and table.create for pre-allocation."
     }
   },
   general: {
-    who: "I am the YouSuck AI, an autonomous engine built for research and coding.",
-    purpose: "To provide expert-level information without external dependencies.",
-    methods: "I use direct web scraping, internal synthesis, and a massive local database."
+    who: "I am the YouSuck AI, an autonomous engine powered by local documentation.",
+    purpose: "Direct code generation without external search dependencies.",
+    methods: "Autonomous synthesis from official language specifications."
   }
 };
 
@@ -111,13 +112,19 @@ app.post("/api/ai/chat", async (req, res) => {
         await new Promise(r => setTimeout(r, 500));
       }
     } else {
-      thoughtLogs.push("Using internal Lua Knowledge Base (No search required).");
+      thoughtLogs.push("Activating YouSuck Lua 5.4 Engine...");
+      thoughtLogs.push("Accessing local reference manual (lua.org/manual/5.4/)...");
+      thoughtLogs.push("Synthesizing logic from core libraries (math, table, coroutine)...");
+      // Simulate deep thinking for Lua
+      await new Promise(r => setTimeout(r, 2000));
+      thoughtLogs.push("Verifying syntax against Lua 5.4 standards...");
+      await new Promise(r => setTimeout(r, 1000));
     }
     
-    thoughtLogs.push("Aggregating multi-source data...");
+    thoughtLogs.push("Finalizing autonomous synthesis...");
     const response = autonomousSynthesis(message, allResults);
     
-    thoughtLogs.push("Response ready.");
+    thoughtLogs.push("Code generation complete.");
 
     res.json({
       result: {

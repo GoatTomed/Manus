@@ -41,7 +41,23 @@ export default function AICoding() {
   const [sessionQuery, setSessionQuery] = useState("");
   const [liveLogs, setLiveLogs] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (loading) {
+      setElapsedTime(0);
+      timerRef.current = setInterval(() => {
+        setElapsedTime(prev => prev + 0.1);
+      }, 100);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [loading]);
 
   useEffect(() => {
     const saved = localStorage.getItem("ai_sessions");
@@ -278,6 +294,7 @@ export default function AICoding() {
                               <span>{liveLogs[liveLogs.length - 1] || "Processing request..."}</span>
                             </div>
                             <div className="step-counter">
+                              <span className="timer-badge">{elapsedTime.toFixed(1)}s</span>
                               {liveLogs.length > 2 ? "2 / 3" : "1 / 3"} <i className="ti ti-chevron-down"></i>
                             </div>
                           </div>
