@@ -38,15 +38,38 @@ async function autonomousSearch(query: string) {
 }
 
 function autonomousSynthesis(query: string, searchResults: any[]) {
-  const lowerQuery = query.toLowerCase();
+  const lowerQuery = query.toLowerCase().trim();
   
-  // 1. Check local knowledge first
-  if (lowerQuery.includes("lua")) return YOUSUCK_KNOWLEDGE.programming.lua;
-  if (lowerQuery.includes("python")) return YOUSUCK_KNOWLEDGE.programming.python;
-  if (lowerQuery.includes("who are you")) return YOUSUCK_KNOWLEDGE.general.who;
+  // ── 1. IDENTITY & OWNERSHIP ──
+  if (lowerQuery.includes("who own you") || lowerQuery.includes("who owns you") || lowerQuery.includes("who made you") || lowerQuery.includes("which website")) {
+    return "I am the official AI of YouSuck. I was created and am owned by this website to provide expert knowledge and research capabilities to its users.";
+  }
   
-  // 2. Generic synthesis for other queries
-  return `Based on my autonomous analysis of "${query}", I've determined that this topic involves complex technical structures. As your independent site AI, I recommend focusing on the core architectural components. I have initiated a deep scan of my internal database to provide more details shortly.`;
+  if (lowerQuery.includes("who are you") || lowerQuery.includes("your name")) {
+    return "I am the YouSuck Autonomous Engine, your independent site AI. I specialize in coding, research, and technical analysis.";
+  }
+
+  // ── 2. TECHNICAL KNOWLEDGE ──
+  if (lowerQuery.includes("lua") || lowerQuery.includes("roblox") || lowerQuery.includes("executor")) {
+    return "For Lua and Roblox development, I recommend focusing on Luau optimization. I can help you with custom executors, script security, and high-performance coding patterns.";
+  }
+  
+  if (lowerQuery.includes("python") || lowerQuery.includes("scripting")) {
+    return "Python is excellent for automation. Whether you're building bots, scrapers, or backend APIs, I can provide the optimized code structures you need.";
+  }
+
+  // ── 3. INTENT ANALYSIS (Simple vs Complex) ──
+  const simpleGreetings = ["hi", "hello", "hey", "yo", "sup"];
+  if (simpleGreetings.some(g => lowerQuery === g)) {
+    return "Hello! I'm your site's AI. How can I assist you with your projects today?";
+  }
+
+  // ── 4. FALLBACK SYNTHESIS ──
+  if (searchResults.length > 0 && searchResults[0].snippet) {
+    return `I've analyzed your request regarding "${query}". My research indicates that this is a multifaceted topic. Here is the core information: ${searchResults[0].snippet}. Let me know if you want me to dive deeper into any specific part!`;
+  }
+
+  return `I've processed your question about "${query}". To give you the best answer, could you specify if you're looking for a technical implementation, a general overview, or a specific example? I'm ready to provide whatever details you need.`;
 }
 
 app.post("/api/ai/chat", async (req, res) => {
