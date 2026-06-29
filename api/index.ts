@@ -78,22 +78,14 @@ app.post("/api/ai/chat", async (req: any, res: any) => {
     let aiResponse = "I'm processing your question...";
 
     try {
-      // Create a task with Manus to handle the query
-      // This uses Manus's internal capabilities: web search, knowledge base, and reasoning
-      const systemPrompt = `You are an intelligent AI assistant with access to:
-1. Real-time web search capabilities
-2. Comprehensive knowledge base covering technology, science, programming, and general topics
-3. Advanced reasoning and problem-solving abilities
-
-Your role is to:
-- Answer questions accurately and thoroughly
-- Search the web when current information is needed
-- Provide code examples when relevant
-- Cite sources when using web search results
-- Be helpful, clear, and concise
+      // System prompt for the AI
+      const systemPrompt = `You are an intelligent AI assistant with access to real-time web search and a comprehensive knowledge base.
+Answer the user's question accurately. If you need current information, search the web.
+Be helpful, clear, and concise.
 
 User Question: ${message}`;
 
+      // 1. Create the task
       const createRes = await axios.post("https://api.manus.ai/v2/task.create", {
         message: { content: systemPrompt },
         title: "AI Chat Query",
@@ -107,41 +99,55 @@ User Question: ${message}`;
       }
 
       const manusTaskId = createRes.data.task_id;
+      if (!manusTaskId) {
+        throw new Error("No task_id returned from Manus API");
+      }
 
-      // Poll for the response
+      // 2. Poll for the response
       let attempts = 0;
-      const maxAttempts = 20; // 40 seconds total
+      const maxAttempts = 30; // 60 seconds total for better reliability
       
       while (attempts < maxAttempts) {
-        const listRes = await axios.get(`https://api.manus.ai/v2/task.listMessages?task_id=${manusTaskId}&order=desc&limit=10`, {
-          headers: { "x-manus-api-key": MANUS_API_KEY }
-        });
-        
-        if (listRes.data.ok && listRes.data.events) {
-          const events = listRes.data.events;
+        try {
+          const listRes = await axios.get(`https://api.manus.ai/v2/task.listMessages?task_id=${manusTaskId}&order=desc&limit=20`, {
+            headers: { "x-manus-api-key": MANUS_API_KEY }
+          });
           
-          // Check for error
-          const errorMsg = events.find((e: any) => e.type === "error_message");
-          if (errorMsg) {
-            aiResponse = `Error: ${errorMsg.error_message?.message || "An error occurred"}`;
-            break;
-          }
-
-          // Check for assistant response
-          const assistantMsg = events.find((e: any) => e.type === "assistant_message");
-          if (assistantMsg && assistantMsg.assistant_message?.text) {
-            aiResponse = assistantMsg.assistant_message.text;
-            break;
-          }
-
-          // Check if task is complete
-          const statusUpdate = events.find((e: any) => e.type === "status_update");
-          if (statusUpdate && statusUpdate.status_update?.agent_status === "stopped") {
-            if (!assistantMsg) {
-              aiResponse = "The AI agent completed but did not generate a response. Please try again.";
+          if (listRes.data.ok && listRes.data.events) {
+            const events = listRes.data.events;
+            
+            // Check for assistant response first (most important)
+            const assistantMsg = events.find((e: any) => e.type === "assistant_message");
+            if (assistantMsg && assistantMsg.assistant_message?.text) {
+              aiResponse = assistantMsg.assistant_message.text;
+              break;
             }
+
+            // Check for error messages from the agent
+            const errorMsg = events.find((e: any) => e.type === "error_message");
+            if (errorMsg) {
+              aiResponse = `AI Error: ${errorMsg.error_message?.message || "An internal error occurred"}`;
+              break;
+            }
+
+            // Check if the agent has stopped
+            const statusUpdate = events.find((e: any) => e.type === "status_update");
+            if (statusUpdate && statusUpdate.status_update?.agent_status === "stopped") {
+              // Re-check for assistant message one last time
+              if (!assistantMsg) {
+                aiResponse = "The AI finished processing but didn't provide a text response. Please try asking again.";
+              }
+              break;
+            }
+          }
+        } catch (pollError: any) {
+          console.error("Polling error:", pollError.message);
+          // If the task specifically isn't found during polling, we should break and report
+          if (pollError.response?.data?.error?.code === "task_not_found") {
+            aiResponse = "Error: The AI task was lost. Please try again.";
             break;
           }
+          // For other errors, we can try to continue polling
         }
         
         await new Promise(r => setTimeout(r, 2000));
@@ -149,7 +155,7 @@ User Question: ${message}`;
       }
       
       if (attempts >= maxAttempts && aiResponse === "I'm processing your question...") {
-        aiResponse = "The request is taking longer than expected. Please try again or rephrase your question.";
+        aiResponse = "The AI is still thinking. Please try refreshing in a moment or ask again.";
       }
 
     } catch (apiError: any) {
