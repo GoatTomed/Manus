@@ -42,6 +42,7 @@ export default function AICoding() {
   const [liveLogs, setLiveLogs] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [logsExpanded, setLogsExpanded] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -281,35 +282,7 @@ export default function AICoding() {
                       </div>
                     </div>
                   ))}
-                  {loading && (
-                    <div className="msg-container assistant loading">
-                      <div className="msg-avatar-manus">
-                        <img src={MANUS_LOGO} alt="Manus Avatar" style={{ borderRadius: "50%" }} />
-                      </div>
-                      <div className="msg-body">
-                        <div className="manus-step-indicator">
-                          <div className="step-header">
-                            <div className="step-title">
-                              <i className="ti ti-clock"></i>
-                              <span>{liveLogs[liveLogs.length - 1] || "Processing request..."}</span>
-                            </div>
-                            <div className="step-counter">
-                              <span className="timer-badge">{elapsedTime.toFixed(1)}s</span>
-                              {liveLogs.length > 2 ? "2 / 3" : "1 / 3"} <i className="ti ti-chevron-down"></i>
-                            </div>
-                          </div>
-                          <div className="live-progress-manus">
-                            <div className="spinner-manus"></div>
-                            <div className="logs-manus">
-                              {liveLogs.map((log, i) => (
-                                <div key={i} className="log-line animate-fade-in">{log}</div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+
                   <div ref={messagesEndRef} />
                 </div>
               )}
