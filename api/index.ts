@@ -54,37 +54,30 @@ async function autonomousSearch(query: string) {
 function autonomousSynthesis(query: string, searchResults: any[]) {
   const lowerQuery = query.toLowerCase().trim();
   
-  // ── 1. IDENTITY & OWNERSHIP ──
-  if (lowerQuery.includes("who own you") || lowerQuery.includes("who owns you") || lowerQuery.includes("who made you") || lowerQuery.includes("which website")) {
-    return "I am the official AI of YouSuck. I was created and am owned by this website to provide expert knowledge and research capabilities to its users.";
+  // ── 1. IDENTITY ──
+  if (lowerQuery.includes("who own you") || lowerQuery.includes("who made you")) {
+    return "YouSuck owns me. I'm the site's independent engine.";
   }
   
-  if (lowerQuery.includes("who are you") || lowerQuery.includes("your name")) {
-    return "I am the YouSuck Autonomous Engine, your independent site AI. I specialize in coding, research, and technical analysis.";
+  if (lowerQuery.includes("who are you")) {
+    return "I'm the YouSuck AI engine. I handle coding and research.";
   }
 
-  // ── 2. TECHNICAL KNOWLEDGE ──
+  // ── 2. LUA EXPERTISE (Direct Code) ──
   if (lowerQuery.includes("lua") || lowerQuery.includes("roblox") || lowerQuery.includes("script")) {
-    const script = generateLuaScript(lowerQuery);
-    return `As the YouSuck Lua Expert, here is an optimized implementation for your request:\n\n\`\`\`lua\n${script}\n\`\`\`\n\nI've optimized this for Luau environments. Let me know if you need specific features like anti-cheat bypass or GUI integration.`;
-  }
-  
-  if (lowerQuery.includes("python") || lowerQuery.includes("scripting")) {
-    return "Python is excellent for automation. Whether you're building bots, scrapers, or backend APIs, I can provide the optimized code structures you need.";
+    return generateLuaScript(lowerQuery);
   }
 
-  // ── 3. INTENT ANALYSIS (Simple vs Complex) ──
-  const simpleGreetings = ["hi", "hello", "hey", "yo", "sup"];
-  if (simpleGreetings.some(g => lowerQuery === g)) {
-    return "Hello! I'm your site's AI. How can I assist you with your projects today?";
-  }
+  // ── 3. CONVERSATIONAL ──
+  const greetings = ["hi", "hello", "hey", "yo"];
+  if (greetings.includes(lowerQuery)) return "Hey, what's up? How can I help with your code today?";
 
-  // ── 4. FALLBACK SYNTHESIS ──
+  // ── 4. DIRECT INFO (No fluff) ──
   if (searchResults.length > 0 && searchResults[0].snippet) {
-    return `I've analyzed your request regarding "${query}". My research indicates that this is a multifaceted topic. Here is the core information: ${searchResults[0].snippet}. Let me know if you want me to dive deeper into any specific part!`;
+    return searchResults[0].snippet;
   }
 
-  return `I've processed your question about "${query}". To give you the best answer, could you specify if you're looking for a technical implementation, a general overview, or a specific example? I'm ready to provide whatever details you need.`;
+  return "I'm here. What exactly do you need help with?";
 }
 
 app.post("/api/ai/chat", async (req, res) => {
