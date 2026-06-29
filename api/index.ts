@@ -96,7 +96,7 @@ User Question: ${message}`;
 
       const manusTaskId = createRes.data.task_id;
       let attempts = 0;
-      const maxAttempts = 30;
+      const maxAttempts = 4; // Reduced polling to fit Vercel 10s timeout
       
       while (attempts < maxAttempts) {
         try {
@@ -107,14 +107,9 @@ User Question: ${message}`;
           if (listRes.data.ok && listRes.data.events) {
             const events = listRes.data.events;
             
-            // Collect logs for progress display
             events.forEach((e: any) => {
-              if (e.type === "thought_log" && e.thought_log?.thought) {
-                thoughtLogs.push(e.thought_log.thought);
-              }
-              if (e.type === "tool_call" && e.tool_call?.name === "web_search") {
-                thoughtLogs.push(`Searching web for: ${e.tool_call.arguments?.query || "information"}`);
-              }
+              if (e.type === "thought_log" && e.thought_log?.thought) thoughtLogs.push(e.thought_log.thought);
+              if (e.type === "tool_call" && e.tool_call?.name === "web_search") thoughtLogs.push(`Searching web for: ${e.tool_call.arguments?.query || "information"}`);
               if (e.type === "tool_output" && e.tool_output?.output) {
                 try {
                   const out = JSON.parse(e.tool_output.output);
@@ -133,10 +128,18 @@ User Question: ${message}`;
             if (statusUpdate && statusUpdate.status_update?.agent_status === "stopped") break;
           }
         } catch (pollError: any) {
+          if (pollError.response?.status === 429) {
+             await new Promise(r => setTimeout(r, 2000));
+             continue;
+          }
           if (pollError.response?.data?.error?.code === "task_not_found") break;
         }
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 1500));
         attempts++;
+      }
+      
+      if (aiResponse === "I'm processing your question...") {
+         aiResponse = "I'm still working on this. Please refresh the chat in a few seconds to see the full response.";
       }
     } catch (apiError: any) {
       aiResponse = `Error: ${apiError.message}`;

@@ -28,6 +28,7 @@ const aiNav: { id: AIView; label: string; icon: string }[] = [
 ];
 
 const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
+const MANUS_LOGO = "https://manus.ai/favicon.ico"; // Using official favicon as logo
 
 export default function AICoding() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -78,29 +79,22 @@ export default function AICoding() {
     if (currentSession?.id === id) setCurrentSession(filtered[0] || null);
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() || !currentSession) return;
+  const sendMessage = async (overrideInput?: string) => {
+    const finalInput = overrideInput || input;
+    if (!finalInput.trim() || !currentSession) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: finalInput,
       timestamp: new Date(),
     };
 
     setLoading(true);
-    setLiveLogs(["Initializing Manus agent...", "Analyzing intent..."]);
-    const userInput = input;
+    setAIView("chat"); // Always switch to chat to see progress
+    setLiveLogs(["Connecting to Manus.ai...", "Analyzing request..."]);
     setInput("");
 
-    // Use functional update to ensure we don't lose the user message
-    setSessions(prev => prev.map(s => {
-      if (s.id === currentSession.id) {
-        return { ...s, messages: [...s.messages, userMessage], updatedAt: new Date() };
-      }
-      return s;
-    }));
-    
     setCurrentSession(prev => {
       if (!prev) return null;
       return { ...prev, messages: [...prev.messages, userMessage], updatedAt: new Date() };
@@ -110,10 +104,16 @@ export default function AICoding() {
       const response = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: currentSession.id, message: userInput }),
+        body: JSON.stringify({ sessionId: currentSession.id, message: finalInput }),
       });
 
+      if (response.status === 504) {
+         throw new Error("Timeout: Vercel server took too long. The AI is still working, please refresh in a moment.");
+      }
+
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Request failed");
+      
       const res = data.result?.data;
       
       if (res?.thoughtLogs) {
@@ -134,7 +134,7 @@ export default function AICoding() {
           const updatedMessages = [...s.messages, userMessage, aiMessage];
           let updatedTitle = s.title;
           if (s.title === "New Chat") {
-            updatedTitle = userInput.substring(0, 40) + (userInput.length > 40 ? "..." : "");
+            updatedTitle = finalInput.substring(0, 40) + (finalInput.length > 40 ? "..." : "");
           }
           return { ...s, title: updatedTitle, messages: updatedMessages, updatedAt: new Date() };
         }
@@ -146,13 +146,26 @@ export default function AICoding() {
         const updatedMessages = [...prev.messages, aiMessage];
         let updatedTitle = prev.title;
         if (prev.title === "New Chat") {
-          updatedTitle = userInput.substring(0, 40) + (userInput.length > 40 ? "..." : "");
+          updatedTitle = finalInput.substring(0, 40) + (finalInput.length > 40 ? "..." : "");
         }
         return { ...prev, title: updatedTitle, messages: updatedMessages, updatedAt: new Date() };
       });
 
-    } catch (error) {
-      toast.error("Failed to get response");
+    } catch (error: any) {
+      const errorMsg = error.message || "Something went wrong";
+      toast.error(errorMsg);
+      
+      const aiErrorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `⚠️ ${errorMsg}`,
+        timestamp: new Date(),
+      };
+
+      setCurrentSession(prev => {
+        if (!prev) return null;
+        return { ...prev, messages: [...prev.messages, aiErrorMessage] };
+      });
     } finally {
       setLoading(false);
       setLiveLogs([]);
@@ -204,7 +217,7 @@ export default function AICoding() {
               {!currentSession ? (
                 <div className="empty-manus">
                   <div className="logo-placeholder-manus">
-                    <img src={LOGO_URL} alt="Logo" />
+                    <img src={MANUS_LOGO} alt="Manus Logo" style={{ borderRadius: "50%" }} />
                   </div>
                   <h1>How can I help you today?</h1>
                   <p>I can search the web, write code, and solve complex problems.</p>
@@ -214,7 +227,7 @@ export default function AICoding() {
                   {currentSession.messages.map(msg => (
                     <div key={msg.id} className={`msg-container ${msg.role}`}>
                       <div className="msg-avatar-manus">
-                        <img src={LOGO_URL} alt="Avatar" />
+                        <img src={msg.role === "user" ? LOGO_URL : MANUS_LOGO} alt="Avatar" style={{ borderRadius: msg.role === "user" ? "8px" : "50%" }} />
                       </div>
                       <div className="msg-body">
                         <div className="msg-content">{msg.content}</div>
@@ -233,7 +246,7 @@ export default function AICoding() {
                   {loading && (
                     <div className="msg-container assistant loading">
                       <div className="msg-avatar-manus">
-                        <img src={LOGO_URL} alt="Avatar" />
+                        <img src={MANUS_LOGO} alt="Manus Avatar" style={{ borderRadius: "50%" }} />
                       </div>
                       <div className="msg-body">
                         <div className="live-progress-manus">
@@ -260,8 +273,15 @@ export default function AICoding() {
                 <h1>Live Web Search</h1>
                 <p>Real-time browsing and data extraction in a secure sandbox.</p>
                 <div className="search-bar-manus">
-                  <input placeholder="Enter URL or search query..." value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === "Enter" && sendMessage()} />
-                  <button onClick={sendMessage} className="search-btn-manus"><i className="ti ti-arrow-right"></i></button>
+                  <input 
+                    placeholder="Enter URL or search query..." 
+                    value={input} 
+                    onChange={e => setInput(e.target.value)} 
+                    onKeyPress={e => e.key === "Enter" && sendMessage()} 
+                  />
+                  <button onClick={() => sendMessage()} className="search-btn-manus">
+                    <i className="ti ti-arrow-right"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -298,9 +318,14 @@ export default function AICoding() {
         {aiView === "chat" && (
           <footer className="manus-input-area">
             <div className="input-box-manus">
-              <textarea placeholder="Message Manus..." value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} />
+              <textarea 
+                placeholder="Message Manus..." 
+                value={input} 
+                onChange={e => setInput(e.target.value)} 
+                onKeyPress={e => { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} 
+              />
               <div className="input-actions-manus">
-                 <button className={`send-btn ${input.trim() ? "active" : ""}`} onClick={sendMessage} disabled={!input.trim() || loading}>
+                 <button className={`send-btn ${input.trim() ? "active" : ""}`} onClick={() => sendMessage()} disabled={!input.trim() || loading}>
                    <i className={`ti ti-arrow-up ${loading ? "spin" : ""}`}></i>
                  </button>
               </div>
