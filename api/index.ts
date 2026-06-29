@@ -85,27 +85,40 @@ app.post("/api/ai/chat", async (req, res) => {
   
   let thoughtLogs = [
     "Initializing YouSuck Autonomous Engine...",
-    "Scanning internal knowledge base...",
-    `Analyzing query: "${message}"`
+    "Analyzing intent and complexity..."
   ];
 
   try {
-    // Step 1: Search
-    thoughtLogs.push("Executing direct web search...");
-    const results = await autonomousSearch(message);
+    const allResults: any[] = [];
+    const lowerMsg = message.toLowerCase();
+
+    // Determine if multiple searches are needed
+    const searchQueries = [message];
+    if (lowerMsg.length > 20 && !lowerMsg.includes("lua")) {
+       searchQueries.push(`${message} technical details`);
+       searchQueries.push(`${message} latest news`);
+    }
+
+    for (let i = 0; i < searchQueries.length; i++) {
+      const query = searchQueries[i];
+      thoughtLogs.push(`Searching (${i + 1}/${searchQueries.length}): ${query}`);
+      const results = await autonomousSearch(query);
+      allResults.push(...results);
+      // Small delay to simulate real processing
+      await new Promise(r => setTimeout(r, 500));
+    }
     
-    // Step 2: Synthesis
-    thoughtLogs.push("Synthesizing information...");
-    const response = autonomousSynthesis(message, results);
+    thoughtLogs.push("Aggregating multi-source data...");
+    const response = autonomousSynthesis(message, allResults);
     
-    thoughtLogs.push("Finalizing response...");
+    thoughtLogs.push("Response ready.");
 
     res.json({
       result: {
         data: {
           response: response,
           thoughtLogs: thoughtLogs,
-          searchResults: results,
+          searchResults: allResults,
           currentStep: 3,
           totalSteps: 3,
           sessionId,
