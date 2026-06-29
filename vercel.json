@@ -1,11 +1,15 @@
 {
   "version": 2,
   "functions": {
+    "api/ai-chat.ts": {
+      "maxDuration": 30
+    },
     "api/index.ts": {
       "maxDuration": 30
     }
   },
   "rewrites": [
+    { "source": "/api/ai/chat", "destination": "/api/ai-chat.ts" },
     { "source": "/api/track-visit", "destination": "/api/index.ts" },
     { "source": "/api/get-key/(.*)", "destination": "/api/index.ts" },
     {
