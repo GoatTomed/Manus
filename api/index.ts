@@ -145,12 +145,17 @@ User Question: ${message}`;
       aiResponse = `Error: ${apiError.message}`;
     }
 
+    const totalSteps = 3; // Estimate steps: Analysis, Execution, Synthesis
+    const currentStep = aiResponse.startsWith("I'm still working") ? 2 : 3;
+
     res.json({
       result: {
         data: {
           response: aiResponse,
-          thoughtLogs: [...new Set(thoughtLogs)], // Unique logs
+          thoughtLogs: [...new Set(thoughtLogs)],
           searchResults,
+          currentStep,
+          totalSteps,
           sessionId,
           timestamp: new Date().toISOString(),
           isConnected: true,

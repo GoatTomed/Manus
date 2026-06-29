@@ -249,12 +249,23 @@ export default function AICoding() {
                         <img src={MANUS_LOGO} alt="Manus Avatar" style={{ borderRadius: "50%" }} />
                       </div>
                       <div className="msg-body">
-                        <div className="live-progress-manus">
-                          <div className="spinner-manus"></div>
-                          <div className="logs-manus">
-                            {liveLogs.map((log, i) => (
-                              <div key={i} className="log-line animate-fade-in">{log}</div>
-                            ))}
+                        <div className="manus-step-indicator">
+                          <div className="step-header">
+                            <div className="step-title">
+                              <i className="ti ti-clock"></i>
+                              <span>{liveLogs[liveLogs.length - 1] || "Processing request..."}</span>
+                            </div>
+                            <div className="step-counter">
+                              {liveLogs.length > 2 ? "2 / 3" : "1 / 3"} <i className="ti ti-chevron-down"></i>
+                            </div>
+                          </div>
+                          <div className="live-progress-manus">
+                            <div className="spinner-manus"></div>
+                            <div className="logs-manus">
+                              {liveLogs.map((log, i) => (
+                                <div key={i} className="log-line animate-fade-in">{log}</div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </div>
