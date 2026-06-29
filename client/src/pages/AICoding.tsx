@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+import CodeBlock from "../components/CodeBlock";
 import "./AICoding.css";
 
 interface ChatMessage {
@@ -230,7 +232,27 @@ export default function AICoding() {
                         <img src={msg.role === "user" ? LOGO_URL : MANUS_LOGO} alt="Avatar" style={{ borderRadius: msg.role === "user" ? "8px" : "50%" }} />
                       </div>
                       <div className="msg-body">
-                        <div className="msg-content">{msg.content}</div>
+                        <div className="msg-content">
+                          <ReactMarkdown
+                            components={{
+                              code({ node, inline, className, children, ...props }: any) {
+                                const match = /language-(\w+)/.exec(className || "");
+                                return !inline && match ? (
+                                  <CodeBlock
+                                    code={String(children).replace(/\n$/, "")}
+                                    language={match[1]}
+                                  />
+                                ) : (
+                                  <code className={className} {...props}>
+                                    {children}
+                                  </code>
+                                );
+                              },
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
                         {msg.results && msg.results.length > 0 && (
                           <div className="search-results-mini">
                             {msg.results.slice(0, 3).map((r: any, i: number) => (

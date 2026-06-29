@@ -30,12 +30,12 @@ const YOUSUCK_KNOWLEDGE = {
 
 function generateLuaScript(topic: string) {
   if (topic.includes("fly")) {
-    return `-- YouSuck Fly Script\nlocal player = game.Players.LocalPlayer\nlocal mouse = player:GetMouse()\nlocal speed = 50\nlocal flying = false\n\nmouse.KeyDown:Connect(function(key)\n    if key:lower() == "f" then\n        flying = not flying\n        if flying then\n            local bv = Instance.new("BodyVelocity", player.Character.HumanoidRootPart)\n            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)\n            while flying do\n                bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * speed\n                task.wait()\n            end\n            bv:Destroy()\n        end\n    end\nend)`;
+    return "Here is your Lua Fly script:\n\n```lua\n-- YouSuck Fly Script\nlocal player = game.Players.LocalPlayer\nlocal mouse = player:GetMouse()\nlocal speed = 50\nlocal flying = false\n\nmouse.KeyDown:Connect(function(key)\n    if key:lower() == \"f\" then\n        flying = not flying\n        if flying then\n            local bv = Instance.new(\"BodyVelocity\", player.Character.HumanoidRootPart)\n            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)\n            while flying do\n                bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * speed\n                task.wait()\n            end\n            bv:Destroy()\n        end\n    end\nend)\n```";
   }
   if (topic.includes("aimbot")) {
-    return `-- YouSuck Aimbot Base\nlocal Players = game:GetService("Players")\nlocal LocalPlayer = Players.LocalPlayer\nlocal Camera = workspace.CurrentCamera\n\nlocal function getClosestPlayer()\n    local closest = nil\n    local dist = math.huge\n    for _, p in pairs(Players:GetPlayers()) do\n        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then\n            local pos, onScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)\n            if onScreen then\n                local d = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude\n                if d < dist then\n                    dist = d\n                    closest = p\n                end\n            end\n        end\n    end\n    return closest\nend`;
+    return "Here is your Lua Aimbot base:\n\n```lua\n-- YouSuck Aimbot Base\nlocal Players = game:GetService(\"Players\")\nlocal LocalPlayer = Players.LocalPlayer\nlocal Camera = workspace.CurrentCamera\n\nlocal function getClosestPlayer()\n    local closest = nil\n    local dist = math.huge\n    for _, p in pairs(Players:GetPlayers()) do\n        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild(\"Head\") then\n            local pos, onScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)\n            if onScreen then\n                local d = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude\n                if d < dist then\n                    dist = d\n                    closest = p\n                end\n            end\n        end\n    end\n    return closest\nend\n```";
   }
-  return "-- YouSuck Lua Template\nprint('Expert Lua engine ready.')";
+  return "Expert Lua engine ready.\n\n```lua\n-- YouSuck Lua Template\nprint('Ready.')\n```";
 }
 
 async function autonomousSearch(query: string) {
@@ -89,23 +89,29 @@ app.post("/api/ai/chat", async (req, res) => {
   ];
 
   try {
-    const allResults: any[] = [];
     const lowerMsg = message.toLowerCase();
+    const allResults: any[] = [];
 
-    // Determine if multiple searches are needed
-    const searchQueries = [message];
-    if (lowerMsg.length > 20 && !lowerMsg.includes("lua")) {
-       searchQueries.push(`${message} technical details`);
-       searchQueries.push(`${message} latest news`);
-    }
+    // Determine if search is needed
+    const isLuaQuery = lowerMsg.includes("lua") || lowerMsg.includes("roblox") || lowerMsg.includes("script");
 
-    for (let i = 0; i < searchQueries.length; i++) {
-      const query = searchQueries[i];
-      thoughtLogs.push(`Searching (${i + 1}/${searchQueries.length}): ${query}`);
-      const results = await autonomousSearch(query);
-      allResults.push(...results);
-      // Small delay to simulate real processing
-      await new Promise(r => setTimeout(r, 500));
+    if (!isLuaQuery) {
+      const searchQueries = [message];
+      if (lowerMsg.length > 20) {
+         searchQueries.push(`${message} technical details`);
+         searchQueries.push(`${message} latest news`);
+      }
+
+      for (let i = 0; i < searchQueries.length; i++) {
+        const query = searchQueries[i];
+        thoughtLogs.push(`Searching (${i + 1}/${searchQueries.length}): ${query}`);
+        const results = await autonomousSearch(query);
+        allResults.push(...results);
+        // Small delay to simulate real processing
+        await new Promise(r => setTimeout(r, 500));
+      }
+    } else {
+      thoughtLogs.push("Using internal Lua Knowledge Base (No search required).");
     }
     
     thoughtLogs.push("Aggregating multi-source data...");
