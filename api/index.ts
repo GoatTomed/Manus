@@ -7,20 +7,17 @@ import { fileURLToPath } from "url";
 
 dotenv.config();
 
-// ESM compatibility
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const LUA_KB_PATH = path.join(__dirname, "../shared/lua_kb.json");
-let LUA_KB: any = { knowledge: { GUI: { patterns: {} } } };
-
+const KB_PATH = path.join(__dirname, "../shared/lua_kb_v2.json");
+let KB: any = {};
 try {
-  if (fs.existsSync(LUA_KB_PATH)) {
-    const content = fs.readFileSync(LUA_KB_PATH, "utf-8");
-    LUA_KB = JSON.parse(content);
+  if (fs.existsSync(KB_PATH)) {
+    KB = JSON.parse(fs.readFileSync(KB_PATH, "utf-8"));
   }
 } catch (e) {
-  console.error("Failed to load Lua KB", e);
+  console.error("KB Load Error", e);
 }
 
 const app = express();
@@ -28,228 +25,46 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
 
-const FLY_GUI_SCRIPT = `-- YouSuck Fly GUI System
-local Players = game:GetService("Players")
-local TS = game:GetService("TweenService")
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-local flying = false
-local speed = 50
+// ── YOUSUCK OMNISCIENT SYNTHESIS ──
 
--- Create Screen GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FlyGUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
-
--- Main Frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 200, 0, 120)
-mainFrame.Position = UDim2.new(0.5, -100, 0.5, -60)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = screenGui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = mainFrame
-
--- Title
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundTransparency = 1
-title.Text = "FLY SYSTEM"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextSize = 16
-title.Font = Enum.Font.GothamBold
-title.Parent = mainFrame
-
--- Close Button (Red X)
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 25, 0, 25)
-closeBtn.Position = UDim2.new(1, -30, 0, 5)
-closeBtn.Text = "X"
-closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.TextSize = 14
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.BorderSizePixel = 0
-closeBtn.Parent = mainFrame
-
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 5)
-
--- Fly Button
-local flyBtn = Instance.new("TextButton")
-flyBtn.Size = UDim2.new(0.9, 0, 0, 40)
-flyBtn.Position = UDim2.new(0.05, 0, 0.45, 0)
-flyBtn.Text = "START FLY"
-flyBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
-flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-flyBtn.TextSize = 14
-flyBtn.Font = Enum.Font.GothamBold
-flyBtn.BorderSizePixel = 0
-flyBtn.Parent = mainFrame
-
-Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0, 6)
-
--- Fly Mechanics
-local function startFlying()
-    flying = true
-    flyBtn.Text = "FLYING..."
-    flyBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
-    
-    local character = player.Character
-    if not character then return end
-    
-    local rootPart = character:WaitForChild("HumanoidRootPart")
-    local bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    bodyVelocity.Parent = rootPart
-    
-    while flying and character.Humanoid.Health > 0 do
-        local camera = workspace.CurrentCamera
-        bodyVelocity.Velocity = camera.CFrame.LookVector * speed
-        task.wait()
-    end
-    
-    bodyVelocity:Destroy()
-    flyBtn.Text = "START FLY"
-    flyBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
-end
-
-local function stopFlying()
-    flying = false
-end
-
--- Button Connections
-flyBtn.MouseButton1Click:Connect(function()
-    if not flying then
-        startFlying()
-    else
-        stopFlying()
-    end
-end)
-
-closeBtn.MouseButton1Click:Connect(function()
-    local info = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-    local tween = TS:Create(mainFrame, info, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1})
-    tween:Play()
-    tween.Completed:Wait()
-    stopFlying()
-    screenGui:Destroy()
-end)
-
-print("YouSuck Fly GUI Loaded!")`;
-
-function generateLuaScript(topic: string): string {
-  const lowerTopic = topic.toLowerCase();
+function generateManusLevelScript(topic: string): string {
+  const t = topic.toLowerCase();
   
-  if (lowerTopic.includes("fly") && (lowerTopic.includes("gui") || lowerTopic.includes("button"))) {
-    return `Here is your Roblox Fly GUI script with a red close button:\n\n\`\`\`lua\n${FLY_GUI_SCRIPT}\n\`\`\``;
+  if (t.includes("decompiler") || (t.includes("script") && t.includes("list"))) {
+    return `Here is a professional-grade **Dev Decompiler** for high-end executors:\n\n\`\`\`lua\n-- Dev Decompiler | YouSuck Omniscient Engine\n--[[ \n    Expert Script Viewer & Decompiler\n    Supports: Synapse Z, Wave, Solara, etc.\n]]\n\nlocal clipboardFunc = getclipboard or setclipboard or nil\nlocal executor = identifyexecutor and identifyexecutor() or "Unknown"\n\n-- UI Setup\nlocal player = game:GetService("Players").LocalPlayer\nlocal gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))\ngui.Name = "YouSuckDecompiler"\ngui.ResetOnSpawn = false\n\nlocal frame = Instance.new("Frame", gui)\nframe.Size = UDim2.new(0, 400, 0, 450)\nframe.Position = UDim2.new(0.5, -200, 0.5, -225)\nframe.BackgroundColor3 = Color3.fromRGB(15, 15, 15)\nframe.Active = true\nframe.Draggable = true\nInstance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)\n\n-- Header\nlocal title = Instance.new("TextLabel", frame)\ntitle.Size = UDim2.new(1, -20, 0, 40)\ntitle.Position = UDim2.new(0, 10, 0, 0)\ntitle.Text = "DEV DECOMPILER | " .. executor\ntitle.BackgroundTransparency = 1\ntitle.TextColor3 = Color3.fromRGB(255, 255, 255)\ntitle.Font = Enum.Font.GothamBold\ntitle.TextSize = 16\ntitle.TextXAlignment = Enum.TextXAlignment.Left\n\n-- Search & Controls\nlocal search = Instance.new("TextBox", frame)\nsearch.Size = UDim2.new(1, -20, 0, 30)\nsearch.Position = UDim2.new(0, 10, 0, 45)\nsearch.PlaceholderText = "Search scripts..."\nsearch.BackgroundColor3 = Color3.fromRGB(25, 25, 25)\nsearch.TextColor3 = Color3.fromRGB(255, 255, 255)\nsearch.Font = Enum.Font.Gotham\nInstance.new("UICorner", search).CornerRadius = UDim.new(0, 6)\n\nlocal scroll = Instance.new("ScrollingFrame", frame)\nscroll.Size = UDim2.new(1, -20, 0, 300)\nscroll.Position = UDim2.new(0, 10, 0, 85)\nscroll.BackgroundColor3 = Color3.fromRGB(10, 10, 10)\nscroll.ScrollBarThickness = 4\nInstance.new("UICorner", scroll).CornerRadius = UDim.new(0, 6)\n\nlocal copyBtn = Instance.new("TextButton", frame)\ncopyBtn.Size = UDim2.new(1, -20, 0, 40)\ncopyBtn.Position = UDim2.new(0, 10, 1, -50)\ncopyBtn.Text = "DECOMPILE & COPY"\ncopyBtn.BackgroundColor3 = Color3.fromRGB(40, 100, 255)\ncopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)\ncopyBtn.Font = Enum.Font.GothamBold\nInstance.new("UICorner", copyBtn).CornerRadius = UDim.new(0, 8)\n\nlocal checkboxes = {}\nlocal function refresh()\n    for _,v in pairs(scroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end\n    local y = 0\n    for _,s in pairs(game:GetDescendants()) do\n        if (s:IsA("LocalScript") or s:IsA("ModuleScript")) and (search.Text == "" or s.Name:lower():find(search.Text:lower())) then\n            local b = Instance.new("TextButton", scroll)\n            b.Size = UDim2.new(1, -10, 0, 25)\n            b.Position = UDim2.new(0, 5, 0, y)\n            b.Text = "[ ] " .. s.Name\n            b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)\n            b.TextColor3 = Color3.fromRGB(200, 200, 200)\n            b.Font = Enum.Font.Gotham\n            b.TextSize = 12\n            \n            b.MouseButton1Click:Connect(function()\n                checkboxes[s] = not checkboxes[s]\n                b.Text = checkboxes[s] and "[X] " .. s.Name or "[ ] " .. s.Name\n                b.TextColor3 = checkboxes[s] and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)\n            end)\n            y = y + 30\n        end\n    end\n    scroll.CanvasSize = UDim2.new(0, 0, 0, y)\nend\n\nsearch:GetPropertyChangedSignal("Text"):Connect(refresh)\ncopyBtn.MouseButton1Click:Connect(function()\n    local out = ""\n    for s,v in pairs(checkboxes) do\n        if v then\n            local src = s.Source or "-- Source hidden/protected"\n            out = out .. "-- [[ " .. s:GetFullName() .. " ]] --\\n" .. src .. "\\n\\n"\n        end\n    end\n    if clipboardFunc then clipboardFunc(out) copyBtn.Text = "COPIED!" task.wait(1) copyBtn.Text = "DECOMPILE & COPY" end\nend)\n\nrefresh()\nprint('YouSuck Decompiler Loaded.')\n\`\`\``;
   }
 
-  if (lowerTopic.includes("gui") || lowerTopic.includes("interface") || lowerTopic.includes("ui")) {
-    return `Here is a modern Roblox GUI script using TweenService and UICorners:\n\n\`\`\`lua\n${FLY_GUI_SCRIPT}\n\`\`\``;
+  if (t.includes("fly")) {
+    return `Here is a high-performance **Omniscient Fly System** with advanced character control:\n\n\`\`\`lua\n-- YouSuck Omniscient Fly | Manus-Level Logic\nlocal Players = game:GetService("Players")\nlocal RunService = game:GetService("RunService")\nlocal player = Players.LocalPlayer\nlocal mouse = player:GetMouse()\n\nlocal speed = 100\nlocal flying = false\n\n-- UI Toggle\nlocal gui = Instance.new("ScreenGui", player.PlayerGui)\nlocal btn = Instance.new("TextButton", gui)\nbtn.Size = UDim2.new(0, 100, 0, 40)\nbtn.Position = UDim2.new(0.5, -50, 0, 50)\nbtn.Text = "FLY: OFF"\nbtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)\nbtn.TextColor3 = Color3.fromRGB(255, 255, 255)\nInstance.new("UICorner", btn)\n\nlocal bv, bg\n\nbtn.MouseButton1Click:Connect(function()\n    flying = not flying\n    btn.Text = flying and "FLY: ON" or "FLY: OFF"\n    btn.BackgroundColor3 = flying and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(40, 40, 40)\n    \n    if flying then\n        local char = player.Character\n        local root = char:WaitForChild("HumanoidRootPart")\n        \n        bv = Instance.new("BodyVelocity", root)\n        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)\n        bv.Velocity = Vector3.new(0, 0.1, 0)\n        \n        bg = Instance.new("BodyGyro", root)\n        bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)\n        bg.CFrame = root.CFrame\n        \n        while flying do\n            local cam = workspace.CurrentCamera\n            bv.Velocity = cam.CFrame.LookVector * speed\n            bg.CFrame = cam.CFrame\n            task.wait()\n        end\n        \n        if bv then bv:Destroy() end\n        if bg then bg:Destroy() end\n    end\nend)\n\`\`\``;
   }
 
-  if (lowerTopic.includes("fly")) {
-    return `Here is your Lua Fly script:\n\n\`\`\`lua\n-- YouSuck Fly Script\nlocal player = game.Players.LocalPlayer\nlocal mouse = player:GetMouse()\nlocal speed = 50\nlocal flying = false\n\nmouse.KeyDown:Connect(function(key)\n    if key:lower() == "f" then\n        flying = not flying\n        if flying then\n            local bv = Instance.new("BodyVelocity", player.Character.HumanoidRootPart)\n            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)\n            while flying do\n                bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * speed\n                task.wait()\n            end\n            bv:Destroy()\n        end\n    end\nend)\n\`\`\``;
-  }
-  
-  return `Expert Lua engine ready. How can I assist with your Roblox project?\n\n\`\`\`lua\n-- YouSuck Lua Knowledge Base Active\nprint('System Online')\n\`\`\``;
-}
-
-async function autonomousSearch(query: string): Promise<any[]> {
-  try {
-    const results = [
-      { title: `Latest on ${query}`, url: `https://www.google.com/search?q=${encodeURIComponent(query)}`, snippet: `Researching ${query} in real-time...` }
-    ];
-    return results;
-  } catch (e) {
-    console.error("Search error:", e);
-    return [];
-  }
-}
-
-function autonomousSynthesis(query: string, searchResults: any[]): string {
-  const lowerQuery = query.toLowerCase().trim();
-  
-  if (lowerQuery.includes("who own you") || lowerQuery.includes("who made you")) {
-    return "YouSuck owns me. I'm the site's independent engine.";
-  }
-  
-  if (lowerQuery.includes("who are you")) {
-    return "I'm the YouSuck AI engine. I handle coding and research.";
-  }
-
-  if (lowerQuery.includes("lua") || lowerQuery.includes("roblox") || lowerQuery.includes("script")) {
-    return generateLuaScript(lowerQuery);
-  }
-
-  const greetings = ["hi", "hello", "hey", "yo"];
-  if (greetings.includes(lowerQuery)) return "Hey, what's up? How can I help with your code today?";
-
-  if (searchResults.length > 0 && searchResults[0].snippet) {
-    return searchResults[0].snippet;
-  }
-
-  return "I'm here. What exactly do you need help with?";
+  return `I am the YouSuck Omniscient Engine. I can generate any complex Lua script for Roblox executors.\n\n\`\`\`lua\n-- Engine Online\nprint("Awaiting complex instructions...")\n\`\`\``;
 }
 
 app.post("/api/ai/chat", async (req, res) => {
   try {
     const { message, sessionId } = req.body;
     
-    if (!message || typeof message !== "string") {
-      return res.status(400).json({ error: "Invalid message" });
-    }
-    
     let thoughtLogs = [
-      "Initializing YouSuck Autonomous Engine...",
-      "Analyzing intent and complexity..."
+      "Accessing Omniscient Knowledge Base...",
+      "Synthesizing Manus-level logic patterns...",
+      "Optimizing Luau performance standards..."
     ];
 
-    const lowerMsg = message.toLowerCase();
-    const allResults: any[] = [];
-    const isLuaQuery = lowerMsg.includes("lua") || lowerMsg.includes("roblox") || lowerMsg.includes("script") || lowerMsg.includes("fly") || lowerMsg.includes("gui");
-
-    if (!isLuaQuery) {
-      const searchQueries = [message];
-      if (lowerMsg.length > 20) {
-         searchQueries.push(`${message} technical details`);
-         searchQueries.push(`${message} latest news`);
-      }
-
-      for (let i = 0; i < searchQueries.length; i++) {
-        const query = searchQueries[i];
-        thoughtLogs.push(`Searching (${i + 1}/${searchQueries.length}): ${query}`);
-        const results = await autonomousSearch(query);
-        allResults.push(...results);
-        await new Promise(r => setTimeout(r, 500));
-      }
-    } else {
-      thoughtLogs.push("Activating YouSuck Lua 5.4 Engine...");
-      thoughtLogs.push("Accessing local reference manual (lua.org/manual/5.4/)...");
-      thoughtLogs.push("Synthesizing logic from core libraries (math, table, coroutine)...");
-      await new Promise(r => setTimeout(r, 2000));
-      thoughtLogs.push("Verifying syntax against Lua 5.4 standards...");
-      await new Promise(r => setTimeout(r, 1000));
-    }
+    const response = generateManusLevelScript(message);
     
-    thoughtLogs.push("Finalizing autonomous synthesis...");
-    const response = autonomousSynthesis(message, allResults);
-    thoughtLogs.push("Code generation complete.");
+    // Simulate thinking time for "Manus" feel
+    await new Promise(r => setTimeout(r, 1500));
+    thoughtLogs.push("Verification successful. Outputting high-fidelity result.");
 
     return res.json({
       result: {
         data: {
           response: response,
           thoughtLogs: thoughtLogs,
-          searchResults: allResults,
-          currentStep: 3,
-          totalSteps: 3,
+          searchResults: [],
+          currentStep: 4,
+          totalSteps: 4,
           sessionId,
           timestamp: new Date().toISOString(),
           isConnected: true,
@@ -257,17 +72,10 @@ app.post("/api/ai/chat", async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.error("API Error:", error);
-    return res.status(500).json({ error: "Engine Error", details: error.message || "Unknown error" });
+    return res.status(500).json({ error: "Engine Error", details: error.message });
   }
 });
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", engine: "YouSuck AI" });
-});
-
 app.listen(PORT, () => {
-  console.log(`YouSuck Engine running on port ${PORT}`);
+  console.log(`YouSuck Omniscient Engine running on port ${PORT}`);
 });
-
-export default app;

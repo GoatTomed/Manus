@@ -1,0 +1,32 @@
+{
+  "version": "2.0",
+  "engine": "YouSuck Omniscient Engine",
+  "specialization": "Roblox Advanced Scripting & Luau Optimization",
+  "knowledge_base": {
+    "ExecutorCore": {
+      "globals": ["getgenv", "getrenv", "getreg", "getgc", "getinstances", "getnilinstances", "getconnections", "getloadedmodules", "getscripts"],
+      "functions": ["loadstring", "mouse1click", "mouse2click", "keypress", "keyrelease", "isrbxactive", "setclipboard", "toclipboard", "rconsoleprint", "rconsolewarn", "rconsoleerr", "rconsoleclear", "rconsolename"],
+      "filesystem": ["readfile", "writefile", "appendfile", "loadfile", "listfiles", "isfile", "isfolder", "makefolder", "delfolder", "delfile"]
+    },
+    "AdvancedUI": {
+      "framework": "Modern Gotham Dark",
+      "components": {
+        "Container": "Instance.new('Frame') with UICorner (12px) and DropShadow",
+        "Interactive": "TextButton with TweenService hover effects",
+        "Input": "TextBox with focus/unfocus visual feedback",
+        "Layout": "UIListLayout or UIGridLayout for automated positioning"
+      },
+      "patterns": {
+        "decompiler_ui": "Large frame (370x360), ScrollingFrame for script list, SearchBox for filtering, Dropdown for service selection."
+      }
+    },
+    "LogicPatterns": {
+      "decompiler": "Iterate through getDescendants() of a service, filter for 'Script' or 'LocalScript', pcall access to .Source property.",
+      "fly": "BodyVelocity on HumanoidRootPart, updated via RenderStepped or while loop linked to Camera.CFrame.LookVector.",
+      "aimbot": "WorldToViewportPoint for visibility check, Magnitude for FOV/Distance sorting, mousemove or CFrame manipulation."
+    },
+    "RobloxServices": [
+      "Workspace", "Players", "TweenService", "RunService", "UserInputService", "HttpService", "ReplicatedStorage", "StarterGui", "LogService"
+    ]
+  }
+}
