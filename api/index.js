@@ -1,5 +1,5 @@
-const express = require('express');
-const dotenv = require('dotenv');
+import express from 'express';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -69,4 +69,4 @@ app.post("/api/ai/chat", async (req, res) => {
   }
 });
 
-module.exports = app;
+export default app;
