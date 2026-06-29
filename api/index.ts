@@ -45,166 +45,117 @@ const pendingMessages = new Map<string, string[]>();
 
 app.post("/api/ai/chat", async (req: any, res: any) => {
   try {
-    const { sessionId, message, conversationHistory, isRoblox } = req.body;
+    const { sessionId, message, conversationHistory } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    let manusTaskId;
-
-    // Try to get session from Supabase
+    // Store session in Supabase for history
     if (sessionId) {
-      const { data: sessionData } = await supabase
-        .from('ai_sessions')
-        .select('manus_task_id')
-        .eq('session_id', sessionId)
-        .single();
-      
-      if (sessionData) {
-        manusTaskId = sessionData.manus_task_id;
-        // Update last activity
-        await supabase
+      try {
+        const { data: sessionData } = await supabase
           .from('ai_sessions')
-          .update({ last_activity: new Date().toISOString(), is_roblox: isRoblox || false })
-          .eq('session_id', sessionId);
-      } else {
-        // Create new session record
-        await supabase
-          .from('ai_sessions')
-          .insert([{ session_id: sessionId, is_roblox: isRoblox || false }]);
+          .select('id')
+          .eq('session_id', sessionId)
+          .single();
+        
+        if (!sessionData) {
+          await supabase
+            .from('ai_sessions')
+            .insert([{ session_id: sessionId, last_activity: new Date().toISOString() }]);
+        } else {
+          await supabase
+            .from('ai_sessions')
+            .update({ last_activity: new Date().toISOString() })
+            .eq('session_id', sessionId);
+        }
+      } catch (e) {
+        console.error("Session storage error:", e);
       }
     }
 
-    let aiResponse = "No response generated";
+    let aiResponse = "I'm processing your question...";
 
     try {
-      // Check if task exists first if we have an ID
-      if (manusTaskId) {
-        try {
-          const checkRes = await axios.get(`https://api.manus.ai/v2/task.get?task_id=${manusTaskId}`, {
-            headers: { "x-manus-api-key": MANUS_API_KEY }
-          });
-          if (!checkRes.data.ok || checkRes.data.task?.status === "expired") {
-            manusTaskId = null;
-          }
-        } catch (e) {
-          manusTaskId = null;
-        }
+      // Create a task with Manus to handle the query
+      // This uses Manus's internal capabilities: web search, knowledge base, and reasoning
+      const systemPrompt = `You are an intelligent AI assistant with access to:
+1. Real-time web search capabilities
+2. Comprehensive knowledge base covering technology, science, programming, and general topics
+3. Advanced reasoning and problem-solving abilities
+
+Your role is to:
+- Answer questions accurately and thoroughly
+- Search the web when current information is needed
+- Provide code examples when relevant
+- Cite sources when using web search results
+- Be helpful, clear, and concise
+
+User Question: ${message}`;
+
+      const createRes = await axios.post("https://api.manus.ai/v2/task.create", {
+        message: { content: systemPrompt },
+        title: "AI Chat Query",
+        interactive_mode: false
+      }, {
+        headers: { "x-manus-api-key": MANUS_API_KEY, "Content-Type": "application/json" }
+      });
+
+      if (!createRes.data.ok) {
+        throw new Error(createRes.data.error?.message || "Failed to create AI task");
       }
 
-      if (!manusTaskId) {
-        const systemPrompt = `You are an expert Roblox Lua scripting assistant and database integration expert. You help developers write Lua code for Roblox games and connect to databases using LuaSQL.
+      const manusTaskId = createRes.data.task_id;
 
-You have deep knowledge of:
-- Roblox Lua API and services (Players, Workspace, RunService, RemoteEvents, etc.)
-- LuaSQL documentation and database connectivity (ODBC, Oracle, MySQL, SQLite, PostgreSQL)
-- Using luasql.env() to create environments, env:connect() for connections, and conn:execute() for queries.
-- Handling LuaSQL cursor objects and fetching results row-by-row.
-
-When answering:
-1. Provide clear, concise Lua code examples.
-2. If the user asks about databases, use LuaSQL correctly.
-3. Explain what the code does and include comments.
-4. Format code in markdown with \`\`\`lua blocks.
-
-User Message: ${message}`;
-
-        const createRes = await axios.post("https://api.manus.ai/v2/task.create", {
-          message: { content: systemPrompt },
-          title: "Roblox Lua Coding Session",
-          interactive_mode: false
-        }, {
-          headers: { "x-manus-api-key": MANUS_API_KEY, "Content-Type": "application/json" }
+      // Poll for the response
+      let attempts = 0;
+      const maxAttempts = 20; // 40 seconds total
+      
+      while (attempts < maxAttempts) {
+        const listRes = await axios.get(`https://api.manus.ai/v2/task.listMessages?task_id=${manusTaskId}&order=desc&limit=10`, {
+          headers: { "x-manus-api-key": MANUS_API_KEY }
         });
+        
+        if (listRes.data.ok && listRes.data.events) {
+          const events = listRes.data.events;
+          
+          // Check for error
+          const errorMsg = events.find((e: any) => e.type === "error_message");
+          if (errorMsg) {
+            aiResponse = `Error: ${errorMsg.error_message?.message || "An error occurred"}`;
+            break;
+          }
 
-        if (createRes.data.ok) {
-           manusTaskId = createRes.data.task_id;
-           if (sessionId) {
-              await supabase
-                .from('ai_sessions')
-                .update({ manus_task_id: manusTaskId })
-                .eq('session_id', sessionId);
-           }
-        } else {
-           throw new Error(createRes.data.error?.message || "Failed to create task");
-        }
-      } else {
-         const sendRes = await axios.post("https://api.manus.ai/v2/task.sendMessage", {
-           task_id: manusTaskId,
-           message: { content: message }
-         }, {
-           headers: { "x-manus-api-key": MANUS_API_KEY, "Content-Type": "application/json" }
-         });
-         
-         if (!sendRes.data.ok) {
-           // If task not found, try creating a new one
-           if (sendRes.data.error?.code === "task_not_found") {
-              const createRes = await axios.post("https://api.manus.ai/v2/task.create", {
-                message: { content: message },
-                title: "Roblox Lua Coding Session (Recovered)",
-                interactive_mode: false
-              }, {
-                headers: { "x-manus-api-key": MANUS_API_KEY, "Content-Type": "application/json" }
-              });
-              
-              if (createRes.data.ok) {
-                manusTaskId = createRes.data.task_id;
-                if (sessionId) {
-                   await supabase
-                     .from('ai_sessions')
-                     .update({ manus_task_id: manusTaskId })
-                     .eq('session_id', sessionId);
-                }
-              } else {
-                throw new Error(createRes.data.error?.message || "Failed to recreate task");
-              }
-           } else {
-             throw new Error(sendRes.data.error?.message || "Failed to send message");
-           }
-         }
-      }
+          // Check for assistant response
+          const assistantMsg = events.find((e: any) => e.type === "assistant_message");
+          if (assistantMsg && assistantMsg.assistant_message?.text) {
+            aiResponse = assistantMsg.assistant_message.text;
+            break;
+          }
 
-      if (manusTaskId) {
-         let attempts = 0;
-         const maxAttempts = 15; // 30 seconds total
-         while (attempts < maxAttempts) {
-            const listRes = await axios.get(`https://api.manus.ai/v2/task.listMessages?task_id=${manusTaskId}&order=desc&limit=10`, {
-               headers: { "x-manus-api-key": MANUS_API_KEY }
-            });
-            
-            if (listRes.data.ok && listRes.data.events) {
-               const events = listRes.data.events;
-               const errorMsg = events.find((e: any) => e.type === "error_message");
-               if (errorMsg) {
-                  aiResponse = `Manus Error: ${errorMsg.error_message?.message || "Unknown agent error"}`;
-                  break;
-               }
-
-               const assistantMsg = events.find((e: any) => e.type === "assistant_message");
-               if (assistantMsg && assistantMsg.assistant_message?.text) {
-                  aiResponse = assistantMsg.assistant_message.text;
-                  break;
-               }
-
-               const statusUpdate = events.find((e: any) => e.type === "status_update");
-               if (statusUpdate && statusUpdate.status_update?.agent_status === "stopped" && !assistantMsg) {
-                  aiResponse = "Agent stopped without producing a response.";
-                  break;
-               }
+          // Check if task is complete
+          const statusUpdate = events.find((e: any) => e.type === "status_update");
+          if (statusUpdate && statusUpdate.status_update?.agent_status === "stopped") {
+            if (!assistantMsg) {
+              aiResponse = "The AI agent completed but did not generate a response. Please try again.";
             }
-            await new Promise(r => setTimeout(r, 2000));
-            attempts++;
-         }
-         if (attempts >= maxAttempts && aiResponse === "No response generated") {
-            aiResponse = "Response timeout: The agent is still working. Please try refreshing or sending another message.";
-         }
+            break;
+          }
+        }
+        
+        await new Promise(r => setTimeout(r, 2000));
+        attempts++;
+      }
+      
+      if (attempts >= maxAttempts && aiResponse === "I'm processing your question...") {
+        aiResponse = "The request is taking longer than expected. Please try again or rephrase your question.";
       }
 
     } catch (apiError: any) {
       const errorDetail = apiError.response?.data?.error?.message || apiError.message;
-      console.error("Manus API Error:", errorDetail);
-      aiResponse = `API Error: ${errorDetail}`;
+      console.error("AI API Error:", errorDetail);
+      aiResponse = `Error: ${errorDetail}. Please try again.`;
     }
 
     res.json({
@@ -214,7 +165,6 @@ User Message: ${message}`;
           sessionId,
           timestamp: new Date().toISOString(),
           isConnected: true,
-          isRobloxConnected: isRoblox && sessionId ? true : false,
         },
       },
     });
