@@ -27,7 +27,7 @@ const aiNav: { id: AIView; label: string; icon: string }[] = [
   { id: "knowledge", label: "Knowledge", icon: "ti-database" },
 ];
 
-const labelStyle = { color: "#71717a", fontSize: "11px", textTransform: "uppercase" as const, letterSpacing: "0.08em", fontWeight: "700", marginBottom: "12px" };
+const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
 
 export default function AICoding() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -93,13 +93,18 @@ export default function AICoding() {
     const userInput = input;
     setInput("");
 
-    const updated = {
-      ...currentSession,
-      messages: [...currentSession.messages, userMessage],
-      updatedAt: new Date(),
-    };
-    setCurrentSession(updated);
-    setSessions(sessions.map(s => s.id === currentSession.id ? updated : s));
+    // Use functional update to ensure we don't lose the user message
+    setSessions(prev => prev.map(s => {
+      if (s.id === currentSession.id) {
+        return { ...s, messages: [...s.messages, userMessage], updatedAt: new Date() };
+      }
+      return s;
+    }));
+    
+    setCurrentSession(prev => {
+      if (!prev) return null;
+      return { ...prev, messages: [...prev.messages, userMessage], updatedAt: new Date() };
+    });
 
     try {
       const response = await fetch("/api/ai/chat", {
@@ -124,18 +129,28 @@ export default function AICoding() {
         results: res?.searchResults,
       };
 
-      const finalUpdate = {
-        ...updated,
-        messages: [...updated.messages, aiMessage],
-        updatedAt: new Date(),
-      };
-      
-      if (currentSession.title === "New Chat") {
-        finalUpdate.title = userInput.substring(0, 40) + (userInput.length > 40 ? "..." : "");
-      }
+      setSessions(prev => prev.map(s => {
+        if (s.id === currentSession.id) {
+          const updatedMessages = [...s.messages, userMessage, aiMessage];
+          let updatedTitle = s.title;
+          if (s.title === "New Chat") {
+            updatedTitle = userInput.substring(0, 40) + (userInput.length > 40 ? "..." : "");
+          }
+          return { ...s, title: updatedTitle, messages: updatedMessages, updatedAt: new Date() };
+        }
+        return s;
+      }));
 
-      setCurrentSession(finalUpdate);
-      setSessions(sessions.map(s => s.id === currentSession.id ? finalUpdate : s));
+      setCurrentSession(prev => {
+        if (!prev) return null;
+        const updatedMessages = [...prev.messages, aiMessage];
+        let updatedTitle = prev.title;
+        if (prev.title === "New Chat") {
+          updatedTitle = userInput.substring(0, 40) + (userInput.length > 40 ? "..." : "");
+        }
+        return { ...prev, title: updatedTitle, messages: updatedMessages, updatedAt: new Date() };
+      });
+
     } catch (error) {
       toast.error("Failed to get response");
     } finally {
@@ -177,7 +192,7 @@ export default function AICoding() {
           <div className="view-tabs">
             {aiNav.map(n => (
               <button key={n.id} className={`tab-btn-manus ${aiView === n.id ? "active" : ""}`} onClick={() => setAIView(n.id)}>
-                <i className={n.icon}></i> {n.label}
+                <i className={`ti ${n.icon}`}></i> {n.label}
               </button>
             ))}
           </div>
@@ -188,7 +203,9 @@ export default function AICoding() {
             <div className="chat-scroller">
               {!currentSession ? (
                 <div className="empty-manus">
-                  <div className="logo-placeholder">M</div>
+                  <div className="logo-placeholder-manus">
+                    <img src={LOGO_URL} alt="Logo" />
+                  </div>
                   <h1>How can I help you today?</h1>
                   <p>I can search the web, write code, and solve complex problems.</p>
                 </div>
@@ -196,7 +213,9 @@ export default function AICoding() {
                 <div className="messages-list-manus">
                   {currentSession.messages.map(msg => (
                     <div key={msg.id} className={`msg-container ${msg.role}`}>
-                      <div className="msg-avatar">{msg.role === "user" ? "U" : "M"}</div>
+                      <div className="msg-avatar-manus">
+                        <img src={LOGO_URL} alt="Avatar" />
+                      </div>
                       <div className="msg-body">
                         <div className="msg-content">{msg.content}</div>
                         {msg.results && msg.results.length > 0 && (
@@ -213,7 +232,9 @@ export default function AICoding() {
                   ))}
                   {loading && (
                     <div className="msg-container assistant loading">
-                      <div className="msg-avatar">M</div>
+                      <div className="msg-avatar-manus">
+                        <img src={LOGO_URL} alt="Avatar" />
+                      </div>
                       <div className="msg-body">
                         <div className="live-progress-manus">
                           <div className="spinner-manus"></div>
@@ -240,7 +261,7 @@ export default function AICoding() {
                 <p>Real-time browsing and data extraction in a secure sandbox.</p>
                 <div className="search-bar-manus">
                   <input placeholder="Enter URL or search query..." value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === "Enter" && sendMessage()} />
-                  <button onClick={sendMessage}><i className="ti ti-arrow-right"></i></button>
+                  <button onClick={sendMessage} className="search-btn-manus"><i className="ti ti-arrow-right"></i></button>
                 </div>
               </div>
             </div>
@@ -278,9 +299,11 @@ export default function AICoding() {
           <footer className="manus-input-area">
             <div className="input-box-manus">
               <textarea placeholder="Message Manus..." value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => { if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} />
-              <button className={`send-btn ${input.trim() ? "active" : ""}`} onClick={sendMessage} disabled={!input.trim() || loading}>
-                <i className={`ti ti-arrow-up ${loading ? "spin" : ""}`}></i>
-              </button>
+              <div className="input-actions-manus">
+                 <button className={`send-btn ${input.trim() ? "active" : ""}`} onClick={sendMessage} disabled={!input.trim() || loading}>
+                   <i className={`ti ti-arrow-up ${loading ? "spin" : ""}`}></i>
+                 </button>
+              </div>
             </div>
             <div className="input-footer">Manus can make mistakes. Check important info.</div>
           </footer>

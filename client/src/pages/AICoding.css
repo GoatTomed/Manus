@@ -181,6 +181,10 @@
   color: #fff;
 }
 
+.tab-btn-manus i {
+  font-size: 16px;
+}
+
 /* ── CHAT CONTENT ── */
 .chat-content-manus {
   flex: 1;
@@ -204,18 +208,21 @@
   text-align: center;
 }
 
-.logo-placeholder {
-  width: 60px;
-  height: 60px;
-  background: #fff;
-  color: #000;
+.logo-placeholder-manus {
+  width: 80px;
+  height: 80px;
+  background: transparent;
   border-radius: 15px;
-  font-size: 32px;
-  font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 24px;
+}
+
+.logo-placeholder-manus img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .empty-manus h1 {
@@ -243,19 +250,19 @@
   gap: 20px;
 }
 
-.msg-avatar {
+.msg-avatar-manus {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
-.user .msg-avatar { background: #333; color: #fff; }
-.assistant .msg-avatar { background: #fff; color: #000; }
+.msg-avatar-manus img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
 .msg-body {
   flex: 1;
@@ -354,8 +361,12 @@
   max-height: 200px;
 }
 
+.input-actions-manus {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .send-btn {
-  align-self: flex-end;
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -417,7 +428,7 @@
   outline: none;
 }
 
-.search-bar-manus button {
+.search-btn-manus {
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -425,6 +436,10 @@
   border: none;
   cursor: pointer;
   font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
 }
 
 /* ── KNOWLEDGE VIEW ── */
