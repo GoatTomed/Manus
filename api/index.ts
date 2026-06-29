@@ -3,14 +3,21 @@ import axios from "axios";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
 
+// ESM compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const LUA_KB_PATH = path.join(__dirname, "../shared/lua_kb.json");
-let LUA_KB = { knowledge: { GUI: { patterns: {} } } };
+let LUA_KB: any = { knowledge: { GUI: { patterns: {} } } };
+
 try {
   if (fs.existsSync(LUA_KB_PATH)) {
-    LUA_KB = JSON.parse(fs.readFileSync(LUA_KB_PATH, "utf-8"));
+    const content = fs.readFileSync(LUA_KB_PATH, "utf-8");
+    LUA_KB = JSON.parse(content);
   }
 } catch (e) {
   console.error("Failed to load Lua KB", e);
@@ -20,26 +27,6 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
-
-// ── YOUSUCK OMNISCIENT ENGINE (AUTONOMOUS) ──
-const YOUSUCK_KNOWLEDGE = {
-  lua_5_4_ref: {
-    version: "5.4",
-    official_docs: "https://www.lua.org/manual/5.4/",
-    core_libs: ["basic", "coroutine", "debug", "io", "math", "os", "package", "string", "table", "utf8"],
-    metamethods: ["__add", "__sub", "__mul", "__div", "__mod", "__pow", "__unm", "__idiv", "__band", "__bor", "__bxor", "__bnot", "__shl", "__shr", "__concat", "__len", "__eq", "__lt", "__le", "__index", "__newindex", "__call", "__gc", "__close", "__mode", "__name", "__tostring"],
-    expert_patterns: {
-      fly: "Utilizes BodyVelocity (Legacy) or LinearVelocity (Modern) for character control.",
-      aimbot: "Uses WorldToViewportPoint for 3D-to-2D projection and Magnitude for distance calculation.",
-      optimization: "Prefers local variables, task.wait over wait, and table.create for pre-allocation."
-    }
-  },
-  general: {
-    who: "I am the YouSuck AI, an autonomous engine powered by local documentation.",
-    purpose: "Direct code generation without external search dependencies.",
-    methods: "Autonomous synthesis from official language specifications."
-  }
-};
 
 const FLY_GUI_SCRIPT = `-- YouSuck Fly GUI System
 local Players = game:GetService("Players")
@@ -156,7 +143,7 @@ end)
 
 print("YouSuck Fly GUI Loaded!")`;
 
-function generateLuaScript(topic: string) {
+function generateLuaScript(topic: string): string {
   const lowerTopic = topic.toLowerCase();
   
   if (lowerTopic.includes("fly") && (lowerTopic.includes("gui") || lowerTopic.includes("button"))) {
@@ -164,8 +151,7 @@ function generateLuaScript(topic: string) {
   }
 
   if (lowerTopic.includes("gui") || lowerTopic.includes("interface") || lowerTopic.includes("ui")) {
-    const guiScript = FLY_GUI_SCRIPT.replace(/YouSuck Fly GUI System/g, "YouSuck Modern GUI System").replace(/FLY SYSTEM/g, "MAIN GUI");
-    return `Here is a modern Roblox GUI script using TweenService and UICorners:\n\n\`\`\`lua\n${guiScript}\n\`\`\``;
+    return `Here is a modern Roblox GUI script using TweenService and UICorners:\n\n\`\`\`lua\n${FLY_GUI_SCRIPT}\n\`\`\``;
   }
 
   if (lowerTopic.includes("fly")) {
@@ -175,18 +161,19 @@ function generateLuaScript(topic: string) {
   return `Expert Lua engine ready. How can I assist with your Roblox project?\n\n\`\`\`lua\n-- YouSuck Lua Knowledge Base Active\nprint('System Online')\n\`\`\``;
 }
 
-async function autonomousSearch(query: string) {
+async function autonomousSearch(query: string): Promise<any[]> {
   try {
     const results = [
       { title: `Latest on ${query}`, url: `https://www.google.com/search?q=${encodeURIComponent(query)}`, snippet: `Researching ${query} in real-time...` }
     ];
     return results;
   } catch (e) {
+    console.error("Search error:", e);
     return [];
   }
 }
 
-function autonomousSynthesis(query: string, searchResults: any[]) {
+function autonomousSynthesis(query: string, searchResults: any[]): string {
   const lowerQuery = query.toLowerCase().trim();
   
   if (lowerQuery.includes("who own you") || lowerQuery.includes("who made you")) {
@@ -212,18 +199,21 @@ function autonomousSynthesis(query: string, searchResults: any[]) {
 }
 
 app.post("/api/ai/chat", async (req, res) => {
-  const { message, sessionId } = req.body;
-  
-  let thoughtLogs = [
-    "Initializing YouSuck Autonomous Engine...",
-    "Analyzing intent and complexity..."
-  ];
-
   try {
+    const { message, sessionId } = req.body;
+    
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "Invalid message" });
+    }
+    
+    let thoughtLogs = [
+      "Initializing YouSuck Autonomous Engine...",
+      "Analyzing intent and complexity..."
+    ];
+
     const lowerMsg = message.toLowerCase();
     const allResults: any[] = [];
-
-    const isLuaQuery = lowerMsg.includes("lua") || lowerMsg.includes("roblox") || lowerMsg.includes("script");
+    const isLuaQuery = lowerMsg.includes("lua") || lowerMsg.includes("roblox") || lowerMsg.includes("script") || lowerMsg.includes("fly") || lowerMsg.includes("gui");
 
     if (!isLuaQuery) {
       const searchQueries = [message];
@@ -250,10 +240,9 @@ app.post("/api/ai/chat", async (req, res) => {
     
     thoughtLogs.push("Finalizing autonomous synthesis...");
     const response = autonomousSynthesis(message, allResults);
-    
     thoughtLogs.push("Code generation complete.");
 
-    res.json({
+    return res.json({
       result: {
         data: {
           response: response,
@@ -268,10 +257,17 @@ app.post("/api/ai/chat", async (req, res) => {
       },
     });
   } catch (error: any) {
-    res.status(500).json({ error: "Engine Error", details: error.message });
+    console.error("API Error:", error);
+    return res.status(500).json({ error: "Engine Error", details: error.message || "Unknown error" });
   }
+});
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", engine: "YouSuck AI" });
 });
 
 app.listen(PORT, () => {
   console.log(`YouSuck Engine running on port ${PORT}`);
 });
+
+export default app;
