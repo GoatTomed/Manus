@@ -26,6 +26,7 @@ function Router() {
       <Route path="/executors" component={Executors} />
       <Route path="/track" component={Track} />
       <Route path="/ai" component={AICoding} />
+      <Route path="/ai/chat/:chatId" component={AICoding} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

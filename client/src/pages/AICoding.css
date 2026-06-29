@@ -509,23 +509,24 @@
 .animate-fade-in { animation: fadeIn 0.3s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ── CODE CARD STYLES ── */
+/* ── CODE CARD STYLES (PREMIUM) ── */
 .code-card-manus {
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #1a1a1a 0%, #1e1e1e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
   margin: 16px 0;
   overflow: hidden;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .code-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  background: #2d2d2d;
-  border-bottom: 1px solid #333;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .code-lang {
@@ -576,8 +577,8 @@
 
 /* Custom scrollbar for code blocks */
 .code-card-body::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 .code-card-body::-webkit-scrollbar-track {
@@ -585,12 +586,30 @@
 }
 
 .code-card-body::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
 }
 
 .code-card-body::-webkit-scrollbar-thumb:hover {
-  background: #444;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Custom scrollbar for chat messages */
+.chat-scroller::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scroller::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.chat-scroller::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .timer-badge {
@@ -637,21 +656,22 @@
   position: relative;
 }
 
-/* ── FLOATING PROGRESS BADGE ── */
+/* ── FLOATING PROGRESS BADGE (LARGE) ── */
 .floating-progress-badge {
-  background: rgba(30, 30, 30, 0.95);
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, rgba(30, 30, 30, 0.98) 0%, rgba(25, 25, 25, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .badge-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .badge-left {
@@ -711,21 +731,42 @@
 .badge-expanded-logs {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #333;
-  max-height: 200px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  max-height: 250px;
   overflow-y: auto;
 }
 
 .badge-log-line {
   font-size: 12px;
-  color: #888;
+  color: #999;
   margin-bottom: 6px;
   font-family: 'JetBrains Mono', monospace;
-  line-height: 1.4;
+  line-height: 1.5;
+  padding-left: 8px;
+  border-left: 2px solid rgba(100, 150, 255, 0.3);
+  padding-left: 10px;
 }
 
 .badge-log-line:last-child {
   margin-bottom: 0;
+}
+
+/* Custom scrollbar for badge logs */
+.badge-expanded-logs::-webkit-scrollbar {
+  width: 6px;
+}
+
+.badge-expanded-logs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.badge-expanded-logs::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.badge-expanded-logs::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* ── CODE LANG BADGE IMPROVEMENTS ── */

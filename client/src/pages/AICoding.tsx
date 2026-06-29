@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import CodeBlock from "../components/CodeBlock";
+import { useLocation } from "wouter";
 import "./AICoding.css";
 
 interface ChatMessage {
@@ -32,7 +33,8 @@ const aiNav: { id: AIView; label: string; icon: string }[] = [
 const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
 const MANUS_LOGO = "https://manus.ai/favicon.ico"; // Using official favicon as logo
 
-export default function AICoding() {
+export default function AICoding({ params }: { params?: { chatId?: string } }) {
+  const [location, setLocation] = useLocation();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [input, setInput] = useState("");
@@ -66,7 +68,19 @@ export default function AICoding() {
       try {
         const parsed = JSON.parse(saved);
         setSessions(parsed);
-        if (parsed.length > 0) setCurrentSession(parsed[0]);
+        
+        // Si on a un chatId dans l'URL, charger cette session
+        const chatIdFromUrl = params?.chatId || location.split('/').pop();
+        if (chatIdFromUrl) {
+          const session = parsed.find((s: ChatSession) => s.id === chatIdFromUrl);
+          if (session) {
+            setCurrentSession(session);
+          } else if (parsed.length > 0) {
+            setCurrentSession(parsed[0]);
+          }
+        } else if (parsed.length > 0) {
+          setCurrentSession(parsed[0]);
+        }
       } catch (e) { console.error(e); }
     }
   }, []);
@@ -90,12 +104,22 @@ export default function AICoding() {
     setSessions([newSession, ...sessions]);
     setCurrentSession(newSession);
     setAIView("chat");
+    // Naviguer vers l'URL du chat
+    setLocation(`/ai/chat/${newSession.id}`);
   };
 
   const deleteSession = (id: string) => {
     const filtered = sessions.filter(s => s.id !== id);
     setSessions(filtered);
-    if (currentSession?.id === id) setCurrentSession(filtered[0] || null);
+    if (currentSession?.id === id) {
+      if (filtered.length > 0) {
+        setCurrentSession(filtered[0]);
+        setLocation(`/ai/chat/${filtered[0].id}`);
+      } else {
+        setCurrentSession(null);
+        setLocation("/ai");
+      }
+    }
   };
 
   const sendMessage = async (overrideInput?: string) => {
@@ -206,7 +230,10 @@ export default function AICoding() {
         </div>
         <div className="sessions-list-manus">
           {sessions.filter(s => s.title.toLowerCase().includes(sessionQuery.toLowerCase())).map(session => (
-            <div key={session.id} className={`session-row-manus ${currentSession?.id === session.id ? "active" : ""}`} onClick={() => setCurrentSession(session)}>
+            <div key={session.id} className={`session-row-manus ${currentSession?.id === session.id ? "active" : ""}`} onClick={() => {
+              setCurrentSession(session);
+              setLocation(`/ai/chat/${session.id}`);
+            }}>
               <i className="ti ti-message"></i>
               <span className="title">{session.title}</span>
               <button className="del" onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}><i className="ti ti-trash"></i></button>
