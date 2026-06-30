@@ -3,14 +3,12 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { Client } from "./trackData";
 import "./Track.css";
 
-type HomeView = "clients" | "server" | "users" | "keys" | "stats" | "announcements";
+type HomeView = "clients" | "users" | "keys" | "stats";
 
 const homeNav: { id: HomeView; label: string; icon: string }[] = [
   { id: "clients", label: "Clients", icon: "ti-users" },
-  { id: "server", label: "Server", icon: "ti-server" },
   { id: "users", label: "Users", icon: "ti-user-circle" },
-  { id: "keys", label: "Keys", icon: "ti-key" },
-  { id: "announcements", label: "Global Announcement", icon: "ti-broadcast" },
+
 ];
 
 function formatUptime(seconds: number) {
@@ -416,29 +414,7 @@ export default function Track() {
             </div>
           )}
 
-          {homeView === "announcements" && (
-            <div className="view active animate-slide-in">
-              <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Global Announcement</h1>
-              <div className="glass-card" style={{ padding: "40px" }}>
-                <div style={labelStyle}>Broadcast Message</div>
-                <textarea 
-                  className="console-textarea" 
-                  style={{ margin: "0 0 24px 0", width: "100%", height: "200px" }}
-                  placeholder="Enter message to broadcast to all active players..."
-                  value={announcementText}
-                  onChange={e => setAnnouncementText(e.target.value)}
-                />
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ color: "#71717a", fontSize: "14px" }}>
-                    Targeting <strong>{clients.length}</strong> active servers.
-                  </div>
-                  <button className="btn-execute" style={{ width: "auto", padding: "0 40px" }} onClick={broadcastAnnouncement} disabled={sendingAnnouncement}>
-                    {sendingAnnouncement ? "Sending..." : "Broadcast Message"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+
         </div>
       </main>
 
@@ -510,9 +486,7 @@ export default function Track() {
               <button className="sidebar-item" onClick={() => { setHomeView("keys"); setShowPalette(false); }}>
                 <i className="ti ti-plus"></i> Generate New Key
               </button>
-              <button className="sidebar-item" onClick={() => { setHomeView("announcements"); setShowPalette(false); }}>
-                <i className="ti ti-broadcast"></i> Send Global Announcement
-              </button>
+
             </div>
           </div>
         </div>

@@ -1,1 +1,6 @@
-{"version": 2, "rewrites": [{"source": "/api/(.*)", "destination": "/api/index.js"}, {"source": "/((?!api).*)", "destination": "/index.html"}]}
+{"version": 2, "rewrites": [
+    {"source": "/yousuck.lua", "destination": "/api/yousuck"},
+    {"source": "/scripts.lua", "destination": "/api/scripts"},
+    {"source": "/api/(.*)", "destination": "/api/index.js"},
+    {"source": "/((?!api).*)", "destination": "/index.html"}
+  ]}

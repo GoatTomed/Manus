@@ -78,22 +78,17 @@ local GAMES = {
 }
 
 local placeId = game.PlaceId
-local scriptUrl = GAMES[placeId]
+local scriptUrl = GAMES[placeId] or "https://pastebin.com/raw/e8cVpx8u" -- Default script for all games
 
-if scriptUrl then
-    print("[YouSuck] Correct Place ID (" .. tostring(placeId) .. ") — chargement du script...")
-    toast("Correct Game! Launching Script...", C.Success, 5)
-    task.wait(1)
-    local ok, err = pcall(function()
-        loadstring(game:HttpGet(scriptUrl))()
-    end)
-    if not ok then
-        warn("[YouSuck] Erreur lors du chargement du script : " .. tostring(err))
-        toast("Script load error. Check output.", C.Error, 5)
-    end
-else
-    print("[YouSuck] Wrong Place ID: " .. tostring(placeId))
-    toast("Wrong Game! Not Supported.", C.Error, 5)
+print("[YouSuck] Place ID: " .. tostring(placeId) .. " — Loading script...")
+toast("Launching Script...", C.Success, 5)
+task.wait(1)
+local ok, err = pcall(function()
+    loadstring(game:HttpGet(scriptUrl))()
+end)
+if not ok then
+    warn("[YouSuck] Error loading script: " .. tostring(err))
+    toast("Script load error. Check output.", C.Error, 5)
 end
 `;
 
