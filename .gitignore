@@ -23,6 +23,6 @@ dist-ssr
 *.sw?
 
 # Vercel
-.vercel
+.vercel 
 .env* 
 .env*.local 
