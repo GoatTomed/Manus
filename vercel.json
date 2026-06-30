@@ -4,5 +4,5 @@
     {"source": "/api/get-key", "destination": "/api/get-key.js"},
     {"source": "/api/get-key/(.*)", "destination": "/api/get-key.js"},
     {"source": "/api/(.*)", "destination": "/api/index.js"},
-    {"source": "/((?!api).*)", "destination": "/dist/index.html"}
+    {"source": "/((?!api).*)", "destination": "/index.html"}
   ]}
