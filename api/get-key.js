@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
-import axios from "axios";
+// Axios removed in favor of native fetch
 
 const supabase = createClient(
   process.env.SUPABASE_URL || '',
@@ -22,22 +22,26 @@ function hashVisitorId(visitorId) {
 
 async function createEarnPasteLink(targetUrl) {
   try {
-    const response = await axios.post(EARNPASTE_API_URL, {
-      targetUrl: targetUrl,
-      timer: 15
-    }, {
+    const response = await fetch(EARNPASTE_API_URL, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': EARNPASTE_API_KEY
-      }
+      },
+      body: JSON.stringify({
+        targetUrl: targetUrl,
+        timer: 15
+      })
     });
     
-    if (response.data && response.data.url) {
-      return response.data.url;
+    const data = await response.json();
+    
+    if (response.ok && data.url) {
+      return data.url;
     }
-    throw new Error(response.data.error || "Failed to create EarnPaste link");
+    throw new Error(data.error || "Failed to create EarnPaste link");
   } catch (error) {
-    console.error("EarnPaste API error:", error.response?.data || error.message);
+    console.error("EarnPaste API error:", error.message);
     throw error;
   }
 }
