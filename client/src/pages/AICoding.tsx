@@ -16,7 +16,7 @@ interface ChatMessage {
 
 interface ChatSession {
   id: string;
-  title: string;
+  title: string; 
   messages: ChatMessage[];
   createdAt: Date;
   updatedAt: Date;
