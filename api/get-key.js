@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import axios from "axios";
 
 const supabase = createClient(
   process.env.SUPABASE_URL || '',
@@ -7,6 +8,7 @@ const supabase = createClient(
 );
 
 const EARNPASTE_API_KEY = process.env.EARNPASTE_API_KEY || "ep_1fc0807b695b99c7f244b4d0dd6ac65bd49085dc6a6a2cd2";
+const EARNPASTE_API_URL = "https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste";
 
 // Helper function to generate a secure random key
 function generateKey() {
@@ -16,6 +18,28 @@ function generateKey() {
 // Helper function to hash visitor ID for privacy
 function hashVisitorId(visitorId) {
   return crypto.createHash('sha256').update(visitorId).digest('hex');
+}
+
+async function createEarnPasteLink(targetUrl) {
+  try {
+    const response = await axios.post(EARNPASTE_API_URL, {
+      targetUrl: targetUrl,
+      timer: 15
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': EARNPASTE_API_KEY
+      }
+    });
+    
+    if (response.data && response.data.url) {
+      return response.data.url;
+    }
+    throw new Error(response.data.error || "Failed to create EarnPaste link");
+  } catch (error) {
+    console.error("EarnPaste API error:", error.response?.data || error.message);
+    throw error;
+  }
 }
 
 export default async function handler(req, res) {
@@ -35,9 +59,7 @@ export default async function handler(req, res) {
   const searchParams = url.searchParams;
 
   try {
-    // GET /api/verify?session=XXX&step=1  (or step=2)
-    // This endpoint is the gate that EarnPaste redirects users back to.
-    // Direct browser visits without a valid session/step are rejected.
+    // GET /api/verify?session=XXX&step=1
     if (path === '/api/verify' && req.method === 'GET') {
       const sessionId = searchParams.get('session');
       const stepParam = parseInt(searchParams.get('step'), 10);
@@ -72,14 +94,13 @@ export default async function handler(req, res) {
         .eq('session_id', sessionId);
 
       if (stepParam === 1) {
-        // Just completed step 1 verification, send them onward to step 2's EarnPaste link
-        // Replace this URL with your actual step-2 EarnPaste link or landing page
-        return res.redirect(302, `https://yoursite.com/verify-step-2-page?session=${sessionId}`);
+        // Just completed step 1 verification, send them back to the frontend for step 2
+        return res.redirect(302, `/get-key?step=2&session=${sessionId}`);
       }
 
       if (stepParam === 2) {
-        // Completed both steps — redirect to result endpoint to claim the key
-        return res.redirect(302, `${url.origin}/api/get-key/result/${sessionId}?visitorId=${session.visitor_id}`);
+        // Completed both steps — redirect to frontend with completed=true
+        return res.redirect(302, `/get-key?completed=true&session=${sessionId}`);
       }
     }
 
@@ -121,17 +142,15 @@ export default async function handler(req, res) {
       }
     }
 
-    // POST /api/get-key/start - Start the key generation process
+    // POST /api/get-key/start - Start the key generation process (Step 1)
     if (path === '/api/get-key/start' && req.method === 'POST') {
       const { visitorId } = req.body;
       if (!visitorId) {
         return res.status(400).json({ error: 'Missing visitorId' });
       }
 
-      // Generate a session ID for tracking
       const sessionId = crypto.randomBytes(12).toString('hex');
 
-      // Store session in Supabase, starting at step 0 (not yet verified)
       try {
         await supabase
           .from('key_sessions')
@@ -141,25 +160,41 @@ export default async function handler(req, res) {
             visitor_hash: hashVisitorId(visitorId),
             step: 0,
             created_at: new Date().toISOString(),
-            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 min expiry
+            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
           });
+          
+        // Create EarnPaste link for Step 1
+        const targetUrl = `${url.origin}/api/verify?session=${sessionId}&step=1`;
+        const earnPasteUrl = await createEarnPasteLink(targetUrl);
+
+        return res.status(200).json({
+          sessionId,
+          earnPasteUrl
+        });
       } catch (err) {
-        console.error('Error creating session:', err);
+        console.error('Error in start:', err);
+        return res.status(500).json({ error: 'Failed to initialize verification' });
+      }
+    }
+
+    // POST /api/get-key/step2 - Final verification step (Step 2)
+    if (path === '/api/get-key/step2' && req.method === 'POST') {
+      const { sessionId } = req.body;
+      if (!sessionId) {
+        return res.status(400).json({ error: 'Missing sessionId' });
       }
 
-      // Send the user to your manually-created EarnPaste link for step 1.
-      // Its destination/redirect URL on EarnPaste's dashboard should be set to:
-      //   https://yoursite.com/api/verify?session=SESSION_ID_PLACEHOLDER&step=1
-      // Since EarnPaste links here are static (not generated per-request),
-      // append the sessionId as a query param your frontend can forward, or
-      // configure the EarnPaste link's destination with a session placeholder
-      // your EarnPaste plan supports. Adjust this URL to your actual step-1 link.
-      const earnPasteUrl = `https://earnpaste.com/your-step-1-link?session=${sessionId}`;
+      try {
+        const targetUrl = `${url.origin}/api/verify?session=${sessionId}&step=2`;
+        const earnPasteUrl = await createEarnPasteLink(targetUrl);
 
-      return res.status(200).json({
-        sessionId,
-        earnPasteUrl
-      });
+        return res.status(200).json({
+          earnPasteUrl
+        });
+      } catch (err) {
+        console.error('Error in step2:', err);
+        return res.status(500).json({ error: 'Failed to initialize step 2' });
+      }
     }
 
     // GET /api/get-key/result/:sessionId - Get the final key after verification
@@ -172,7 +207,6 @@ export default async function handler(req, res) {
       }
 
       try {
-        // Fetch session
         const { data: session, error: sessionError } = await supabase
           .from('key_sessions')
           .select('*')
@@ -183,21 +217,17 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Session not found or expired' });
         }
 
-        // Check if session is expired
         if (new Date(session.expires_at) < new Date()) {
           return res.status(400).json({ error: 'Session expired' });
         }
 
-        // Require that both verification steps were actually completed via /api/verify
         if (session.step < 2) {
           return res.status(403).json({ error: 'Verification not completed' });
         }
 
-        // Generate or reuse key
         let key;
         const visitorHash = hashVisitorId(visitorId);
 
-        // Check if visitor already has a valid key
         const { data: existingKey } = await supabase
           .from('keys')
           .select('*')
@@ -210,33 +240,26 @@ export default async function handler(req, res) {
         if (existingKey) {
           key = existingKey.key_value;
         } else {
-          // Generate new key
           key = generateKey();
           const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-          try {
-            await supabase
-              .from('keys')
-              .insert({
-                key_value: key,
-                visitor_hash: visitorHash,
-                visitor_id: visitorId,
-                created_at: new Date().toISOString(),
-                expires_at: expiresAt
-              });
-          } catch (err) {
-            console.error('Error inserting key:', err);
-          }
+          await supabase
+            .from('keys')
+            .insert({
+              key_value: key,
+              visitor_hash: visitorHash,
+              visitor_id: visitorId,
+              created_at: new Date().toISOString(),
+              expires_at: expiresAt
+            });
         }
 
-        // Get expiration time
         const { data: keyData } = await supabase
           .from('keys')
           .select('expires_at')
           .eq('key_value', key)
           .single();
 
-        // Mark session as completed
         await supabase
           .from('key_sessions')
           .update({ step: 3, completed_at: new Date().toISOString() })
