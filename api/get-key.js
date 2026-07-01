@@ -1,14 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
-// Axios removed in favor of native fetch
 
 const supabase = createClient(
   process.env.SUPABASE_URL || '',
   process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
-const EARNPASTE_API_KEY = process.env.EARNPASTE_API_KEY || "ep_1fc0807b695b99c7f244b4d0dd6ac65bd49085dc6a6a2cd2";
-const EARNPASTE_API_URL = "https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste";
+const EARNPASTE_API_KEY = "ep_1fc0807b695b99c7f244b4d0dd6ac65bd49085dc6a6a2cd2";
 
 // Helper function to generate a secure random key
 function generateKey() {
@@ -18,32 +16,6 @@ function generateKey() {
 // Helper function to hash visitor ID for privacy
 function hashVisitorId(visitorId) {
   return crypto.createHash('sha256').update(visitorId).digest('hex');
-}
-
-async function createEarnPasteLink(targetUrl) {
-  try {
-    const response = await fetch(EARNPASTE_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': EARNPASTE_API_KEY
-      },
-      body: JSON.stringify({
-        targetUrl: targetUrl,
-        timer: 15
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (response.ok && data.url) {
-      return data.url;
-    }
-    throw new Error(data.error || "Failed to create EarnPaste link");
-  } catch (error) {
-    console.error("EarnPaste API error:", error.message);
-    throw error;
-  }
 }
 
 export default async function handler(req, res) {
@@ -167,13 +139,12 @@ export default async function handler(req, res) {
             expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
           });
           
-        // Create EarnPaste link for Step 1
+        // Skip EarnPaste and redirect directly for testing or simple flow
         const targetUrl = `${url.origin}/api/verify?session=${sessionId}&step=1`;
-        const earnPasteUrl = await createEarnPasteLink(targetUrl);
 
         return res.status(200).json({
           sessionId,
-          earnPasteUrl
+          earnPasteUrl: targetUrl
         });
       } catch (err) {
         console.error('Error in start:', err);
@@ -190,10 +161,9 @@ export default async function handler(req, res) {
 
       try {
         const targetUrl = `${url.origin}/api/verify?session=${sessionId}&step=2`;
-        const earnPasteUrl = await createEarnPasteLink(targetUrl);
 
         return res.status(200).json({
-          earnPasteUrl
+          earnPasteUrl: targetUrl
         });
       } catch (err) {
         console.error('Error in step2:', err);
