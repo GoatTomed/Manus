@@ -3,16 +3,22 @@
  */
 import { Link } from "wouter";
 import { useEffect, useState } from "react";
+import { PWAToast } from "@/components/PWAToast";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
+  const [showPWAToast, setShowPWAToast] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
+      // Show PWA toast after page loads
+      setTimeout(() => {
+        setShowPWAToast(true);
+      }, 500);
     }, 3000);
     return () => clearTimeout(timer);
   }, []);
@@ -46,6 +52,7 @@ export default function Home() {
 
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
+      <PWAToast show={showPWAToast} />
       <main className="flex-1 flex flex-col items-center justify-center p-6">
         {/* Hero Section */}
         <div className="text-center px-4 max-w-sm w-full animate-fade-in-up">

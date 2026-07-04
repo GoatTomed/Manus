@@ -1,94 +1,106 @@
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
-export function usePWAToast(showOnPage: boolean) {
-  const [shown, setShown] = useState(false);
+interface PWAToastProps {
+  show: boolean;
+}
+
+export function PWAToast({ show }: PWAToastProps) {
+  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (!showOnPage || shown) return;
+    if (!show || dismissed) {
+      setVisible(false);
+      return;
+    }
 
     // Check if running on Windows
     const isWindows = navigator.userAgent.toLowerCase().includes("windows");
     if (!isWindows) return;
 
-    // Small delay to ensure everything is loaded
+    // Show toast after a short delay
     const timer = setTimeout(() => {
-      setShown(true);
-      
-      toast.custom(
-        (toastId) => (
-          <div
-            className="w-full max-w-sm p-4 rounded-xl shadow-2xl"
-            style={{
-              background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
-              border: "1px solid #00d4ff",
-              boxShadow: "0 0 20px rgba(0, 212, 255, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.1)",
-            }}
-          >
-            {/* Close button */}
-            <div className="flex justify-end mb-2">
-              <button
-                onClick={() => toast.dismiss(toastId)}
-                className="text-gray-400 hover:text-white transition-colors text-lg leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Icon and title */}
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                style={{
-                  background: "linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)",
-                }}
-              >
-                📱
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm">Installer YouSuck</h3>
-                <p className="text-gray-400 text-xs">Application de bureau</p>
-              </div>
-            </div>
-
-            {/* Description */}
-            <p className="text-gray-300 text-xs mb-4 leading-relaxed">
-              Lancez le jeu directement depuis votre bureau sans navigateur. Accès plus rapide et expérience optimisée.
-            </p>
-
-            {/* Buttons */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => toast.dismiss(toastId)}
-                className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold text-gray-300 hover:text-white transition-colors border border-gray-600 hover:border-gray-400"
-              >
-                Plus tard
-              </button>
-              <button
-                onClick={() => {
-                  toast.dismiss(toastId);
-                  // Trigger PWA install prompt if available
-                  if ((window as any).deferredPrompt) {
-                    (window as any).deferredPrompt.prompt();
-                  }
-                }}
-                className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:shadow-lg"
-                style={{
-                  background: "linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)",
-                }}
-              >
-                Installer
-              </button>
-            </div>
-          </div>
-        ),
-        {
-          duration: Infinity,
-          position: "top-center",
-        }
-      );
-    }, 800);
+      setVisible(true);
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [showOnPage, shown]);
+  }, [show, dismissed]);
+
+  if (!visible) return null;
+
+  const handleInstall = () => {
+    setDismissed(true);
+    // Trigger PWA install prompt if available
+    if ((window as any).deferredPrompt) {
+      (window as any).deferredPrompt.prompt();
+    }
+  };
+
+  const handleDismiss = () => {
+    setDismissed(true);
+  };
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+      {/* Roblox-style Toast */}
+      <div
+        className="rounded-lg shadow-2xl overflow-hidden"
+        style={{
+          background: "#1a1a1a",
+          border: "1px solid #2a2a2a",
+          width: "320px",
+        }}
+      >
+        {/* Header bar */}
+        <div
+          className="h-1"
+          style={{
+            background: "linear-gradient(90deg, #00a8ff 0%, #0088cc 100%)",
+          }}
+        />
+
+        {/* Content */}
+        <div className="p-4">
+          {/* Title */}
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-white font-bold text-sm">YouSuck</h3>
+            <button
+              onClick={handleDismiss}
+              className="text-gray-400 hover:text-white transition-colors text-lg leading-none w-6 h-6 flex items-center justify-center"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Message */}
+          <p className="text-gray-300 text-xs mb-4 leading-relaxed">
+            Installer l'application pour une meilleure expérience sans navigateur.
+          </p>
+
+          {/* Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleDismiss}
+              className="flex-1 px-3 py-1.5 rounded text-xs font-semibold text-gray-300 hover:text-white transition-colors"
+              style={{
+                background: "#2a2a2a",
+                border: "1px solid #3a3a3a",
+              }}
+            >
+              Plus tard
+            </button>
+            <button
+              onClick={handleInstall}
+              className="flex-1 px-3 py-1.5 rounded text-xs font-semibold text-white transition-all"
+              style={{
+                background: "linear-gradient(90deg, #00a8ff 0%, #0088cc 100%)",
+              }}
+            >
+              Installer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

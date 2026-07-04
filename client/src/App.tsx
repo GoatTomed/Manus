@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, useLocation } from "wouter";
+import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -14,7 +14,6 @@ import Track from "./pages/Track";
 import AICoding from "./pages/AICoding";
 import { useEffect } from "react";
 import { nanoid } from "nanoid";
-import { usePWAToast } from "./components/PWAToast";
 
 function Router() {
   return (
@@ -34,13 +33,7 @@ function Router() {
   );
 }
 
-function AppContent() {
-  const [location] = useLocation();
-  const isHomePage = location === "/";
-
-  // Show PWA toast on home page
-  usePWAToast(isHomePage);
-
+function App() {
   useEffect(() => {
     document.title = "YouSuck";
 
@@ -121,4 +114,4 @@ function AppContent() {
   );
 }
 
-export default AppContent;
+export default App;
