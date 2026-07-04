@@ -52,7 +52,9 @@ function Open-MyWebsiteAsAppYousuck {
         Write-Error "Google Chrome n'est pas trouvé à l'emplacement spécifié : $chromePath"
         return
     }
-    Start-Process -FilePath $chromePath -ArgumentList "--app=$Url"
+    # --start-fullscreen lance le navigateur en plein écran
+    # --app lance en mode application (sans barre d'adresse)
+    Start-Process -FilePath $chromePath -ArgumentList "--app=$Url", "--start-fullscreen"
 }
 
 Set-Alias -Name Yousuck -Value Open-MyWebsiteAsAppYousuck
