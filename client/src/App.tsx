@@ -15,6 +15,7 @@ import AICoding from "./pages/AICoding";
 import { useEffect, useState } from "react";
 import { nanoid } from "nanoid";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 
 function Router() {
   return (
@@ -35,7 +36,7 @@ function Router() {
 }
 
 function App() {
-  const [pwaPromptShown, setPwaPromptShown] = useState(false);
+  const [location] = useLocation();
 
   useEffect(() => {
     document.title = "YouSuck";
@@ -84,48 +85,72 @@ function App() {
       }
     };
     
-    // Show PWA installation prompt
+    // Show PWA installation prompt - only on home page
     const showPWAPrompt = () => {
-      if (pwaPromptShown) return;
-      
-      const hasShownPrompt = localStorage.getItem("pwa_prompt_shown");
-      if (hasShownPrompt) return;
+      if (location !== "/") return;
       
       // Check if running on Windows (via user agent)
       const isWindows = navigator.userAgent.indexOf("Windows") > -1;
       
       if (isWindows) {
-        setPwaPromptShown(true);
         toast.custom(
           (t) => (
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg shadow-lg flex items-center justify-between gap-4 max-w-md">
-              <div className="flex-1">
-                <p className="font-semibold text-sm">Installer l'application ?</p>
-                <p className="text-xs opacity-90 mt-1">Obtenez une meilleure expérience sans navigateur</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    localStorage.setItem("pwa_prompt_shown", "true");
-                    toast.dismiss(t);
-                  }}
-                  className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition-colors"
-                >
-                  Non
-                </button>
-                <button
-                  onClick={() => {
-                    localStorage.setItem("pwa_prompt_shown", "true");
-                    toast.dismiss(t);
-                    // Trigger PWA install prompt if available
-                    if ((window as any).deferredPrompt) {
-                      (window as any).deferredPrompt.prompt();
-                    }
-                  }}
-                  className="px-3 py-1 bg-white text-blue-600 hover:bg-gray-100 rounded text-xs font-medium transition-colors"
-                >
-                  Oui
-                </button>
+            <div 
+              className="fixed top-4 left-1/2 transform -translate-x-1/2 w-96 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 z-50"
+              style={{
+                background: "linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%)",
+                border: "1px solid rgba(0, 171, 255, 0.3)",
+                borderRadius: "8px",
+                backdropFilter: "blur(10px)",
+              }}
+            >
+              <div className="p-4">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ background: "#00ABFF" }} />
+                    <p className="font-bold text-sm" style={{ color: "#00ABFF" }}>YouSuck</p>
+                  </div>
+                  <button
+                    onClick={() => toast.dismiss(t)}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                {/* Content */}
+                <div className="mb-4">
+                  <p className="text-white font-semibold text-sm mb-1">Installer l'application ?</p>
+                  <p className="text-gray-300 text-xs leading-relaxed">Obtenez une meilleure expérience sans navigateur. Lancez l'app directement depuis votre bureau.</p>
+                </div>
+                
+                {/* Buttons */}
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={() => {
+                      toast.dismiss(t);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold text-gray-300 hover:text-white transition-colors"
+                  >
+                    Plus tard
+                  </button>
+                  <button
+                    onClick={() => {
+                      toast.dismiss(t);
+                      // Trigger PWA install prompt if available
+                      if ((window as any).deferredPrompt) {
+                        (window as any).deferredPrompt.prompt();
+                      }
+                    }}
+                    className="px-4 py-2 text-xs font-semibold text-white rounded transition-all"
+                    style={{
+                      background: "linear-gradient(135deg, #00ABFF 0%, #0099EE 100%)",
+                    }}
+                  >
+                    Installer
+                  </button>
+                </div>
               </div>
             </div>
           ),
@@ -155,7 +180,7 @@ function App() {
       clearTimeout(promptTimer);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     };
-  }, [pwaPromptShown]);
+  }, [location]);
 
   return (
     <ErrorBoundary>
