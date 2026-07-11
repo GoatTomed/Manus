@@ -139,13 +139,40 @@ export default async function handler(req, res) {
             expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
           });
           
-        // Skip EarnPaste and redirect directly for testing or simple flow
-        const targetUrl = `${url.origin}/api/verify?session=${sessionId}&step=1`;
+        // Create EarnPaste link that will redirect to /api/verify for step validation
+        const verifyUrl = `${url.origin}/api/verify?session=${sessionId}&step=1`;
+        
+        try {
+          const earnPasteResponse = await fetch('https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': EARNPASTE_API_KEY
+            },
+            body: JSON.stringify({ targetUrl: verifyUrl, timer: 15 })
+          });
 
-        return res.status(200).json({
-          sessionId,
-          earnPasteUrl: targetUrl
-        });
+          if (!earnPasteResponse.ok) {
+            throw new Error(`EarnPaste API error: ${earnPasteResponse.status}`);
+          }
+
+          const earnPasteData = await earnPasteResponse.json();
+          if (!earnPasteData.url) {
+            throw new Error('No URL returned from EarnPaste API');
+          }
+
+          return res.status(200).json({
+            sessionId,
+            earnPasteUrl: earnPasteData.url
+          });
+        } catch (earnPasteErr) {
+          console.error('EarnPaste error:', earnPasteErr);
+          // Fallback: if EarnPaste fails, return the verify URL directly
+          return res.status(200).json({
+            sessionId,
+            earnPasteUrl: verifyUrl
+          });
+        }
       } catch (err) {
         console.error('Error in start:', err);
         return res.status(500).json({ error: 'Failed to initialize verification' });
@@ -160,11 +187,37 @@ export default async function handler(req, res) {
       }
 
       try {
-        const targetUrl = `${url.origin}/api/verify?session=${sessionId}&step=2`;
+        const verifyUrl = `${url.origin}/api/verify?session=${sessionId}&step=2`;
+        
+        try {
+          const earnPasteResponse = await fetch('https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': EARNPASTE_API_KEY
+            },
+            body: JSON.stringify({ targetUrl: verifyUrl, timer: 15 })
+          });
 
-        return res.status(200).json({
-          earnPasteUrl: targetUrl
-        });
+          if (!earnPasteResponse.ok) {
+            throw new Error(`EarnPaste API error: ${earnPasteResponse.status}`);
+          }
+
+          const earnPasteData = await earnPasteResponse.json();
+          if (!earnPasteData.url) {
+            throw new Error('No URL returned from EarnPaste API');
+          }
+
+          return res.status(200).json({
+            earnPasteUrl: earnPasteData.url
+          });
+        } catch (earnPasteErr) {
+          console.error('EarnPaste error:', earnPasteErr);
+          // Fallback: if EarnPaste fails, return the verify URL directly
+          return res.status(200).json({
+            earnPasteUrl: verifyUrl
+          });
+        }
       } catch (err) {
         console.error('Error in step2:', err);
         return res.status(500).json({ error: 'Failed to initialize step 2' });
