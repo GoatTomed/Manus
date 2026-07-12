@@ -8,6 +8,11 @@ const supabase = createClient(
 
 const EARNPASTE_API_KEY = "ep_1fc0807b695b99c7f244b4d0dd6ac65bd49085dc6a6a2cd2";
 
+// Helper function to generate a unique verification token (UUID-like format)
+function generateVerificationToken() {
+  return crypto.randomUUID();
+}
+
 // Helper function to generate a secure random key
 function generateKey() {
   return crypto.randomBytes(16).toString('hex').toUpperCase();
@@ -35,22 +40,44 @@ export default async function handler(req, res) {
   const searchParams = url.searchParams;
 
   try {
-    // GET /api/verify?session=XXX&step=1
-    if (path === '/api/verify' && req.method === 'GET') {
-      const sessionId = searchParams.get('session');
-      const stepParam = parseInt(searchParams.get('step'), 10);
+    // GET /verify?wt=TOKEN - Verify token and advance step
+    if (path === '/verify' && req.method === 'GET') {
+      const token = searchParams.get('wt');
 
-      if (!sessionId || !stepParam) {
-        return res.status(403).json({ error: 'Direct access not allowed' });
+      if (!token) {
+        return res.status(400).json({ error: 'Missing verification token' });
       }
 
-      const { data: session, error } = await supabase
+      // Get the token record
+      const { data: tokenRecord, error: tokenError } = await supabase
+        .from('verification_tokens')
+        .select('*')
+        .eq('token', token)
+        .single();
+
+      if (tokenError || !tokenRecord) {
+        return res.status(403).json({ error: 'Invalid or expired token' });
+      }
+
+      if (tokenRecord.is_used) {
+        return res.status(403).json({ error: 'Token already used' });
+      }
+
+      if (new Date(tokenRecord.expires_at) < new Date()) {
+        return res.status(403).json({ error: 'Token expired' });
+      }
+
+      const sessionId = tokenRecord.session_id;
+      const stepParam = tokenRecord.step;
+
+      // Get the session
+      const { data: session, error: sessionError } = await supabase
         .from('key_sessions')
         .select('*')
         .eq('session_id', sessionId)
         .single();
 
-      if (error || !session) {
+      if (sessionError || !session) {
         return res.status(403).json({ error: 'Invalid session' });
       }
 
@@ -58,12 +85,13 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'Session expired' });
       }
 
-      // Must be completing the step that comes right after their current recorded step
-      if (stepParam !== session.step + 1) {
-        return res.status(403).json({ error: 'Invalid verification step' });
-      }
+      // Mark token as used
+      await supabase
+        .from('verification_tokens')
+        .update({ is_used: true })
+        .eq('token', token);
 
-      // Valid — advance their step
+      // Advance their step
       await supabase
         .from('key_sessions')
         .update({ step: stepParam })
@@ -139,8 +167,22 @@ export default async function handler(req, res) {
             expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
           });
           
-        // Create EarnPaste link that will redirect to /api/verify for step validation
-        const verifyUrl = `${url.origin}/api/verify?session=${sessionId}&step=1`;
+        // Create a unique verification token
+        const verificationToken = generateVerificationToken();
+        const tokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+        // Store the token in the database
+        await supabase
+          .from('verification_tokens')
+          .insert({
+            token: verificationToken,
+            session_id: sessionId,
+            step: 1,
+            expires_at: tokenExpiresAt
+          });
+
+        // Create EarnPaste link that will redirect to /verify with the token
+        const verifyUrl = `${url.origin}/verify?wt=${verificationToken}`;
         
         try {
           const earnPasteResponse = await fetch('https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste', {
@@ -187,7 +229,21 @@ export default async function handler(req, res) {
       }
 
       try {
-        const verifyUrl = `${url.origin}/api/verify?session=${sessionId}&step=2`;
+        // Create a unique verification token for step 2
+        const verificationToken = generateVerificationToken();
+        const tokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+        // Store the token in the database
+        await supabase
+          .from('verification_tokens')
+          .insert({
+            token: verificationToken,
+            session_id: sessionId,
+            step: 2,
+            expires_at: tokenExpiresAt
+          });
+
+        const verifyUrl = `${url.origin}/verify?wt=${verificationToken}`;
         
         try {
           const earnPasteResponse = await fetch('https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste', {

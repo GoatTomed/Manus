@@ -9,51 +9,20 @@ const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
 
 export default function Home() {
-  const [isLoading, setIsLoading] = useState(true);
   const [showPWAToast, setShowPWAToast] = useState(false);
 
   useEffect(() => {
+    // Show PWA toast after page loads
     const timer = setTimeout(() => {
-      setIsLoading(false);
-      // Show PWA toast after page loads
-      setTimeout(() => {
-        setShowPWAToast(true);
-      }, 500);
-    }, 3000);
+      setShowPWAToast(true);
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
-
-  if (isLoading) {
-    return (
-      <div style={{
-        minHeight: "100vh",
-        backgroundColor: "#0c0c0c",
-        backgroundImage: `linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)`,
-        backgroundSize: "48px 48px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}>
-        <style>{`
-          @keyframes spin { to { transform: rotate(360deg); } }
-        `}</style>
-        <div style={{
-          width: 40,
-          height: 40,
-          borderRadius: "50%",
-          border: "4px solid #d1d5db",
-          borderTopColor: "transparent",
-          animation: "spin 1s linear infinite",
-        }} />
-      </div>
-    );
-  }
 
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
       <PWAToast show={showPWAToast} />
-      <main className="flex-1 flex flex-col items-center justify-center p-6">
+      <main className="flex-1 flex flex-col items-center justify-center p-6 animate-fade-in-up">
         {/* Hero Section */}
         <div className="text-center px-4 max-w-sm w-full animate-fade-in-up">
           {/* Logo */}

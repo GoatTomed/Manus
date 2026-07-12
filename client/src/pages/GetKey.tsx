@@ -138,13 +138,7 @@ export default function GetKey() {
 
   const progressPercentage = currentStep === 1 ? 0 : currentStep === 2 ? 50 : 100;
 
-  if (isLoading && currentStep !== 3) {
-    return (
-      <div className="dot-grid-bg min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#00ABFF]" size={32} />
-      </div>
-    );
-  }
+
 
   return (
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
