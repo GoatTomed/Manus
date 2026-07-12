@@ -9,7 +9,7 @@ export default function GetKey() {
   const [currentStep, setCurrentStep] = useState(1);
   const [generatedKey, setGeneratedKey] = useState("");
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false); 
   const [error, setError] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState("");
