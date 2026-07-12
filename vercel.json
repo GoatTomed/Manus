@@ -1,6 +1,8 @@
 {"version": 2, "rewrites": [
     {"source": "/yousuck.lua", "destination": "/api/yousuck"},
     {"source": "/scripts.lua", "destination": "/api/scripts"},
+    {"source": "/api/access", "destination": "/api/get-key.js"},
+    {"source": "/api/access/(.*)", "destination": "/api/get-key.js"},
     {"source": "/api/get-key", "destination": "/api/get-key.js"},
     {"source": "/api/get-key/(.*)", "destination": "/api/get-key.js"},
     {"source": "/api/verify", "destination": "/api/get-key.js"},

@@ -99,12 +99,12 @@ export default async function handler(req, res) {
 
       if (stepParam === 1) {
         // Just completed step 1 verification, send them back to the frontend for step 2
-        return res.redirect(302, `/get-key?step=2&session=${sessionId}`);
+        return res.redirect(302, `/access?step=2&session=${sessionId}`);
       }
 
       if (stepParam === 2) {
         // Completed both steps — redirect to frontend with completed=true
-        return res.redirect(302, `/get-key?completed=true&session=${sessionId}`);
+        return res.redirect(302, `/access?completed=true&session=${sessionId}`);
       }
     }
 

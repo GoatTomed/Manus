@@ -23,7 +23,7 @@ export default function GetKey() {
           return;
         }
 
-        const res = await axios.get(`/api/get-key/check?visitorId=${visitorId}`);
+        const res = await axios.get(`/api/access/check?visitorId=${visitorId}`);
         if (res.data.hasKey) {
           setGeneratedKey(res.data.key);
           setExpiresAt(res.data.expiresAt);
@@ -53,7 +53,7 @@ export default function GetKey() {
     } else {
       checkExistingKey();
     }
-  }, [location]);
+  }, []);
 
   useEffect(() => {
     if (!expiresAt) return;
@@ -84,7 +84,7 @@ export default function GetKey() {
     setIsLoading(true);
     try {
       const visitorId = localStorage.getItem("ys_visitor_id");
-      const res = await axios.get(`/api/get-key/result/${sid}?visitorId=${visitorId}`);
+      const res = await axios.get(`/api/access/result/${sid}?visitorId=${visitorId}`);
       setGeneratedKey(res.data.key);
       // Use the expiresAt returned by the backend (handles key reuse correctly)
       setExpiresAt(res.data.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());
@@ -101,7 +101,7 @@ export default function GetKey() {
     setError("");
     try {
       const visitorId = localStorage.getItem("ys_visitor_id");
-      const res = await axios.post("/api/get-key/start", { visitorId });
+      const res = await axios.post("/api/access/start", { visitorId });
       const { earnPasteUrl } = res.data;
       window.location.href = earnPasteUrl;
     } catch (err: any) {
@@ -120,7 +120,7 @@ export default function GetKey() {
     setIsLoading(true);
     setError("");
     try {
-      const res = await axios.post("/api/get-key/step2", { sessionId });
+      const res = await axios.post("/api/access/step2", { sessionId });
       const { earnPasteUrl } = res.data;
       window.location.href = earnPasteUrl;
     } catch (err: any) {

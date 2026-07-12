@@ -20,7 +20,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/get-key" component={GetKey} />
+      <Route path="/access" component={GetKey} />
       <Route path="/verify" component={Verify} />
       <Route path="/key" component={Key} />
       <Route path="/verification-error" component={VerificationError} />
