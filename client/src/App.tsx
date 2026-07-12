@@ -5,7 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
-import GetKey from "./pages/Access";
+import GetKey from "./pages/access";
 import Key from "./pages/Key";
 import VerificationError from "./pages/VerificationError";
 import KeyAdmin from "./pages/KeyAdmin";
