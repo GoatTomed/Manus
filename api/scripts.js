@@ -81,7 +81,7 @@ export default async function handler(req, res) {
           <div class="vignette"></div>
           <div class="scanlines"></div>
           <div class="container">
-            <img src="${LOGO_URL}" alt="Logo" class="logo">
+            <!-- Logo removed -->
             <h1><span class="light">Access </span><span class="bold">Denied</span></h1>
             <a href="https://yoursuck.vercel.app/" class="btn">Return Home</a>
           </div>

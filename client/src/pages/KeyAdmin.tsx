@@ -56,15 +56,6 @@ export default function KeyAdmin() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#080808] text-white font-sans">
         <div className="flex flex-col items-center gap-6">
-          {/* Logo / Icon matching the image */}
-          <div className="w-20 h-20 relative">
-             <img 
-                src="https://firebasestorage.googleapis.com/v0/b/earnpaste-3cd5a.firebasestorage.app/o/assets%2Ficonfinal%20tiny.png?alt=media&token=780ed354-67b3-48a6-840e-c3312d21c0ef" 
-                alt="Access Denied"
-                className="w-full h-full object-contain"
-             />
-          </div>
-          
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
             Access <span className="text-[#00ABFF]">Denied</span>
           </h1>
