@@ -108,8 +108,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // GET /api/get-key/check - Check if visitor already has a valid key
-    if (path === '/api/get-key/check' && req.method === 'GET') {
+    // GET /api/access/check - Check if visitor already has a valid key
+    if (path === '/api/access/check' && req.method === 'GET') {
       const visitorId = searchParams.get('visitorId');
       if (!visitorId) {
         return res.status(400).json({ error: 'Missing visitorId' });
@@ -146,8 +146,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // POST /api/get-key/start - Start the key generation process (Step 1)
-    if (path === '/api/get-key/start' && req.method === 'POST') {
+    // POST /api/access/start - Start the key generation process (Step 1)
+    if (path === '/api/access/start' && req.method === 'POST') {
       const { visitorId } = req.body;
       if (!visitorId) {
         return res.status(400).json({ error: 'Missing visitorId' });
@@ -221,8 +221,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // POST /api/get-key/step2 - Final verification step (Step 2)
-    if (path === '/api/get-key/step2' && req.method === 'POST') {
+    // POST /api/access/step2 - Final verification step (Step 2)
+    if (path === '/api/access/step2' && req.method === 'POST') {
       const { sessionId } = req.body;
       if (!sessionId) {
         return res.status(400).json({ error: 'Missing sessionId' });
@@ -280,8 +280,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // GET /api/get-key/result/:sessionId - Get the final key after verification
-    if (path.startsWith('/api/get-key/result/') && req.method === 'GET') {
+    // GET /api/access/result/:sessionId - Get the final key after verification
+    if (path.startsWith('/api/access/result/') && req.method === 'GET') {
       const sessionId = path.split('/').pop();
       const visitorId = searchParams.get('visitorId');
 
