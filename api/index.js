@@ -1,3 +1,26 @@
+import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
+
+const ALLOWED_IP = "24.49.252.230";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
+
+function getClientIp(req) {
+  const clientIp = req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "";
+  return typeof clientIp === 'string' ? clientIp.split(',')[0].trim() : clientIp;
+}
+
+function generateKey() {
+  return crypto.randomBytes(16).toString('hex').toUpperCase();
+}
+
+function hashVisitorId(visitorId) {
+  return crypto.createHash('sha256').update(String(visitorId)).digest('hex');
+}
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -16,6 +39,45 @@ export default async function handler(req, res) {
   // Health check
   if (path === '/api/health') {
     return res.status(200).json({ status: "ok", engine: "YouSuck Omniscient Native" });
+  }
+
+  // IP gate for the admin key panel
+  if (path === '/api/check-access') {
+    const actualIp = getClientIp(req);
+    if (actualIp.includes(ALLOWED_IP)) {
+      return res.status(200).json({ allowed: true, ip: actualIp });
+    }
+    return res.status(403).json({ allowed: false, ip: actualIp });
+  }
+
+  // Admin-only instant key generation (IP restricted)
+  if (path === '/api/admin/generate-key' && req.method === 'POST') {
+    const actualIp = getClientIp(req);
+    if (!actualIp.includes(ALLOWED_IP)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    try {
+      const visitorId = req.body?.visitorId || `ADMIN-${actualIp}`;
+      const key = generateKey();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      const { error } = await supabase
+        .from('keys')
+        .insert({
+          key_value: key,
+          visitor_hash: hashVisitorId(visitorId),
+          visitor_id: visitorId,
+          created_at: new Date().toISOString(),
+          expires_at: expiresAt,
+        });
+
+      if (error) throw error;
+
+      return res.status(200).json({ key_value: key, expires_at: expiresAt });
+    } catch (error) {
+      return res.status(500).json({ error: 'Failed to generate key', details: error.message });
+    }
   }
 
   // Main chat endpoint
