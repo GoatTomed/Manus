@@ -56,7 +56,15 @@ export default async function handler(req, res) {
         .single();
 
       if (tokenError || !tokenRecord) {
-        return res.status(403).json({ error: 'Invalid or expired token' });
+        console.error('Token lookup error:', tokenError, 'Token:', token);
+        return res.status(403).json({ 
+          error: 'Invalid or expired token', 
+          debug: { 
+            token: token ? (token.substring(0, 8) + '...') : 'null',
+            hasError: !!tokenError,
+            errorMsg: tokenError?.message || 'Token not found'
+          }
+        });
       }
 
       if (tokenRecord.is_used) {
