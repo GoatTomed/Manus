@@ -1,10 +1,24 @@
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Initialize Supabase lazily to avoid issues during module load in some environments
+let supabaseClient = null;
+const getSupabase = () => {
+  if (!supabaseClient) {
+    const url = process.env.SUPABASE_URL || '';
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    if (!url || !key) {
+      console.error("Missing Supabase credentials!");
+    }
+    supabaseClient = createClient(url, key, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      }
+    });
+  }
+  return supabaseClient;
+};
 
 const EARNPASTE_API_KEY = "ep_1fc0807b695b99c7f244b4d0dd6ac65bd49085dc6a6a2cd2";
 
@@ -56,11 +70,28 @@ export default async function handler(req, res) {
       }
 
       // Get the token record
-      const { data: tokenRecord, error: tokenError } = await supabase
-        .from('verification_tokens')
-        .select('*')
-        .eq('token', token)
-        .single();
+      const supabase = getSupabase();
+      let tokenRecord, tokenError;
+      
+      try {
+        const result = await supabase
+          .from('verification_tokens')
+          .select('*')
+          .eq('token', token)
+          .single();
+        tokenRecord = result.data;
+        tokenError = result.error;
+      } catch (fetchErr) {
+        console.error('Supabase fetch exception:', fetchErr);
+        return res.status(500).json({
+          error: 'Database connection failed',
+          debug: {
+            message: fetchErr.message,
+            stack: fetchErr.stack?.substring(0, 100),
+            token: token ? (token.substring(0, 8) + '...') : 'null'
+          }
+        });
+      }
 
       if (tokenError || !tokenRecord) {
         console.error('Token lookup error:', tokenError, 'Token:', token);
@@ -132,6 +163,7 @@ export default async function handler(req, res) {
       }
 
       const visitorHash = hashVisitorId(visitorId);
+      const supabase = getSupabase();
 
       try {
         const { data, error } = await supabase
@@ -170,6 +202,7 @@ export default async function handler(req, res) {
       }
 
       const sessionId = crypto.randomBytes(12).toString('hex');
+      const supabase = getSupabase();
 
       try {
         await supabase
@@ -251,6 +284,8 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing sessionId' });
       }
 
+      const supabase = getSupabase();
+
       try {
         // Create a unique verification token for step 2
         const verificationToken = generateVerificationToken();
@@ -319,6 +354,8 @@ export default async function handler(req, res) {
       if (!sessionId || !visitorId) {
         return res.status(400).json({ error: 'Missing sessionId or visitorId' });
       }
+
+      const supabase = getSupabase();
 
       try {
         const { data: session, error: sessionError } = await supabase
