@@ -74,6 +74,21 @@ export default async function handler(req, res) {
       let tokenRecord, tokenError;
       
       try {
+        // Diagnostic: Check if we can even reach the Supabase URL
+        const supabaseUrl = process.env.SUPABASE_URL || '';
+        const diagStart = Date.now();
+        let diagResult = 'unknown';
+        
+        try {
+          const ping = await fetch(`${supabaseUrl}/rest/v1/`, { 
+            method: 'HEAD',
+            headers: { 'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY || '' }
+          });
+          diagResult = `status_${ping.status}`;
+        } catch (e) {
+          diagResult = `error_${e.message}`;
+        }
+
         const result = await supabase
           .from('verification_tokens')
           .select('*')
@@ -87,8 +102,10 @@ export default async function handler(req, res) {
           error: 'Database connection failed',
           debug: {
             message: fetchErr.message,
-            stack: fetchErr.stack?.substring(0, 100),
-            token: token ? (token.substring(0, 8) + '...') : 'null'
+            token: token ? (token.substring(0, 8) + '...') : 'null',
+            url: (process.env.SUPABASE_URL || 'missing').substring(0, 15) + '...',
+            diag: diagResult,
+            envKeys: Object.keys(process.env).filter(k => k.includes('SUPABASE'))
           }
         });
       }
