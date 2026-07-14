@@ -35,14 +35,21 @@ export default async function handler(req, res) {
     return;
   }
 
-  const url = new URL(req.url, `http://${req.headers.host}`);
+  // Determine protocol (important for Vercel/proxies)
+  const protocol = req.headers['x-forwarded-proto'] || 'http';
+  const host = req.headers.host || 'localhost';
+  const origin = `${protocol}://${host}`;
+  
+  // Parse URL more robustly
+  const url = new URL(req.url, origin);
   const path = url.pathname;
   const searchParams = url.searchParams;
 
   try {
     // GET /verify?wt=TOKEN - Verify token and advance step
-    if (path === '/verify' && req.method === 'GET') {
-      const token = searchParams.get('wt');
+    // Handle both /verify and /api/access.js (if rewrite passes destination path)
+    if ((path === '/verify' || path === '/api/access.js' || path === '/api/access') && searchParams.has('wt')) {
+      const token = searchParams.get('wt')?.trim();
 
       if (!token) {
         return res.status(400).json({ error: 'Missing verification token' });
@@ -62,7 +69,8 @@ export default async function handler(req, res) {
           debug: { 
             token: token ? (token.substring(0, 8) + '...') : 'null',
             hasError: !!tokenError,
-            errorMsg: tokenError?.message || 'Token not found'
+            errorMsg: tokenError?.message || (tokenError === null ? 'Token not found in database' : 'Database error'),
+            path: path
           }
         });
       }
@@ -179,20 +187,25 @@ export default async function handler(req, res) {
         const verificationToken = generateVerificationToken();
         const tokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
-        // Store the token in the database
-        await supabase
-          .from('verification_tokens')
-          .insert({
-            token: verificationToken,
-            session_id: sessionId,
-            step: 1,
-            expires_at: tokenExpiresAt
-          });
-
         // Create EarnPaste link that will redirect to /verify with the token
-        const verifyUrl = `${url.origin}/verify?wt=${verificationToken}`;
+        const verifyUrl = `${origin}/verify?wt=${verificationToken}`;
         
         try {
+          // Store the token in the database BEFORE calling EarnPaste
+          const { error: tokenInsertError } = await supabase
+            .from('verification_tokens')
+            .insert({
+              token: verificationToken,
+              session_id: sessionId,
+              step: 1,
+              expires_at: tokenExpiresAt
+            });
+          
+          if (tokenInsertError) {
+            console.error('Token insert error:', tokenInsertError);
+            throw new Error(`Database error: ${tokenInsertError.message}`);
+          }
+
           const earnPasteResponse = await fetch('https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste', {
             method: 'POST',
             headers: {
@@ -243,19 +256,24 @@ export default async function handler(req, res) {
         const verificationToken = generateVerificationToken();
         const tokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
-        // Store the token in the database
-        await supabase
-          .from('verification_tokens')
-          .insert({
-            token: verificationToken,
-            session_id: sessionId,
-            step: 2,
-            expires_at: tokenExpiresAt
-          });
-
-        const verifyUrl = `${url.origin}/verify?wt=${verificationToken}`;
+        const verifyUrl = `${origin}/verify?wt=${verificationToken}`;
         
         try {
+          // Store the token in the database BEFORE calling EarnPaste
+          const { error: tokenInsertError } = await supabase
+            .from('verification_tokens')
+            .insert({
+              token: verificationToken,
+              session_id: sessionId,
+              step: 2,
+              expires_at: tokenExpiresAt
+            });
+          
+          if (tokenInsertError) {
+            console.error('Token insert error:', tokenInsertError);
+            throw new Error(`Database error: ${tokenInsertError.message}`);
+          }
+
           const earnPasteResponse = await fetch('https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste', {
             method: 'POST',
             headers: {
@@ -293,8 +311,9 @@ export default async function handler(req, res) {
     }
 
     // GET /api/access/result/:sessionId - Get the final key after verification
-    if (path.startsWith('/api/access/result/') && req.method === 'GET') {
-      const sessionId = path.split('/').pop();
+    if (path.includes('/api/access/result/') && req.method === 'GET') {
+      // Handle trailing slashes and ensure we get the ID correctly
+      const sessionId = path.split('/result/')[1]?.split('/')[0];
       const visitorId = searchParams.get('visitorId');
 
       if (!sessionId || !visitorId) {
