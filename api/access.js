@@ -205,14 +205,16 @@ export default async function handler(req, res) {
 
           return res.status(200).json({
             sessionId,
-            earnPasteUrl: earnPasteData.url
+            earnPasteUrl: earnPasteData.url,
+            verifyUrl: verifyUrl
           });
         } catch (earnPasteErr) {
           console.error('EarnPaste error:', earnPasteErr);
           // Fallback: if EarnPaste fails, return the verify URL directly
           return res.status(200).json({
             sessionId,
-            earnPasteUrl: verifyUrl
+            earnPasteUrl: verifyUrl,
+            verifyUrl: verifyUrl
           });
         }
       } catch (err) {
@@ -265,13 +267,15 @@ export default async function handler(req, res) {
           }
 
           return res.status(200).json({
-            earnPasteUrl: earnPasteData.url
+            earnPasteUrl: earnPasteData.url,
+            verifyUrl: verifyUrl
           });
         } catch (earnPasteErr) {
           console.error('EarnPaste error:', earnPasteErr);
           // Fallback: if EarnPaste fails, return the verify URL directly
           return res.status(200).json({
-            earnPasteUrl: verifyUrl
+            earnPasteUrl: verifyUrl,
+            verifyUrl: verifyUrl
           });
         }
       } catch (err) {
