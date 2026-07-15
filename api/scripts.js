@@ -5,10 +5,42 @@ const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZd
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
 import path from "path";
+import axios from "axios";
+
+const axiosFetcher = async (url, options) => {
+  try {
+    const response = await axios({
+      url,
+      method: options.method,
+      headers: options.headers,
+      data: options.body,
+      timeout: 10000,
+      validateStatus: () => true,
+    });
+    return {
+      ok: response.status >= 200 && response.status < 300,
+      status: response.status,
+      statusText: response.statusText,
+      json: async () => response.data,
+      text: async () => typeof response.data === 'string' ? response.data : JSON.stringify(response.data),
+    };
+  } catch (error) {
+    throw error;
+  }
+};
 
 const supabase = createClient(
   process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+    global: {
+      fetch: axiosFetcher,
+    },
+  }
 );
 
 export default async function handler(req, res) {
