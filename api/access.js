@@ -18,8 +18,8 @@ function getErrorPage(errorMsg, debugInfo) {
     body { background-color: var(--background); background-image: radial-gradient(circle at 50% -20%, rgba(0, 171, 255, 0.08), transparent 50%), linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px); background-size: 100% 100%, 40px 40px, 40px 40px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Space Grotesk', system-ui, sans-serif; color: var(--foreground); padding: 1.5rem; -webkit-font-smoothing: antialiased; }
     .container { width: 100%; max-width: 400px; text-align: center; animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .logo { width: 96px; height: 96px; object-fit: contain; margin-bottom: 0.5rem; }
-    .badge { display: inline-flex; align-items: center; padding: 0.5rem 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; color: #ef4444; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+    .logo { width: 96px; height: 96px; object-fit: contain; margin: 0 auto; }
+    .badge { display: inline-flex; align-items: center; padding: 0.5rem 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; color: #ef4444; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.5rem; }
     h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 2rem; letter-spacing: -0.02em; }
     h1 span.primary { color: var(--primary); }
     .btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 0.875rem; text-decoration: none; transition: all 0.2s; cursor: pointer; }
@@ -32,7 +32,9 @@ function getErrorPage(errorMsg, debugInfo) {
 <body>
   <div class="container">
     <div class="badge">Verification Failed</div>
-    <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp" alt="Logo" class="logo">
+    <div style="margin-bottom: 1rem;">
+      <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp" alt="Logo" class="logo">
+    </div>
     <h1>You<span class="primary">Suck</span></h1>
     <button onclick="copyIssue('${errorMsg}')" class="btn btn-copy">Copy Issue</button>
     <a href="/" class="btn btn-secondary">Return Home</a>
@@ -206,9 +208,11 @@ export default async function handler(req, res) {
       }
 
       if (tokenError || !tokenRecord) {
-        console.error('Token lookup error:', tokenError, 'Token:', token);
+        console.error(`Token lookup failure: error=${JSON.stringify(tokenError)}, token=${token}`);
         res.setHeader('Content-Type', 'text/html');
-        return res.status(403).send(getErrorPage('Invalid or expired token', { 
+        // Check if token exists at all to provide better error message
+        const errorMsg = tokenError ? `Database error: ${tokenError.message}` : 'Token not found in database. Make sure you are using the correct link.';
+        return res.status(403).send(getErrorPage(errorMsg, { 
           token: token ? (token.substring(0, 8) + '...') : 'null',
           path: path
         }));
