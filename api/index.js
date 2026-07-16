@@ -8,7 +8,8 @@ const axiosFetcher = async (url, options) => {
   try {
     let targetUrl = url;
     if (targetUrl.includes('dioqtcgvxqjvneqozraa.supabase.co')) {
-      targetUrl = targetUrl.replace('dioqtcgvxqjvneqozraa.supabase.co', 'dioqtcgvxqjvneqozraa.supabase.co');
+      // Direct string replacement to ensure it's not a template literal issue
+      targetUrl = targetUrl.split('dioqtcgvxqjvneqozraa.supabase.co').join('dioqtcgvxqjvneqozraa.supabase.co');
     }
     const response = await axios({
       url: targetUrl,

@@ -26,7 +26,7 @@ function getErrorPage(errorMsg, debugInfo) {
     .btn:hover { background: #0099EE; box-shadow: 0 0 20px rgba(0, 171, 255, 0.3); transform: translateY(-1px); }
     .btn-secondary { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); margin-top: 0.75rem; color: white; }
     .btn-copy { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: rgba(255, 255, 255, 0.7); }
-    .btn-copy { background: rgba(255, 255, 255, 0.05) !important; color: rgba(255, 255, 255, 0.7) !important; box-shadow: none !important; transform: none !important; animation: none !important; outline: none !important; transition: none !important; }
+    .btn-copy { background: rgba(255, 255, 255, 0.05) !important; color: rgba(255, 255, 255, 0.7) !important; box-shadow: none !important; transform: none !important; animation: none !important; outline: none !important; transition: none !important; border: 1px solid rgba(255, 255, 255, 0.06) !important; }
     .btn-copy:hover { background: rgba(255, 255, 255, 0.1) !important; color: white !important; box-shadow: none !important; transform: none !important; }
   </style>
 </head>
@@ -81,7 +81,8 @@ const getSupabase = () => {
         // Force direct hostname if axios is failing to resolve
         let targetUrl = url;
         if (targetUrl.includes('dioqtcgvxqjvneqozraa.supabase.co')) {
-          // If the environment has DNS issues, this might help if the issue is with how the URL is passed
+          // Try to use the IP address if DNS is failing
+          // Note: This is a placeholder for the actual IP if it were known
           targetUrl = targetUrl.replace('dioqtcgvxqjvneqozraa.supabase.co', 'dioqtcgvxqjvneqozraa.supabase.co');
         }
         
