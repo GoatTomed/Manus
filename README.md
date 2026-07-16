@@ -11,7 +11,7 @@ Pure React 19 + Tailwind 4 template with shadcn/ui baked in. **Use this README a
 - Design tokens live entirely in `client/src/index.css`—keep that file intact.
 
 ## File Structure
-
+ 
 ```
 client/
   public/       ← Small configuration files ONLY (favicon.ico, robots.txt). DO NOT put images/media here.
