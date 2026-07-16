@@ -27,7 +27,14 @@ const axiosFetcher = async (url, options) => {
 };
 
 const supabase = createClient(
-    (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.startsWith('http') ? `https://${process.env.SUPABASE_URL.trim()}` : process.env.SUPABASE_URL) || '',
+    (() => {
+      let u = process.env.SUPABASE_URL || '';
+      if (!u) return '';
+      u = u.trim();
+      if (!u.startsWith('http')) u = `https://${u}`;
+      if (u.endsWith('/')) u = u.slice(0, -1);
+      return u;
+    })() || '',
   process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   {
     auth: {
