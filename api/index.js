@@ -33,6 +33,9 @@ const supabase = createClient(
       u = u.trim();
       if (!u.startsWith('http')) u = `https://${u}`;
       if (u.endsWith('/')) u = u.slice(0, -1);
+      if (u.includes('dioqtcgvxqjvneqozraa')) {
+        u = 'https://dioqtcgvxqjvneqozraa.supabase.co';
+      }
       return u;
     })() || '',
   process.env.SUPABASE_SERVICE_ROLE_KEY || '',

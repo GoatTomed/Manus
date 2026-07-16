@@ -26,7 +26,8 @@ function getErrorPage(errorMsg, debugInfo) {
     .btn:hover { background: #0099EE; box-shadow: 0 0 20px rgba(0, 171, 255, 0.3); transform: translateY(-1px); }
     .btn-secondary { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); margin-top: 0.75rem; color: white; }
     .btn-copy { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: rgba(255, 255, 255, 0.7); }
-    .btn-copy:hover { background: rgba(255, 255, 255, 0.1); color: white; box-shadow: none !important; transform: none !important; }
+    .btn-copy, .btn-copy:hover, .btn-copy:active, .btn-copy:focus { background: rgba(255, 255, 255, 0.05) !important; color: rgba(255, 255, 255, 0.7) !important; box-shadow: none !important; transform: none !important; animation: none !important; outline: none !important; }
+    .btn-copy:hover { background: rgba(255, 255, 255, 0.1) !important; color: white !important; }
   </style>
 </head>
 <body>
@@ -62,6 +63,10 @@ const getSupabase = () => {
       url = url.trim();
       if (!url.startsWith('http')) url = `https://${url}`;
       if (url.endsWith('/')) url = url.slice(0, -1);
+      // Hardcode fix for specific project if URL matches the error pattern
+      if (url.includes('dioqtcgvxqjvneqozraa')) {
+        url = 'https://dioqtcgvxqjvneqozraa.supabase.co';
+      }
     }
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
     
