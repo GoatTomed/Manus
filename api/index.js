@@ -6,12 +6,16 @@ const ALLOWED_IP = "24.49.252.230";
 
 const axiosFetcher = async (url, options) => {
   try {
+    let targetUrl = url;
+    if (targetUrl.includes('dioqtcgvxqjvneqozraa.supabase.co')) {
+      targetUrl = targetUrl.replace('dioqtcgvxqjvneqozraa.supabase.co', 'dioqtcgvxqjvneqozraa.supabase.co');
+    }
     const response = await axios({
-      url,
+      url: targetUrl,
       method: options.method,
       headers: options.headers,
       data: options.body,
-      timeout: 10000,
+      timeout: 15000,
       validateStatus: () => true,
     });
     return {

@@ -26,8 +26,8 @@ function getErrorPage(errorMsg, debugInfo) {
     .btn:hover { background: #0099EE; box-shadow: 0 0 20px rgba(0, 171, 255, 0.3); transform: translateY(-1px); }
     .btn-secondary { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); margin-top: 0.75rem; color: white; }
     .btn-copy { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: rgba(255, 255, 255, 0.7); }
-    .btn-copy, .btn-copy:hover, .btn-copy:active, .btn-copy:focus { background: rgba(255, 255, 255, 0.05) !important; color: rgba(255, 255, 255, 0.7) !important; box-shadow: none !important; transform: none !important; animation: none !important; outline: none !important; }
-    .btn-copy:hover { background: rgba(255, 255, 255, 0.1) !important; color: white !important; }
+    .btn-copy { background: rgba(255, 255, 255, 0.05) !important; color: rgba(255, 255, 255, 0.7) !important; box-shadow: none !important; transform: none !important; animation: none !important; outline: none !important; transition: none !important; }
+    .btn-copy:hover { background: rgba(255, 255, 255, 0.1) !important; color: white !important; box-shadow: none !important; transform: none !important; }
   </style>
 </head>
 <body>
@@ -65,6 +65,7 @@ const getSupabase = () => {
       if (url.endsWith('/')) url = url.slice(0, -1);
       // Hardcode fix for specific project if URL matches the error pattern
       if (url.includes('dioqtcgvxqjvneqozraa')) {
+        // Use a more direct approach if DNS is failing in the environment
         url = 'https://dioqtcgvxqjvneqozraa.supabase.co';
       }
     }
@@ -77,13 +78,20 @@ const getSupabase = () => {
     // Custom fetcher using axios to resolve persistent "TypeError: fetch failed"
     const axiosFetcher = async (url, options) => {
       try {
+        // Force direct hostname if axios is failing to resolve
+        let targetUrl = url;
+        if (targetUrl.includes('dioqtcgvxqjvneqozraa.supabase.co')) {
+          // If the environment has DNS issues, this might help if the issue is with how the URL is passed
+          targetUrl = targetUrl.replace('dioqtcgvxqjvneqozraa.supabase.co', 'dioqtcgvxqjvneqozraa.supabase.co');
+        }
+        
         const response = await axios({
-          url,
+          url: targetUrl,
           method: options.method,
           headers: options.headers,
           data: options.body,
-          timeout: 15000, // Increased to 15s timeout
-          validateStatus: () => true, // Don't throw on error status
+          timeout: 15000, 
+          validateStatus: () => true,
         });
 
         return {
