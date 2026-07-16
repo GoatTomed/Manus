@@ -26,7 +26,7 @@ function getErrorPage(errorMsg, debugInfo) {
     .btn:hover { background: #0099EE; box-shadow: 0 0 20px rgba(0, 171, 255, 0.3); transform: translateY(-1px); }
     .btn-secondary { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); margin-top: 0.75rem; color: white; }
     .btn-copy { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: rgba(255, 255, 255, 0.7); }
-    .btn-copy:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+    .btn-copy:hover { background: rgba(255, 255, 255, 0.1); color: white; box-shadow: none !important; }
   </style>
 </head>
 <body>
@@ -57,7 +57,8 @@ function getErrorPage(errorMsg, debugInfo) {
 let supabaseClient = null;
 const getSupabase = () => {
   if (!supabaseClient) {
-    const url = process.env.SUPABASE_URL || '';
+    let url = process.env.SUPABASE_URL || '';
+    if (url && !url.startsWith('http')) url = `https://${url.trim()}`;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
     
     if (!url || !key) {
