@@ -64,9 +64,9 @@ const getSupabase = () => {
       if (!url.startsWith('http')) url = `https://${url}`;
       if (url.endsWith('/')) url = url.slice(0, -1);
       // Hardcode fix for specific project if URL matches the error pattern
-      if (url.includes('dioqtcgvxqjvneqozraa')) {
+      if (url.includes('cdjvpyngbzolrlqzuzdy')) {
         // Use a more direct approach if DNS is failing in the environment
-        url = 'https://dioqtcgvxqjvneqozraa.supabase.co';
+        url = 'https://cdjvpyngbzolrlqzuzdy.supabase.co';
       }
     }
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -80,10 +80,10 @@ const getSupabase = () => {
       try {
         // Force direct hostname if axios is failing to resolve
         let targetUrl = url;
-        if (targetUrl.includes('dioqtcgvxqjvneqozraa.supabase.co')) {
+        if (targetUrl.includes('cdjvpyngbzolrlqzuzdy.supabase.co')) {
           // Try to use the IP address if DNS is failing
           // Note: This is a placeholder for the actual IP if it were known
-          targetUrl = targetUrl.replace('dioqtcgvxqjvneqozraa.supabase.co', 'dioqtcgvxqjvneqozraa.supabase.co');
+          targetUrl = targetUrl.replace('cdjvpyngbzolrlqzuzdy.supabase.co', 'cdjvpyngbzolrlqzuzdy.supabase.co');
         }
         
         const response = await axios({
