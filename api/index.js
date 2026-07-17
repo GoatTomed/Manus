@@ -7,9 +7,9 @@ const ALLOWED_IP = "24.49.252.230";
 const axiosFetcher = async (url, options) => {
   try {
     let targetUrl = url;
-    if (targetUrl.includes('cdjvpyngbzolrlqzuzdy.supabase.co')) {
+    if (targetUrl.includes('dioqtcgvxqjvneqozraa.supabase.co')) {
       // Direct string replacement to ensure it's not a template literal issue
-      targetUrl = targetUrl.split('cdjvpyngbzolrlqzuzdy.supabase.co').join('cdjvpyngbzolrlqzuzdy.supabase.co');
+      targetUrl = targetUrl.split('dioqtcgvxqjvneqozraa.supabase.co').join('dioqtcgvxqjvneqozraa.supabase.co');
     }
     const response = await axios({
       url: targetUrl,
@@ -38,8 +38,8 @@ const supabase = createClient(
       u = u.trim();
       if (!u.startsWith('http')) u = `https://${u}`;
       if (u.endsWith('/')) u = u.slice(0, -1);
-      if (u.includes('cdjvpyngbzolrlqzuzdy')) {
-        u = 'https://cdjvpyngbzolrlqzuzdy.supabase.co';
+      if (u.includes('dioqtcgvxqjvneqozraa')) {
+        u = 'https://dioqtcgvxqjvneqozraa.supabase.co';
       }
       return u;
     })() || '',
