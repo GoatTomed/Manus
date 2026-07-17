@@ -63,10 +63,12 @@ const getSupabase = () => {
       url = url.trim();
       if (!url.startsWith('http')) url = `https://${url}`;
       if (url.endsWith('/')) url = url.slice(0, -1);
-      // Hardcode fix for specific project if URL matches the error pattern
-      if (url.includes('cdjvpyngbzolrlqzuzdy')) {
-        // Use a more direct approach if DNS is failing in the environment
-        url = 'https://cdjvpyngbzolrlqzuzdy.supabase.co';
+      // Ensure we have a clean Supabase URL
+      if (url.includes('.supabase.co')) {
+        const match = url.match(/https?:\/\/([a-z0-9]+)\.supabase\.co/i);
+        if (match && match[1]) {
+          url = `https://${match[1]}.supabase.co`;
+        }
       }
     }
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -100,21 +102,26 @@ const getSupabase = () => {
         try {
           response = await tryRequest(targetUrl);
         } catch (initialError) {
-          if (initialError.code === 'ENOTFOUND' && targetUrl.includes('cdjvpyngbzolrlqzuzdy.supabase.co')) {
-            console.log("DNS Lookup failed for Supabase, attempting IP fallbacks...");
-            const hostname = 'cdjvpyngbzolrlqzuzdy.supabase.co';
-            let success = false;
-            for (const ip of fallbackIps) {
-              try {
-                const ipUrl = targetUrl.replace(hostname, ip);
-                response = await tryRequest(ipUrl, hostname);
-                success = true;
-                break;
-              } catch (ipError) {
-                console.error(`Fallback IP ${ip} failed:`, ipError.message);
+          if (initialError.code === 'ENOTFOUND' && targetUrl.includes('.supabase.co')) {
+            const match = targetUrl.match(/https?:\/\/([a-z0-9]+)\.supabase\.co/i);
+            if (match && match[1]) {
+              const hostname = `${match[1]}.supabase.co`;
+              console.log(`DNS Lookup failed for ${hostname}, attempting IP fallbacks...`);
+              let success = false;
+              for (const ip of fallbackIps) {
+                try {
+                  const ipUrl = targetUrl.replace(hostname, ip);
+                  response = await tryRequest(ipUrl, hostname);
+                  success = true;
+                  break;
+                } catch (ipError) {
+                  // continue
+                }
               }
+              if (!success) throw initialError;
+            } else {
+              throw initialError;
             }
-            if (!success) throw initialError;
           } else {
             throw initialError;
           }

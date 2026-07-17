@@ -7,7 +7,6 @@ const ALLOWED_IP = "24.49.252.230";
 const axiosFetcher = async (url, options) => {
   try {
     let targetUrl = url;
-    const hostname = 'cdjvpyngbzolrlqzuzdy.supabase.co';
     const fallbackIps = ['104.18.38.10', '172.64.149.246'];
 
     const tryRequest = async (requestUrl, hostHeader = null) => {
@@ -27,19 +26,25 @@ const axiosFetcher = async (url, options) => {
     try {
       response = await tryRequest(targetUrl);
     } catch (initialError) {
-      if (initialError.code === 'ENOTFOUND' && targetUrl.includes(hostname)) {
-        let success = false;
-        for (const ip of fallbackIps) {
-          try {
-            const ipUrl = targetUrl.replace(hostname, ip);
-            response = await tryRequest(ipUrl, hostname);
-            success = true;
-            break;
-          } catch (ipError) {
-            // continue
+      if (initialError.code === 'ENOTFOUND' && targetUrl.includes('.supabase.co')) {
+        const match = targetUrl.match(/https?:\/\/([a-z0-9]+)\.supabase\.co/i);
+        if (match && match[1]) {
+          const hostname = `${match[1]}.supabase.co`;
+          let success = false;
+          for (const ip of fallbackIps) {
+            try {
+              const ipUrl = targetUrl.replace(hostname, ip);
+              response = await tryRequest(ipUrl, hostname);
+              success = true;
+              break;
+            } catch (ipError) {
+              // continue
+            }
           }
+          if (!success) throw initialError;
+        } else {
+          throw initialError;
         }
-        if (!success) throw initialError;
       } else {
         throw initialError;
       }
@@ -64,8 +69,11 @@ const supabase = createClient(
       u = u.trim();
       if (!u.startsWith('http')) u = `https://${u}`;
       if (u.endsWith('/')) u = u.slice(0, -1);
-      if (u.includes('cdjvpyngbzolrlqzuzdy')) {
-        u = 'https://cdjvpyngbzolrlqzuzdy.supabase.co';
+      if (u.includes('.supabase.co')) {
+        const match = u.match(/https?:\/\/([a-z0-9]+)\.supabase\.co/i);
+        if (match && match[1]) {
+          u = `https://${match[1]}.supabase.co`;
+        }
       }
       return u;
     })() || '',
