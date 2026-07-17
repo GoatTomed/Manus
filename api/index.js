@@ -7,18 +7,44 @@ const ALLOWED_IP = "24.49.252.230";
 const axiosFetcher = async (url, options) => {
   try {
     let targetUrl = url;
-    if (targetUrl.includes('cdjvpyngbzolrlqzuzdy.supabase.co')) {
-      // Direct string replacement to ensure it's not a template literal issue
-      targetUrl = targetUrl.split('cdjvpyngbzolrlqzuzdy.supabase.co').join('cdjvpyngbzolrlqzuzdy.supabase.co');
+    const hostname = 'cdjvpyngbzolrlqzuzdy.supabase.co';
+    const fallbackIps = ['104.18.38.10', '172.64.149.246'];
+
+    const tryRequest = async (requestUrl, hostHeader = null) => {
+      const config = {
+        url: requestUrl,
+        method: options.method,
+        headers: { ...options.headers },
+        data: options.body,
+        timeout: 10000,
+        validateStatus: () => true,
+      };
+      if (hostHeader) config.headers['Host'] = hostHeader;
+      return await axios(config);
+    };
+
+    let response;
+    try {
+      response = await tryRequest(targetUrl);
+    } catch (initialError) {
+      if (initialError.code === 'ENOTFOUND' && targetUrl.includes(hostname)) {
+        let success = false;
+        for (const ip of fallbackIps) {
+          try {
+            const ipUrl = targetUrl.replace(hostname, ip);
+            response = await tryRequest(ipUrl, hostname);
+            success = true;
+            break;
+          } catch (ipError) {
+            // continue
+          }
+        }
+        if (!success) throw initialError;
+      } else {
+        throw initialError;
+      }
     }
-    const response = await axios({
-      url: targetUrl,
-      method: options.method,
-      headers: options.headers,
-      data: options.body,
-      timeout: 15000,
-      validateStatus: () => true,
-    });
+
     return {
       ok: response.status >= 200 && response.status < 300,
       status: response.status,

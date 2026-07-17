@@ -80,20 +80,45 @@ const getSupabase = () => {
       try {
         // Force direct hostname if axios is failing to resolve
         let targetUrl = url;
-        if (targetUrl.includes('cdjvpyngbzolrlqzuzdy.supabase.co')) {
-          // Try to use the IP address if DNS is failing
-          // Note: This is a placeholder for the actual IP if it were known
-          targetUrl = targetUrl.replace('cdjvpyngbzolrlqzuzdy.supabase.co', 'cdjvpyngbzolrlqzuzdy.supabase.co');
-        }
+        // Supabase/Cloudflare IP addresses as fallback for ENOTFOUND
+        const fallbackIps = ['104.18.38.10', '172.64.149.246'];
         
-        const response = await axios({
-          url: targetUrl,
-          method: options.method,
-          headers: options.headers,
-          data: options.body,
-          timeout: 15000, 
-          validateStatus: () => true,
-        });
+        const tryRequest = async (requestUrl, hostHeader = null) => {
+          const config = {
+            url: requestUrl,
+            method: options.method,
+            headers: { ...options.headers },
+            data: options.body,
+            timeout: 10000,
+            validateStatus: () => true,
+          };
+          if (hostHeader) config.headers['Host'] = hostHeader;
+          return await axios(config);
+        };
+
+        let response;
+        try {
+          response = await tryRequest(targetUrl);
+        } catch (initialError) {
+          if (initialError.code === 'ENOTFOUND' && targetUrl.includes('cdjvpyngbzolrlqzuzdy.supabase.co')) {
+            console.log("DNS Lookup failed for Supabase, attempting IP fallbacks...");
+            const hostname = 'cdjvpyngbzolrlqzuzdy.supabase.co';
+            let success = false;
+            for (const ip of fallbackIps) {
+              try {
+                const ipUrl = targetUrl.replace(hostname, ip);
+                response = await tryRequest(ipUrl, hostname);
+                success = true;
+                break;
+              } catch (ipError) {
+                console.error(`Fallback IP ${ip} failed:`, ipError.message);
+              }
+            }
+            if (!success) throw initialError;
+          } else {
+            throw initialError;
+          }
+        }
 
         return {
           ok: response.status >= 200 && response.status < 300,
