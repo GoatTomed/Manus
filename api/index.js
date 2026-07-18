@@ -13,7 +13,9 @@ const axiosFetcher = async (url, options) => {
       const config = {
         url: requestUrl,
         method: options.method,
-        headers: { ...options.headers },
+        headers: options.headers instanceof Headers 
+          ? Object.fromEntries(options.headers.entries()) 
+          : { ...options.headers },
         data: options.body,
         timeout: 10000,
         validateStatus: () => true,
