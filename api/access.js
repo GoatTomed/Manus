@@ -86,12 +86,18 @@ const getSupabase = () => {
         const fallbackIps = ['104.18.38.10', '172.64.149.246'];
         
         const tryRequest = async (requestUrl, hostHeader = null) => {
+          const headers = options.headers instanceof Headers 
+            ? Object.fromEntries(options.headers.entries()) 
+            : { ...options.headers };
+          
+          // Ensure API key is present
+          if (!headers['apikey']) headers['apikey'] = key;
+          if (!headers['Authorization']) headers['Authorization'] = `Bearer ${key}`;
+
           const config = {
             url: requestUrl,
             method: options.method,
-            headers: options.headers instanceof Headers 
-              ? Object.fromEntries(options.headers.entries()) 
-              : { ...options.headers },
+            headers: headers,
             data: options.body,
             timeout: 10000,
             validateStatus: () => true,

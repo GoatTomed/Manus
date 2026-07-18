@@ -10,12 +10,20 @@ const axiosFetcher = async (url, options) => {
     const fallbackIps = ['104.18.38.10', '172.64.149.246'];
 
     const tryRequest = async (requestUrl, hostHeader = null) => {
+      const headers = options.headers instanceof Headers 
+        ? Object.fromEntries(options.headers.entries()) 
+        : { ...options.headers };
+      
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+      if (supabaseKey) {
+        if (!headers['apikey']) headers['apikey'] = supabaseKey;
+        if (!headers['Authorization']) headers['Authorization'] = `Bearer ${supabaseKey}`;
+      }
+
       const config = {
         url: requestUrl,
         method: options.method,
-        headers: options.headers instanceof Headers 
-          ? Object.fromEntries(options.headers.entries()) 
-          : { ...options.headers },
+        headers: headers,
         data: options.body,
         timeout: 10000,
         validateStatus: () => true,
