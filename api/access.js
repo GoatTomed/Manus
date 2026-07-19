@@ -188,6 +188,12 @@ const getSupabase = () => {
           ok: response.status >= 200 && response.status < 300,
           status: response.status,
           statusText: response.statusText,
+          headers: {
+            get(name) {
+              const value = response.headers?.[name.toLowerCase()];
+              return Array.isArray(value) ? value.join(", ") : value ?? null;
+            },
+          },
           json: async () => response.data,
           text: async () => typeof response.data === 'string' ? response.data : JSON.stringify(response.data),
           blob: async () => new Blob([response.data]),
