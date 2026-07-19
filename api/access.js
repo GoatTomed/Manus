@@ -492,6 +492,7 @@ export default async function handler(req, res) {
     // GET /api/access/verify?wt=TOKEN - Verify token and return frontend redirect info
     if (path === '/api/access/verify' && req.method === 'GET' && searchParams.has('wt')) {
       const token = searchParams.get('wt')?.trim();
+      const completeAll = (searchParams.get('completeAll') || '').toString() === '1' || (searchParams.get('completeAll') || '').toString() === 'true';
       if (!token) {
         return res.status(400).json({ status: 'error', message: 'Missing verification token' });
       }
@@ -559,8 +560,36 @@ export default async function handler(req, res) {
         return res.status(403).json({ status: 'error', message: 'Session expired' });
       }
 
+      // If caller requested to complete all steps atomically, set session to final step and mark token used.
+      if (completeAll) {
+        if (useLocalDb) {
+          updateLocalToken(token, { is_used: true });
+          updateLocalSession(sessionId, { step: 2 });
+        } else {
+          await robustQuery(
+            getSupabase()
+              .from('verification_tokens')
+              .update({ is_used: true })
+              .eq('token', token)
+          );
+          await robustQuery(
+            getSupabase()
+              .from('key_sessions')
+              .update({ step: 2 })
+              .eq('session_id', sessionId)
+          );
+        }
+
+        const redirectUrl = new URL('/access', origin);
+        redirectUrl.searchParams.set('completed', 'true');
+        redirectUrl.searchParams.set('session', sessionId);
+        return res.status(200).json({ status: 'success', redirectUrl: redirectUrl.toString() });
+      }
+
+      // default behavior: mark token used and set session step to the token's step
       if (useLocalDb) {
         updateLocalToken(token, { is_used: true });
+        updateLocalSession(sessionId, { step: stepParam });
       } else {
         await robustQuery(
           getSupabase()
@@ -568,11 +597,6 @@ export default async function handler(req, res) {
             .update({ is_used: true })
             .eq('token', token)
         );
-      }
-
-      if (useLocalDb) {
-        updateLocalSession(sessionId, { step: stepParam });
-      } else {
         await robustQuery(
           getSupabase()
             .from('key_sessions')
