@@ -82,6 +82,9 @@ local function safeAddTab(win, name)
             Sidebar.Position = UDim2.new(0, 8, 0, 8)
             Sidebar.BackgroundColor3 = Theme.Sidebar
             Sidebar.Parent = self.Gui
+            local sCorner = Instance.new("UICorner")
+            sCorner.CornerRadius = UDim.new(0, 8)
+            sCorner.Parent = Sidebar
             self.Sidebar = Sidebar
             local layout = Instance.new("UIListLayout", Sidebar)
             layout.Padding = UDim.new(0,6)
@@ -96,6 +99,9 @@ local function safeAddTab(win, name)
                 Container.Size = UDim2.new(1, -20, 0, 40)
                 Container.BackgroundColor3 = Theme.Raised
                 Container.Parent = self.Container or Window.Gui
+                local cCorner = Instance.new("UICorner")
+                cCorner.CornerRadius = UDim.new(0, 6)
+                cCorner.Parent = Container
                 Section.Container = Container
                 -- attach helper methods
                 function Section:AddButton(c)
@@ -106,6 +112,9 @@ local function safeAddTab(win, name)
                     Button.Text = c.Name or "Button"
                     Button.TextColor3 = Theme.Text
                     Button.Parent = Section.Container
+                    local bCorner = Instance.new("UICorner")
+                    bCorner.CornerRadius = UDim.new(0, 6)
+                    bCorner.Parent = Button
                     Button.MouseButton1Click:Connect(function() if c.Callback then pcall(c.Callback) end end)
                     return Button
                 end
@@ -120,6 +129,9 @@ local function safeAddTab(win, name)
                     Btn.Text = (c.Name or "Toggle") .. " [" .. (getgenv().YouSuck_Flags[flag] and "ON" or "OFF") .. "]"
                     Btn.TextColor3 = Theme.Text
                     Btn.Parent = Section.Container
+                    local tCorner = Instance.new("UICorner")
+                    tCorner.CornerRadius = UDim.new(0, 6)
+                    tCorner.Parent = Btn
                     Btn.MouseButton1Click:Connect(function()
                         getgenv().YouSuck_Flags[flag] = not getgenv().YouSuck_Flags[flag]
                         Btn.Text = (c.Name or "Toggle") .. " [" .. (getgenv().YouSuck_Flags[flag] and "ON" or "OFF") .. "]"
@@ -154,6 +166,9 @@ local function safeAddTab(win, name)
             local Note = Instance.new("Frame")
             Note.Size = UDim2.new(1, 0, 0, 48)
             Note.BackgroundColor3 = Theme.Surface
+            local nCorner = Instance.new("UICorner")
+            nCorner.CornerRadius = UDim.new(0, 8)
+            nCorner.Parent = Note
             local Label = Instance.new("TextLabel", Note)
             Label.Size = UDim2.new(1, -12, 1, 0)
             Label.Position = UDim2.new(0, 6, 0, 0)
@@ -221,6 +236,9 @@ local function safeAddTab(win, name)
                 Button.Text = c.Name or "Button"
                 Button.TextColor3 = Theme.Text
                 Button.Parent = self.Container
+                local bCorner = Instance.new("UICorner")
+                bCorner.CornerRadius = UDim.new(0, 6)
+                bCorner.Parent = Button
                 Button.MouseButton1Click:Connect(function() if c.Callback then pcall(c.Callback) end end)
                 return Button
             end
@@ -237,6 +255,9 @@ local function safeAddTab(win, name)
                 Btn.Text = (c.Name or "Toggle") .. " [" .. (getgenv().YouSuck_Flags[flag] and "ON" or "OFF") .. "]"
                 Btn.TextColor3 = Theme.Text
                 Btn.Parent = self.Container
+                local tCorner = Instance.new("UICorner")
+                tCorner.CornerRadius = UDim.new(0, 6)
+                tCorner.Parent = Btn
                 Btn.MouseButton1Click:Connect(function()
                     getgenv().YouSuck_Flags[flag] = not getgenv().YouSuck_Flags[flag]
                     Btn.Text = (c.Name or "Toggle") .. " [" .. (getgenv().YouSuck_Flags[flag] and "ON" or "OFF") .. "]"
