@@ -289,7 +289,7 @@ local function safeAddTab(win, name)
 
         -- Toggle
         if CombatSec.AddToggle then
-            CombatSec:AddToggle({ Name = "ESP", Flag = "ESP", Callback = function(v) print("ESP", v) end })
+            CombatSec:AddToggle({ Name = "ESP", Flag = "ESP", Callback = function(v) end })
         end
         -- Button
         if CombatSec.AddButton then
@@ -297,13 +297,13 @@ local function safeAddTab(win, name)
         end
         -- Dropdown/Slider/Keybind (best-effort)
         if CombatSec.AddDropdown then
-            pcall(function() CombatSec:AddDropdown({ Name = "Mode", Items = {"Silent","Normal","Aggressive"}, Default = "Normal", Flag = "Mode", Callback = function(v) print("Mode", v) end }) end)
+            pcall(function() CombatSec:AddDropdown({ Name = "Mode", Items = {"Silent","Normal","Aggressive"}, Default = "Normal", Flag = "Mode", Callback = function(v) end }) end)
         end
         if CombatSec.AddSlider then
-            pcall(function() CombatSec:AddSlider({ Name = "Range", Min = 0, Max = 100, Default = 50, Callback = function(v) print("Range", v) end }) end)
+            pcall(function() CombatSec:AddSlider({ Name = "Range", Min = 0, Max = 100, Default = 50, Callback = function(v) end }) end)
         end
         if CombatSec.AddKeybind then
-            pcall(function() CombatSec:AddKeybind({ Name = "Activate", Default = Enum.KeyCode.F, Callback = function() print("Activated") end }) end)
+            pcall(function() CombatSec:AddKeybind({ Name = "Activate", Default = Enum.KeyCode.F, Callback = function() end }) end)
         end
     end
 

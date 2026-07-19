@@ -262,7 +262,6 @@ local function loadLocalUILibrary()
                 if fnOk and type(fn) == "function" then
                     local resultOk, result = pcall(fn)
                     if resultOk and type(result) == "table" then
-                        print("[AH] Loaded local UI library:", path)
                         return result
                     end
                 end
@@ -1137,8 +1136,6 @@ if savedAccent and type(savedAccent) == "table" and #savedAccent == 3 then
     end
 end
 
-print("[AH] Inlined UI library loaded")
-
 local Lib = nil
 
 local State = {
@@ -1192,7 +1189,6 @@ else
     end
     _G.YouSuckUI_Window = Window
 end
-print("[AH] Window created", Window, type(Window.SetOpen), type(Window.AddTab))
 
 local originalSetAccent = Window.SetAccent
 Window.SetAccent = function(self, color, skipSave)

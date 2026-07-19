@@ -374,5 +374,3 @@ Btn.MouseButton1Click:Connect(function()
         end
     end)
 end)
-
-print("YouSuck Key System Loaded Successfully!")
