@@ -213,22 +213,37 @@ export default async function handler(req, res) {
         return res.status(200).json({ valid: false, message: 'Missing key' });
       }
 
-      const { data, error } = await supabase
-        .from('keys')
-        .select('key_value, expires_at, visitor_id, used_count')
-        .eq('key_value', key)
-        .single();
+      const raw = String(key || '');
+      const searchKey = raw.trim().toUpperCase();
+      const newFormat = /^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/;
+      const legacyHex = /^[A-F0-9]{32}$/i;
 
-      if (error) {
-        // If the key is not found, return a normalized invalid response
+      let data = null;
+      let error = null;
+
+      if (newFormat.test(searchKey)) {
+        ({ data, error } = await supabase
+          .from('keys')
+          .select('id, key_value, expires_at, visitor_id, used_count, legacy_key')
+          .eq('key_value', searchKey)
+          .maybeSingle());
+      } else if (legacyHex.test(searchKey)) {
+        // try matching either key_value or legacy_key for backward compatibility
+        const orCond = `key_value.eq.${searchKey},legacy_key.eq.${searchKey}`;
+        ({ data, error } = await supabase
+          .from('keys')
+          .select('id, key_value, expires_at, visitor_id, used_count, legacy_key')
+          .or(orCond)
+          .maybeSingle());
+      } else {
+        return res.status(200).json({ valid: false, message: 'Invalid key format' });
+      }
+
+      if (error || !data) {
         return res.status(200).json({ valid: false, message: 'Invalid key' });
       }
 
-      if (!data || !data.key_value) {
-        return res.status(200).json({ valid: false, message: 'Invalid key' });
-      }
-
-      if (new Date(data.expires_at) < new Date()) {
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
         return res.status(200).json({ valid: false, message: 'Key expired' });
       }
 
@@ -236,15 +251,13 @@ export default async function handler(req, res) {
         last_used: new Date().toISOString(),
         used_count: (data.used_count || 0) + 1,
       };
+      if (robloxId) updates.visitor_id = String(robloxId);
 
-      if (robloxId) {
-        updates.visitor_id = String(robloxId);
-      }
-
+      // Update by primary id to handle legacy_key matches
       await supabase
         .from('keys')
         .update(updates)
-        .eq('key_value', key);
+        .eq('id', data.id);
 
       return res.status(200).json({ valid: true, message: 'Key valid', expiresAt: data.expires_at });
     } catch (error) {
