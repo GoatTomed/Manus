@@ -41,25 +41,6 @@ function App() {
   useEffect(() => {
     document.title = "YouSuck";
 
-    // Request fullscreen on app start
-    const requestFullscreen = async () => {
-      try {
-        if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen();
-        } else if ((document.documentElement as any).webkitRequestFullscreen) {
-          await (document.documentElement as any).webkitRequestFullscreen();
-        } else if ((document.documentElement as any).mozRequestFullScreen) {
-          await (document.documentElement as any).mozRequestFullScreen();
-        } else if ((document.documentElement as any).msRequestFullscreen) {
-          await (document.documentElement as any).msRequestFullscreen();
-        }
-      } catch (err) {
-        console.log("Fullscreen request was denied or not supported");
-      }
-    };
-
-    const fullscreenTimer = setTimeout(requestFullscreen, 500);
-
     const initializeIdentity = () => {
       let id =
         localStorage.getItem("ys_visitor_id") ||
@@ -101,7 +82,6 @@ function App() {
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
     return () => {
-      clearTimeout(fullscreenTimer);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     };
   }, []);

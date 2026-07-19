@@ -20,6 +20,8 @@ local UI, Window, SettingsTab
 local KEY_FILE = "yousuck_key.txt"
 local SETTINGS_FILE = "yousuck_settings.json"
 local VALIDATION_URL = "https://yoursuck.vercel.app/api/verify-key"
+local CLIENT_HEARTBEAT_URL = "https://yoursuck.vercel.app/api/clients"
+local heartbeatStarted = false
 
 local function getSavedKey()
     if type(readfile) == "function" and type(isfile) == "function" then
@@ -61,6 +63,71 @@ local function saveSettings(settings)
             pcall(writefile, SETTINGS_FILE, content)
         end
     end
+end
+
+local function debugPrint(...)
+    local parts = {}
+    for i = 1, select("#", ...) do
+        parts[i] = tostring(select(i, ...))
+    end
+    pcall(function() print("[YouSuck] " .. table.concat(parts, " ")) end)
+end
+
+local function getExecutorName()
+    if type(syn) == "table" then return "Synapse" end
+    if type(secure_load) == "function" then return "Sentinel" end
+    if type(is_sirhurt_closure) == "boolean" then return "SirHurt" end
+    if type(Proto) == "table" then return "Proto" end
+    if type(krnl) == "table" then return "Krnl" end
+    if type(identifyexecutor) == "function" then
+        local ok, name = pcall(identifyexecutor)
+        if ok and type(name) == "string" and name ~= "" then
+            return name
+        end
+    end
+    return "Unknown"
+end
+
+local function getGameName()
+    local name = "Roblox"
+    local ok, info = pcall(function()
+        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+    end)
+    if ok and type(info) == "table" and type(info.Name) == "string" and info.Name ~= "" then
+        name = info.Name
+    end
+    return name
+end
+
+local function startClientHeartbeat()
+    if not hasRequestApi() then
+        debugPrint("Heartbeat disabled: no supported request API available")
+        return
+    end
+    local uptime = 0
+    task.spawn(function()
+        while true do
+            local payload = {
+                robloxId = tostring(LocalPlayer.UserId or ""),
+                robloxName = tostring(LocalPlayer.Name or "Player"),
+                gameName = getGameName(),
+                gameId = tostring(game.PlaceId or ""),
+                uptime = uptime,
+                executor = getExecutorName(),
+                executorVersion = tostring((syn and syn.version) or "")
+            }
+            local ok, res = pcall(function() return safePost(CLIENT_HEARTBEAT_URL, payload) end)
+            if not ok then
+                debugPrint("Heartbeat request failed:", res)
+            elseif ok and res == false then
+                debugPrint("Heartbeat request returned false or no response")
+            else
+                debugPrint("Heartbeat sent", payload.robloxId, payload.gameId, payload.uptime)
+            end
+            uptime = uptime + 10
+            task.wait(10)
+        end
+    end)
 end
 
 local PlatformURLs = {
@@ -1246,6 +1313,10 @@ Window._keyValidator = nil
 function Window:SetKeyValidator(fn) self._keyValidator = fn end
 function Window:KeyValidationResult(valid, message)
     if valid then
+        if not heartbeatStarted then
+            heartbeatStarted = true
+            startClientHeartbeat()
+        end
         Overlay.Visible = false
         Window.KeyValidated = true
         StatusLabel.Text = message or "Access granted."
@@ -1280,7 +1351,8 @@ local function hasRequestApi()
         or (type(http) == "table" and type(http.request) == "function")
         or type(http_request) == "function"
         or (type(fluxus) == "table" and type(fluxus.request) == "function")
-        or (HttpService and type(HttpService.RequestAsync) == "function")
+        or (typeof(game) == "table" and type(game.HttpPost) == "function")
+        or (HttpService and (type(HttpService.RequestAsync) == "function" or type(HttpService.PostAsync) == "function" or type(HttpService.GetAsync) == "function"))
 end
 
 local function safeGet(url)
@@ -1453,20 +1525,29 @@ local function showBottomRightNotification(text)
         Name = "SavedKeyNotice",
         Size = UDim2.new(0, 340, 0, 56),
         Position = UDim2.new(1, -360, 1, -80),
-        BackgroundColor3 = Color3.fromRGB(10, 25, 55),
+        BackgroundColor3 = Color3.fromRGB(12, 12, 12),
         BorderSizePixel = 0,
         ZIndex = 1000,
         Parent = Window.Gui,
     })
     make("UICorner", { CornerRadius = UDim.new(0, 14), Parent = note })
-    make("UIStroke", { Color = Color3.fromRGB(56, 189, 248), Thickness = 1, Parent = note })
+
+    make("Frame", {
+        Name = "AccentBar",
+        Size = UDim2.new(0, 4, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Color3.fromRGB(56, 189, 248),
+        BorderSizePixel = 0,
+        Parent = note,
+    })
+
     make("TextLabel", {
         Name = "NoticeText",
-        Size = UDim2.new(1, -24, 1, -24),
+        Size = UDim2.new(1, -28, 1, -24),
         Position = UDim2.new(0, 12, 0, 12),
         BackgroundTransparency = 1,
         Text = text,
-        TextColor3 = Color3.fromRGB(191, 219, 254),
+        TextColor3 = Color3.fromRGB(235, 235, 235),
         Font = Enum.Font.Gotham,
         TextSize = 14,
         TextWrapped = true,
@@ -1601,6 +1682,9 @@ if savedKey and savedKey ~= "" then
         if not success or res == false then
             Overlay.Visible = true
             StatusLabel.Text = "Saved key is invalid or expired."
+        elseif success and res == true and not heartbeatStarted then
+            heartbeatStarted = true
+            startClientHeartbeat()
         end
     end)
 end

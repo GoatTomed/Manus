@@ -8,7 +8,7 @@ type HomeView = "clients" | "users" | "keys" | "stats";
 const homeNav: { id: HomeView; label: string; icon: string }[] = [
   { id: "clients", label: "Clients", icon: "ti-users" },
   { id: "users", label: "Users", icon: "ti-user-circle" },
-
+  { id: "keys", label: "Keys", icon: "ti-key" },
 ];
 
 function formatUptime(seconds: number) {
@@ -202,6 +202,9 @@ export default function Track() {
     c.place?.toLowerCase().includes(clientQuery.toLowerCase())
   ), [clients, clientQuery]);
 
+  const activeGameCount = useMemo(() => new Set(clients.map(c => c.place || "")).size, [clients]);
+  const uniqueExecutorCount = useMemo(() => new Set(clients.map(c => c.executor || "Unknown")).size, [clients]);
+
   const filteredUsers = useMemo(() => {
     const list = Object.values(storedUsers);
     return list.filter(u => 
@@ -274,6 +277,20 @@ export default function Track() {
                 <div className="search-container">
                   <i className="ti ti-search" style={{ color: "#52525b" }}></i>
                   <input placeholder="Search clients..." value={clientQuery} onChange={e => setClientQuery(e.target.value)} />
+                </div>
+              </div>
+              <div className="dashboard-summary">
+                <div className="summary-card">
+                  <div className="summary-label">Active clients</div>
+                  <div className="summary-value">{filteredClients.length}</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Active games</div>
+                  <div className="summary-value">{activeGameCount}</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Executors</div>
+                  <div className="summary-value">{uniqueExecutorCount}</div>
                 </div>
               </div>
               <div className="client-grid">

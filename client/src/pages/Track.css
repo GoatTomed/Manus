@@ -259,6 +259,39 @@
   width: 100%;
 }
 
+.dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 22px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.summary-label {
+  color: #71717a;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.summary-value {
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 900;
+}
+
 .search-container input::placeholder {
   color: #52525b;
 }
@@ -274,8 +307,12 @@
 }
 
 .client-grid .glass-card {
-  padding: 20px;
+  padding: 24px;
   cursor: pointer;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .card-info-row {
@@ -466,4 +503,23 @@
   .main-content.has-fixed-sidebar:has(~ .profile-sidebar) {
     padding-right: 40px;
   }
+}
+
+.profile-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  background: rgba(10, 10, 10, 0.98);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: -28px 0 64px rgba(0, 0, 0, 0.35);
+  padding: 32px 24px;
+  overflow-y: auto;
+  z-index: 60;
+}
+
+.profile-sidebar .profile-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }

@@ -1190,7 +1190,7 @@ end
 
 local savedKey = getSavedKey()
 
--- Simple pitch black verify overlay
+-- Pitch black verify overlay with loading indicator
 local Overlay = make("Frame", { 
     Name = "VerifyOverlay", 
     Size = UDim2.new(1,0,1,0), 
@@ -1201,5 +1201,69 @@ local Overlay = make("Frame", {
     Visible = (savedKey == nil or savedKey == ""),
     Parent = Window.Main 
 })
+
+-- Center container
+local Center = make("Frame", {
+    Name = "Center",
+    Size = UDim2.new(0, 300, 0, 120),
+    Position = UDim2.new(0.5, -150, 0.5, -60),
+    BackgroundTransparency = 1,
+    Parent = Overlay
+})
+
+-- React icon (using a simple colored circle)
+local Icon = make("Frame", {
+    Name = "ReactIcon",
+    Size = UDim2.new(0, 60, 0, 60),
+    Position = UDim2.new(0.5, -30, 0, 0),
+    BackgroundColor3 = Color3.fromRGB(97, 218, 251),
+    Parent = Center
+})
+make("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = Icon })
+
+-- Verifying text
+make("TextLabel", {
+    Name = "Title",
+    Size = UDim2.new(1, 0, 0, 24),
+    Position = UDim2.new(0, 0, 0, 70),
+    BackgroundTransparency = 1,
+    Text = "# Verifying",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextSize = 18,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    Parent = Center
+})
+
+-- Loading bar
+local LoadingBar = make("Frame", {
+    Name = "LoadingBar",
+    Size = UDim2.new(1, 0, 0, 4),
+    Position = UDim2.new(0, 0, 1, 6),
+    BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+    Parent = Center
+})
+make("UICorner", { CornerRadius = UDim.new(0, 2), Parent = LoadingBar })
+
+local LoadingFill = make("Frame", {
+    Name = "Fill",
+    Size = UDim2.new(0, 0, 1, 0),
+    BackgroundColor3 = Color3.fromRGB(97, 218, 251),
+    BorderSizePixel = 0,
+    Parent = LoadingBar
+})
+make("UICorner", { CornerRadius = UDim.new(0, 2), Parent = LoadingFill })
+
+-- Animate loading bar
+task.spawn(function()
+    while Overlay.Visible do
+        for i = 0, 100, 2 do
+            if not Overlay.Visible then break end
+            LoadingFill.Size = UDim2.new(i / 100, 0, 1, 0)
+            task.wait(0.05)
+        end
+        LoadingFill.Size = UDim2.new(0, 0, 1, 0)
+    end
+end)
 
 return UI
