@@ -489,6 +489,112 @@ export default async function handler(req, res) {
       }
     }
 
+    // GET /api/access/verify?wt=TOKEN - Verify token and return frontend redirect info
+    if (path === '/api/access/verify' && req.method === 'GET' && searchParams.has('wt')) {
+      const token = searchParams.get('wt')?.trim();
+      if (!token) {
+        return res.status(400).json({ status: 'error', message: 'Missing verification token' });
+      }
+
+      let tokenRecord = null;
+      let tokenError = null;
+      if (useLocalDb) {
+        tokenRecord = getLocalToken(token);
+      } else {
+        const supabase = getSupabase();
+        try {
+          const result = await robustQuery(
+            supabase
+              .from('verification_tokens')
+              .select('*')
+              .eq('token', token)
+              .single()
+          );
+          tokenRecord = result.data;
+          tokenError = result.error;
+        } catch (fetchErr) {
+          console.error('Supabase fetch exception:', fetchErr);
+          return res.status(500).json({ status: 'error', message: 'Database connection failed' });
+        }
+      }
+
+      if (tokenError || !tokenRecord) {
+        console.error(`Token lookup failure: error=${JSON.stringify(tokenError)}, token=${token}`);
+        return res.status(403).json({ status: 'error', message: tokenError ? tokenError.message : 'Token not found' });
+      }
+
+      if (tokenRecord.is_used) {
+        return res.status(403).json({ status: 'error', message: 'Token already used' });
+      }
+
+      if (new Date(tokenRecord.expires_at) < new Date()) {
+        return res.status(403).json({ status: 'error', message: 'Token expired' });
+      }
+
+      const sessionId = tokenRecord.session_id;
+      const stepParam = tokenRecord.step;
+
+      let session;
+      if (useLocalDb) {
+        session = getLocalSession(sessionId);
+      } else {
+        const result = await robustQuery(
+          getSupabase()
+            .from('key_sessions')
+            .select('*')
+            .eq('session_id', sessionId)
+            .single()
+        );
+        session = result.data;
+        if (result.error) {
+          console.error('Session lookup error:', result.error);
+        }
+      }
+
+      if (!session) {
+        return res.status(403).json({ status: 'error', message: 'Invalid session' });
+      }
+
+      if (new Date(session.expires_at) < new Date()) {
+        return res.status(403).json({ status: 'error', message: 'Session expired' });
+      }
+
+      if (useLocalDb) {
+        updateLocalToken(token, { is_used: true });
+      } else {
+        await robustQuery(
+          getSupabase()
+            .from('verification_tokens')
+            .update({ is_used: true })
+            .eq('token', token)
+        );
+      }
+
+      if (useLocalDb) {
+        updateLocalSession(sessionId, { step: stepParam });
+      } else {
+        await robustQuery(
+          getSupabase()
+            .from('key_sessions')
+            .update({ step: stepParam })
+            .eq('session_id', sessionId)
+        );
+      }
+
+      const redirectUrl = new URL('/access', origin);
+      if (stepParam === 1) {
+        redirectUrl.searchParams.set('step', '2');
+        redirectUrl.searchParams.set('session', sessionId);
+        return res.status(200).json({ status: 'success', redirectUrl: redirectUrl.toString() });
+      }
+      if (stepParam === 2) {
+        redirectUrl.searchParams.set('completed', 'true');
+        redirectUrl.searchParams.set('session', sessionId);
+        return res.status(200).json({ status: 'success', redirectUrl: redirectUrl.toString() });
+      }
+      return res.status(400).json({ status: 'error', message: 'Unknown verification step' });
+    }
+
     // GET /api/access/check - Check if visitor already has a valid key
     if (path === '/api/access/check' && req.method === 'GET') {
       const visitorId = searchParams.get('visitorId');

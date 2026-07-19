@@ -14,17 +14,35 @@ export default function Verify() {
       setStatus("error");
       return;
     }
+    const verifyToken = async () => {
+      try {
+        const res = await fetch(`/api/access/verify?wt=${encodeURIComponent(token)}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
 
-    const redirectTimeout = window.setTimeout(() => {
-      setStatus("success");
-      window.setTimeout(() => {
-        window.location.href = `/api/access?wt=${token}`;
-      }, 900);
-    }, 3600);
+        if (!res.ok) {
+          setStatus("error");
+          return;
+        }
 
-    return () => {
-      clearTimeout(redirectTimeout);
+        const data = await res.json();
+        if (data.status === "success" && data.redirectUrl) {
+          setStatus("success");
+          window.setTimeout(() => {
+            window.location.href = data.redirectUrl;
+          }, 900);
+          return;
+        }
+
+        setStatus("error");
+      } catch (err) {
+        setStatus("error");
+      }
     };
+
+    verifyToken();
+    return () => {};
   }, [search]);
 
   return (
@@ -34,10 +52,13 @@ export default function Verify() {
         display: "grid",
         placeItems: "center",
         padding: "24px",
-        background: "#080808",
+        background: status === "loading" ? "#020202" : "#080808",
         backgroundImage:
-          "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
-        backgroundSize: "56px 56px",
+          status === "loading"
+            ? "none"
+            : "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
+        backgroundSize: status === "loading" ? undefined : "56px 56px",
+        transition: "background 0.2s ease",
       }}
     >
       <style>{`
