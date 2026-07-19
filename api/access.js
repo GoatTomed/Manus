@@ -37,22 +37,25 @@ function getErrorPage(errorMsg, debugInfo) {
       <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp" alt="Logo" class="logo">
     </div>
     <h1>You<span class="primary">Suck</span></h1>
-    <button onclick="copyIssue(this, '${errorMsg.replace(/'/g, "\\'")}'" class="btn btn-copy">Copy Issue</button>
+    <button id="copyBtn" class="btn btn-copy">Copy Issue</button>
     <a href="/" class="btn btn-secondary">Return Home</a>
   </div>
   <script>
-    function copyIssue(btn, msg) {
-      // Try modern Clipboard API first
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(msg).then(() => {
-          showCopySuccess(btn);
+    const errorMessage = `${errorMsg}`;
+    
+    document.getElementById('copyBtn').addEventListener('click', function() {
+      copyToClipboard(errorMessage, this);
+    });
+    
+    function copyToClipboard(text, btn) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+          showSuccess(btn);
         }).catch(() => {
-          // Fallback to textarea method if clipboard fails
-          fallbackCopy(msg, btn);
+          fallbackCopy(text, btn);
         });
       } else {
-        // Fallback for older browsers
-        fallbackCopy(msg, btn);
+        fallbackCopy(text, btn);
       }
     }
     
@@ -60,35 +63,39 @@ function getErrorPage(errorMsg, debugInfo) {
       const textarea = document.createElement('textarea');
       textarea.value = text;
       textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
+      textarea.style.left = '-9999px';
+      textarea.style.top = '-9999px';
       document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
       
       try {
-        textarea.select();
-        const successful = document.execCommand('copy');
-        if (successful) {
-          showCopySuccess(btn);
-        } else {
-          showCopyFailed(btn);
-        }
+        document.execCommand('copy');
+        showSuccess(btn);
       } catch (err) {
-        console.error('Fallback copy failed:', err);
-        showCopyFailed(btn);
+        console.error('Copy failed:', err);
+        showError(btn);
       } finally {
         document.body.removeChild(textarea);
       }
     }
     
-    function showCopySuccess(btn) {
-      const originalText = btn.textContent;
+    function showSuccess(btn) {
+      const original = btn.textContent;
       btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = originalText; }, 2000);
+      btn.style.opacity = '0.8';
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.style.opacity = '1';
+      }, 2000);
     }
     
-    function showCopyFailed(btn) {
-      const originalText = btn.textContent;
-      btn.textContent = 'Copy failed';
-      setTimeout(() => { btn.textContent = originalText; }, 2000);
+    function showError(btn) {
+      const original = btn.textContent;
+      btn.textContent = 'Failed';
+      setTimeout(() => {
+        btn.textContent = original;
+      }, 2000);
     }
   </script>
 </body>
