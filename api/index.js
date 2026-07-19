@@ -4,6 +4,30 @@ import axios from "axios";
 
 const ALLOWED_IP = "24.49.252.230";
 
+async function parseJsonBody(req) {
+  if (req.body != null) {
+    return req.body;
+  }
+
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk.toString();
+    });
+    req.on("end", () => {
+      if (!body) {
+        return resolve({});
+      }
+      try {
+        resolve(JSON.parse(body));
+      } catch (err) {
+        resolve({});
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
 const axiosFetcher = async (url, options) => {
   try {
     let targetUrl = url;
@@ -124,6 +148,7 @@ export default async function handler(req, res) {
     return;
   }
 
+  req.body = await parseJsonBody(req);
   const url = new URL(req.url, `http://${req.headers.host}`);
   const path = url.pathname;
 
@@ -140,17 +165,21 @@ export default async function handler(req, res) {
       const key = generateKey();
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-      const { error } = await supabase
-        .from('keys')
-        .insert({
-          key_value: key,
-          visitor_hash: hashVisitorId(visitorId),
-          visitor_id: visitorId,
-          created_at: new Date().toISOString(),
-          expires_at: expiresAt,
-        });
+      if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        const { error } = await supabase
+          .from('keys')
+          .insert({
+            key_value: key,
+            visitor_hash: hashVisitorId(visitorId),
+            visitor_id: visitorId,
+            created_at: new Date().toISOString(),
+            expires_at: expiresAt,
+          });
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        console.warn('Supabase credentials missing, generating admin key locally only.');
+      }
 
       return res.status(200).json({ key_value: key, expires_at: expiresAt });
     } catch (error) {

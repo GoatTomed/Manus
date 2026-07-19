@@ -41,7 +41,7 @@ function getErrorPage(errorMsg, debugInfo) {
     <a href="/" class="btn btn-secondary">Return Home</a>
   </div>
   <script>
-    const errorMessage = `${errorMsg}`;
+    const errorMessage = "${errorMsg}";
     
     document.getElementById('copyBtn').addEventListener('click', function() {
       copyToClipboard(errorMessage, this);
@@ -242,7 +242,64 @@ async function robustQuery(queryBuilder, retries = 3) {
   return { data: null, error: lastError };
 }
 
+async function parseJsonBody(req) {
+  if (req.body != null) {
+    return req.body;
+  }
+
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk.toString();
+    });
+    req.on("end", () => {
+      if (!body) {
+        return resolve({});
+      }
+      try {
+        resolve(JSON.parse(body));
+      } catch (err) {
+        resolve({});
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
 const EARNPASTE_API_KEY = "ep_1fc0807b695b99c7f244b4d0dd6ac65bd49085dc6a6a2cd2";
+
+const localSessionStore = new Map();
+const localTokenStore = new Map();
+
+function storeLocalSession(session) {
+  localSessionStore.set(session.session_id, session);
+}
+
+function getLocalSession(sessionId) {
+  return localSessionStore.get(sessionId) || null;
+}
+
+function updateLocalSession(sessionId, updates) {
+  const session = localSessionStore.get(sessionId);
+  if (session) {
+    localSessionStore.set(sessionId, { ...session, ...updates });
+  }
+}
+
+function storeLocalToken(tokenRecord) {
+  localTokenStore.set(tokenRecord.token, tokenRecord);
+}
+
+function getLocalToken(token) {
+  return localTokenStore.get(token) || null;
+}
+
+function updateLocalToken(token, updates) {
+  const tokenRecord = localTokenStore.get(token);
+  if (tokenRecord) {
+    localTokenStore.set(token, { ...tokenRecord, ...updates });
+  }
+}
 
 // Helper function to generate a unique verification token (UUID-like format)
 function generateVerificationToken() {
@@ -280,9 +337,11 @@ export default async function handler(req, res) {
   const url = new URL(req.url, origin);
   const path = url.pathname;
   const searchParams = url.searchParams;
+  const useLocalDb = !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY;
+  req.body = await parseJsonBody(req);
 
   try {
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!useLocalDb && (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)) {
       res.setHeader('Content-Type', 'text/html');
       return res.status(500).send(getErrorPage('Server configuration error: missing Supabase credentials', {
         message: 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment variables.',
@@ -300,27 +359,31 @@ export default async function handler(req, res) {
       }
 
       // Get the token record
-      const supabase = getSupabase();
-      let tokenRecord, tokenError;
-      
-      try {
-        const result = await robustQuery(
-          supabase
-            .from('verification_tokens')
-            .select('*')
-            .eq('token', token)
-            .single()
-        );
-        tokenRecord = result.data;
-        tokenError = result.error;
-      } catch (fetchErr) {
-        console.error('Supabase fetch exception:', fetchErr);
-        res.setHeader('Content-Type', 'text/html');
-        return res.status(500).send(getErrorPage('Database connection failed', {
-          message: fetchErr.message,
-          token: token ? (token.substring(0, 8) + '...') : 'null',
-          path: path
-        }));
+      let tokenRecord = null;
+      let tokenError = null;
+      if (useLocalDb) {
+        tokenRecord = getLocalToken(token);
+      } else {
+        const supabase = getSupabase();
+        try {
+          const result = await robustQuery(
+            supabase
+              .from('verification_tokens')
+              .select('*')
+              .eq('token', token)
+              .single()
+          );
+          tokenRecord = result.data;
+          tokenError = result.error;
+        } catch (fetchErr) {
+          console.error('Supabase fetch exception:', fetchErr);
+          res.setHeader('Content-Type', 'text/html');
+          return res.status(500).send(getErrorPage('Database connection failed', {
+            message: fetchErr.message,
+            token: token ? (token.substring(0, 8) + '...') : 'null',
+            path: path
+          }));
+        }
       }
 
       if (tokenError || !tokenRecord) {
@@ -347,16 +410,24 @@ export default async function handler(req, res) {
       const sessionId = tokenRecord.session_id;
       const stepParam = tokenRecord.step;
 
-      // Get the session
-      const { data: session, error: sessionError } = await robustQuery(
-        supabase
-          .from('key_sessions')
-          .select('*')
-          .eq('session_id', sessionId)
-          .single()
-      );
+      let session;
+      if (useLocalDb) {
+        session = getLocalSession(sessionId);
+      } else {
+        const result = await robustQuery(
+          supabase
+            .from('key_sessions')
+            .select('*')
+            .eq('session_id', sessionId)
+            .single()
+        );
+        session = result.data;
+        if (result.error) {
+          console.error('Session lookup error:', result.error);
+        }
+      }
 
-      if (sessionError || !session) {
+      if (!session) {
         res.setHeader('Content-Type', 'text/html');
         return res.status(403).send(getErrorPage('Invalid session', { token: token.substring(0, 8) + '...', path }));
       }
@@ -367,20 +438,28 @@ export default async function handler(req, res) {
       }
 
       // Mark token as used
-      await robustQuery(
-        supabase
-          .from('verification_tokens')
-          .update({ is_used: true })
-          .eq('token', token)
-      );
+      if (useLocalDb) {
+        updateLocalToken(token, { is_used: true });
+      } else {
+        await robustQuery(
+          supabase
+            .from('verification_tokens')
+            .update({ is_used: true })
+            .eq('token', token)
+        );
+      }
 
       // Advance their step
-      await robustQuery(
-        supabase
-          .from('key_sessions')
-          .update({ step: stepParam })
-          .eq('session_id', sessionId)
-      );
+      if (useLocalDb) {
+        updateLocalSession(sessionId, { step: stepParam });
+      } else {
+        await robustQuery(
+          supabase
+            .from('key_sessions')
+            .update({ step: stepParam })
+            .eq('session_id', sessionId)
+        );
+      }
 
       if (stepParam === 1) {
         // Just completed step 1 verification, send them back to the frontend for step 2
@@ -449,21 +528,32 @@ export default async function handler(req, res) {
       }
 
       const sessionId = crypto.randomBytes(12).toString('hex');
-      const supabase = getSupabase();
+      const supabase = useLocalDb ? null : getSupabase();
 
       try {
-        await robustQuery(
-          supabase
-            .from('key_sessions')
-            .insert({
-              session_id: sessionId,
-              visitor_id: visitorId,
-              visitor_hash: hashVisitorId(visitorId),
-              step: 0,
-              created_at: new Date().toISOString(),
-              expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
-            })
-        );
+        if (useLocalDb) {
+          storeLocalSession({
+            session_id: sessionId,
+            visitor_id: visitorId,
+            visitor_hash: hashVisitorId(visitorId),
+            step: 0,
+            created_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
+          });
+        } else {
+          await robustQuery(
+            supabase
+              .from('key_sessions')
+              .insert({
+                session_id: sessionId,
+                visitor_id: visitorId,
+                visitor_hash: hashVisitorId(visitorId),
+                step: 0,
+                created_at: new Date().toISOString(),
+                expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
+              })
+          );
+        }
           
         // Create a unique verification token
         const verificationToken = generateVerificationToken();
@@ -474,20 +564,30 @@ export default async function handler(req, res) {
         
         try {
           // Store the token in the database BEFORE calling EarnPaste
-          const { error: tokenInsertError } = await robustQuery(
-            supabase
-              .from('verification_tokens')
-              .insert({
-                token: verificationToken,
-                session_id: sessionId,
-                step: 1,
-                expires_at: tokenExpiresAt
-              })
-          );
-          
-          if (tokenInsertError) {
-            console.error('Token insert error:', tokenInsertError);
-            throw new Error(`Database error: ${tokenInsertError.message}`);
+          if (useLocalDb) {
+            storeLocalToken({
+              token: verificationToken,
+              session_id: sessionId,
+              step: 1,
+              expires_at: tokenExpiresAt,
+              is_used: false
+            });
+          } else {
+            const { error: tokenInsertError } = await robustQuery(
+              supabase
+                .from('verification_tokens')
+                .insert({
+                  token: verificationToken,
+                  session_id: sessionId,
+                  step: 1,
+                  expires_at: tokenExpiresAt
+                })
+            );
+            
+            if (tokenInsertError) {
+              console.error('Token insert error:', tokenInsertError);
+              throw new Error(`Database error: ${tokenInsertError.message}`);
+            }
           }
 
           const earnPasteResponse = await fetch('https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste', {
@@ -535,7 +635,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing sessionId' });
       }
 
-      const supabase = getSupabase();
+      const supabase = useLocalDb ? null : getSupabase();
 
       try {
         // Create a unique verification token for step 2
@@ -545,21 +645,30 @@ export default async function handler(req, res) {
         const verifyUrl = `${origin}/verify?wt=${verificationToken}`;
         
         try {
-          // Store the token in the database BEFORE calling EarnPaste
-          const { error: tokenInsertError } = await robustQuery(
-            supabase
-              .from('verification_tokens')
-              .insert({
-                token: verificationToken,
-                session_id: sessionId,
-                step: 2,
-                expires_at: tokenExpiresAt
-              })
-          );
-          
-          if (tokenInsertError) {
-            console.error('Token insert error:', tokenInsertError);
-            throw new Error(`Database error: ${tokenInsertError.message}`);
+          if (useLocalDb) {
+            storeLocalToken({
+              token: verificationToken,
+              session_id: sessionId,
+              step: 2,
+              expires_at: tokenExpiresAt,
+              is_used: false
+            });
+          } else {
+            const { error: tokenInsertError } = await robustQuery(
+              supabase
+                .from('verification_tokens')
+                .insert({
+                  token: verificationToken,
+                  session_id: sessionId,
+                  step: 2,
+                  expires_at: tokenExpiresAt
+                })
+            );
+            
+            if (tokenInsertError) {
+              console.error('Token insert error:', tokenInsertError);
+              throw new Error(`Database error: ${tokenInsertError.message}`);
+            }
           }
 
           const earnPasteResponse = await fetch('https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste', {
