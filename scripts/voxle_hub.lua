@@ -1,4 +1,4 @@
-loadstring(game:HttpGet("https://yoursuck.vercel.app/yousuck.lua", true))()
+local UI = loadstring(game:HttpGet("https://yoursuck.vercel.app/yousuck.lua", true))()
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
