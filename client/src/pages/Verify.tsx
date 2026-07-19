@@ -5,7 +5,6 @@ import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 export default function Verify() {
   const search = useSearch();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState("Verifying your access...");
 
   useEffect(() => {
     const params = new URLSearchParams(search);
@@ -13,34 +12,17 @@ export default function Verify() {
 
     if (!token) {
       setStatus("error");
-      setMessage("Invalid verification link.");
       return;
     }
 
-    const steps = [
-      { delay: 600, message: "Initializing verification module..." },
-      { delay: 1400, message: "Validating your link..." },
-      { delay: 2200, message: "Checking server credentials..." },
-      { delay: 3000, message: "Preparing redirect..." },
-    ];
-
-    const timeouts = steps.map((step) =>
-      window.setTimeout(() => {
-        setMessage(step.message);
-      }, step.delay)
-    );
-
     const redirectTimeout = window.setTimeout(() => {
       setStatus("success");
-      setMessage("Verification complete. Redirecting...");
-
       window.setTimeout(() => {
         window.location.href = `/api/access?wt=${token}`;
       }, 900);
     }, 3600);
 
     return () => {
-      timeouts.forEach((t) => clearTimeout(t));
       clearTimeout(redirectTimeout);
     };
   }, [search]);
@@ -84,14 +66,6 @@ export default function Verify() {
           )}
         </div>
 
-        <div style={{ width: "100%", textAlign: "center" }}>
-          <h1 style={{ margin: 0, fontSize: "2.4rem", fontWeight: 900, color: "#f5f5f5", letterSpacing: "-0.03em" }}>
-            {status === "loading" ? "Verifying" : status === "success" ? "Verification Complete" : "Verification Failed"}
-          </h1>
-          <p style={{ margin: "16px auto 0", maxWidth: "420px", lineHeight: 1.6, color: "rgba(255,255,255,0.72)", fontSize: "1rem" }}>
-            {message}
-          </p>
-        </div>
       </div>
     </div>
   );
