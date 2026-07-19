@@ -1241,51 +1241,8 @@ CloseBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-local function showRightToast(msg)
-    local screenGui = Window.Gui
-    if not screenGui then return end
-    local existing = screenGui:FindFirstChild("RightToast")
-    if existing then existing:Destroy() end
-    local toast = make("Frame", {
-        Name = "RightToast",
-        Size = UDim2.new(0, 240, 0, 48),
-        Position = UDim2.new(1, 10, 0.5, -24),
-        BackgroundColor3 = UI.Theme.Surface,
-        BorderSizePixel = 0,
-        ZIndex = 1000,
-        Parent = screenGui
-    })
-    make("UICorner", { CornerRadius = UDim.new(0, 8), Parent = toast })
-    make("UIStroke", { Color = UI.Theme.Error, Thickness = 1.5, Parent = toast })
-    make("TextLabel", {
-        Size = UDim2.new(1, -20, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        BackgroundTransparency = 1,
-        Text = msg,
-        TextColor3 = UI.Theme.Text,
-        Font = Enum.Font.GothamBold,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Center,
-        ZIndex = 1001,
-        Parent = toast
-    })
-    local info = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-    local tweenIn = TweenService:Create(toast, info, { Position = UDim2.new(1, -260, 0.5, -24) })
-    tweenIn:Play()
-    task.delay(3, function()
-        if toast and toast.Parent then
-            local tweenOut = TweenService:Create(toast, info, { Position = UDim2.new(1, 10, 0.5, -24) })
-            tweenOut:Play()
-            tweenOut.Completed:Wait()
-            if toast and toast.Parent then
-                toast:Destroy()
-            end
-        end
-    end)
-end
-
 Blocker.MouseButton1Click:Connect(function()
-    showRightToast("Redeem A Key")
+    -- No-op: notifications disabled
 end)
 
 Window.KeyValidated = false
@@ -1371,12 +1328,11 @@ Window:SetKeyValidator(function(key, callback)
         callback(true, "Test key accepted.")
         return true
     end
-    -- normalize and allow either XXX-XXX-XXX or legacy 32-char hex
+    -- normalize and enforce format XXX-XXX-XXX only
     local norm = normalizeKey(key)
     local isNew = norm:match("^[A-Z0-9]{3}%-[A-Z0-9]{3}%-[A-Z0-9]{3}$")
-    local isLegacyHex = norm:match("^[A-F0-9]{32}$")
-    if not isNew and not isLegacyHex then
-        callback(false, "Key format invalid. Expected XXX-XXX-XXX or legacy 32-char hex")
+    if not isNew then
+        callback(false, "Key format invalid. Expected XXX-XXX-XXX (legacy keys are no longer supported)")
         return false
     end
 
@@ -1447,7 +1403,10 @@ if savedKey and savedKey ~= "" then
     end)
 end
 
-Window:Notify("YouSuck UI loaded. Enter key to unlock.", "success", 4)
+-- Notifications disabled in embedded UI
+Window.Notify = function() end
+
+-- Window loaded
 Window:SetOpen(true)
 
 -- End of fixed.lua

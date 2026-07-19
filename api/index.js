@@ -216,28 +216,16 @@ export default async function handler(req, res) {
       const raw = String(key || '');
       const searchKey = raw.trim().toUpperCase();
       const newFormat = /^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/;
-      const legacyHex = /^[A-F0-9]{32}$/i;
 
-      let data = null;
-      let error = null;
-
-      if (newFormat.test(searchKey)) {
-        ({ data, error } = await supabase
-          .from('keys')
-          .select('id, key_value, expires_at, visitor_id, used_count, legacy_key')
-          .eq('key_value', searchKey)
-          .maybeSingle());
-      } else if (legacyHex.test(searchKey)) {
-        // try matching either key_value or legacy_key for backward compatibility
-        const orCond = `key_value.eq.${searchKey},legacy_key.eq.${searchKey}`;
-        ({ data, error } = await supabase
-          .from('keys')
-          .select('id, key_value, expires_at, visitor_id, used_count, legacy_key')
-          .or(orCond)
-          .maybeSingle());
-      } else {
+      if (!newFormat.test(searchKey)) {
         return res.status(200).json({ valid: false, message: 'Invalid key format' });
       }
+
+      const { data, error } = await supabase
+        .from('keys')
+        .select('id, key_value, expires_at, visitor_id, used_count')
+        .eq('key_value', searchKey)
+        .maybeSingle();
 
       if (error || !data) {
         return res.status(200).json({ valid: false, message: 'Invalid key' });
