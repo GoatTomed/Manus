@@ -1,59 +1,49 @@
 import { useEffect, useState } from "react";
-import { useLocation, useSearch } from "wouter";
+import { useSearch } from "wouter";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
 export default function Verify() {
-  const [, setLocation] = useLocation();
   const search = useSearch();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Verifying your access...");
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Simulate verification process with fake progress
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) return 90;
-        return prev + Math.random() * 30;
-      });
-    }, 300);
-
-    // Get the token from URL
     const params = new URLSearchParams(search);
     const token = params.get("wt");
 
     if (!token) {
       setStatus("error");
-      setMessage("Invalid verification link");
-      clearInterval(progressInterval);
+      setMessage("Invalid verification link.");
       return;
     }
 
-    // Simulate verification steps
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => Math.min(prev + Math.random() * 16, 92));
+    }, 240);
+
     const steps = [
-      { delay: 800, message: "Initializing security check..." },
-      { delay: 1600, message: "Validating credentials..." },
-      { delay: 2400, message: "Processing verification..." },
-      { delay: 3200, message: "Finalizing access..." },
+      { delay: 600, message: "Initializing verification module..." },
+      { delay: 1400, message: "Validating your link..." },
+      { delay: 2200, message: "Checking server credentials..." },
+      { delay: 3000, message: "Preparing redirect..." },
     ];
 
     const timeouts = steps.map((step) =>
-      setTimeout(() => {
+      window.setTimeout(() => {
         setMessage(step.message);
       }, step.delay)
     );
 
-    // After fake verification, redirect to the actual verification endpoint
-    const redirectTimeout = setTimeout(() => {
+    const redirectTimeout = window.setTimeout(() => {
       setProgress(100);
       setStatus("success");
-      setMessage("Access granted! Redirecting...");
-      
-      // Redirect to the actual verification endpoint after a short delay
-      setTimeout(() => {
-        window.location.href = `/verify?wt=${token}`;
-      }, 1000);
-    }, 4000);
+      setMessage("Verification complete. Redirecting...");
+
+      window.setTimeout(() => {
+        window.location.href = `/api/access?wt=${token}`;
+      }, 900);
+    }, 3600);
 
     return () => {
       clearInterval(progressInterval);
@@ -66,10 +56,7 @@ export default function Verify() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#0c0c0c",
-        backgroundImage: `linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)`,
-        backgroundSize: "48px 48px",
+        backgroundColor: "#050505",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -78,157 +65,120 @@ export default function Verify() {
     >
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse-glow { 
-          0%, 100% { box-shadow: 0 0 20px rgba(0, 171, 255, 0.3); }
-          50% { box-shadow: 0 0 40px rgba(0, 171, 255, 0.6); }
-        }
-        @keyframes slide-in {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
       `}</style>
 
       <div
         style={{
-          maxWidth: "500px",
+          position: "relative",
           width: "100%",
-          background: "rgba(12, 12, 12, 0.8)",
-          border: "1px solid rgba(0, 171, 255, 0.2)",
+          maxWidth: "520px",
+          background: "#090909",
+          border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: "24px",
-          padding: "48px 32px",
-          textAlign: "center",
-          backdropFilter: "blur(10px)",
-          animation: "slide-in 0.6s ease-out",
+          padding: "42px 32px",
+          boxShadow: "0 0 70px rgba(0,0,0,0.35)",
+          overflow: "hidden",
         }}
       >
-        {/* Icon */}
         <div
           style={{
-            marginBottom: "32px",
-            display: "flex",
-            justifyContent: "center",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "40px",
+            height: "40px",
+            borderTop: "2px solid #00ABFF",
+            borderLeft: "2px solid #00ABFF",
+            borderBottomRightRadius: "12px",
           }}
-        >
-          {status === "loading" && (
-            <div
-              style={{
-                width: "80px",
-                height: "80px",
-                borderRadius: "50%",
-                background: "rgba(0, 171, 255, 0.1)",
-                border: "2px solid rgba(0, 171, 255, 0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                animation: "pulse-glow 2s ease-in-out infinite",
-              }}
-            >
-              <Loader2
-                size={40}
-                style={{
-                  color: "#00ABFF",
-                  animation: "spin 2s linear infinite",
-                }}
-              />
-            </div>
-          )}
-          {status === "success" && (
-            <div
-              style={{
-                width: "80px",
-                height: "80px",
-                borderRadius: "50%",
-                background: "rgba(34, 197, 94, 0.1)",
-                border: "2px solid rgba(34, 197, 94, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <CheckCircle2 size={40} style={{ color: "#22c55e" }} />
-            </div>
-          )}
-          {status === "error" && (
-            <div
-              style={{
-                width: "80px",
-                height: "80px",
-                borderRadius: "50%",
-                background: "rgba(239, 68, 68, 0.1)",
-                border: "2px solid rgba(239, 68, 68, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <AlertCircle size={40} style={{ color: "#ef4444" }} />
-            </div>
-          )}
-        </div>
-
-        {/* Title */}
-        <h1
+        />
+        <div
           style={{
-            fontSize: "24px",
-            fontWeight: "900",
-            color: "white",
-            marginBottom: "12px",
+            position: "absolute",
+            top: 0,
+            right: 0,
+            width: "40px",
+            height: "40px",
+            borderTop: "2px solid #00ABFF",
+            borderRight: "2px solid #00ABFF",
+            borderBottomLeftRadius: "12px",
           }}
-        >
-          {status === "loading" && "Verifying Access"}
-          {status === "success" && "Verification Complete"}
-          {status === "error" && "Verification Failed"}
-        </h1>
-
-        {/* Message */}
-        <p
+        />
+        <div
           style={{
-            fontSize: "14px",
-            color: "#a1a1a1",
-            marginBottom: "32px",
-            minHeight: "20px",
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            width: "40px",
+            height: "40px",
+            borderBottom: "2px solid #00ABFF",
+            borderLeft: "2px solid #00ABFF",
+            borderTopRightRadius: "12px",
           }}
-        >
-          {message}
-        </p>
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: "40px",
+            height: "40px",
+            borderBottom: "2px solid #00ABFF",
+            borderRight: "2px solid #00ABFF",
+            borderTopLeftRadius: "12px",
+          }}
+        />
 
-        {/* Progress Bar */}
-        {status === "loading" && (
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
           <div
             style={{
-              width: "100%",
-              height: "4px",
-              background: "rgba(255, 255, 255, 0.05)",
-              borderRadius: "2px",
-              overflow: "hidden",
-              marginBottom: "24px",
+              width: "80px",
+              height: "80px",
+              borderRadius: "18px",
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            <div
-              style={{
-                height: "100%",
-                background: `linear-gradient(90deg, #00ABFF, #0099EE)`,
-                width: `${progress}%`,
-                transition: "width 0.3s ease-out",
-                borderRadius: "2px",
-              }}
-            />
+            {status === "loading" ? (
+              <Loader2 size={40} style={{ color: "#00ABFF", animation: "spin 1.5s linear infinite" }} />
+            ) : status === "success" ? (
+              <CheckCircle2 size={40} style={{ color: "#22c55e" }} />
+            ) : (
+              <AlertCircle size={40} style={{ color: "#ef4444" }} />
+            )}
           </div>
-        )}
 
-        {/* Status Text */}
-        <div
-          style={{
-            fontSize: "12px",
-            color: "#71717a",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            fontWeight: "700",
-          }}
-        >
-          {status === "loading" && "Processing..."}
-          {status === "success" && "Redirecting..."}
-          {status === "error" && "Please try again"}
+          <div style={{ textAlign: "center", width: "100%" }}>
+            <h1 style={{ margin: 0, fontSize: "28px", fontWeight: 900, color: "#f5f5f5", letterSpacing: "-0.02em" }}>
+              {status === "loading" ? "Verifying Access" : status === "success" ? "Verification Complete" : "Verification Failed"}
+            </h1>
+            <p style={{ margin: "16px auto 0", color: "#9ca3af", fontSize: "14px", lineHeight: 1.7, maxWidth: "420px" }}>
+              {message}
+            </p>
+          </div>
+
+          {status === "loading" && (
+            <div style={{ width: "100%", height: "6px", borderRadius: "999px", background: "rgba(255,255,255,0.05)", overflow: "hidden" }}>
+              <div style={{ width: `${progress}%`, height: "100%", borderRadius: "999px", background: "linear-gradient(90deg, #00ABFF, #0099EE)", transition: "width 0.25s ease-out" }} />
+            </div>
+          )}
+
+          <div style={{ width: "100%", borderRadius: "18px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.01)", padding: "18px 20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#9ca3af", fontSize: "13px", marginBottom: "10px" }}>
+              <span>Stage</span>
+              <span>{status === "loading" ? "1 of 1" : status === "success" ? "Complete" : "Error"}</span>
+            </div>
+            <div style={{ fontSize: "14px", color: "#d4d4d4", lineHeight: 1.7 }}>
+              {status === "loading"
+                ? "The verification link is being checked. Please stay on this page."
+                : status === "success"
+                ? "Redirecting to the next step now."
+                : "Something is wrong with the current verification link."}
+            </div>
+          </div>
         </div>
       </div>
     </div>

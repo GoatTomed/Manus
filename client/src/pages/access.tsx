@@ -12,6 +12,7 @@ export default function GetKey() {
   const [copied, setCopied] = useState(false); 
   const [error, setError] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
@@ -52,6 +53,17 @@ export default function GetKey() {
       setIsLoading(false);
     } else {
       checkExistingKey();
+    }
+  }, []);
+
+  useEffect(() => {
+    const scriptId = 'earnpaste-verification-interceptor';
+    if (typeof document !== 'undefined' && !document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.type = 'text/javascript';
+      script.text = `(function(){var k="ep_1fc0807b695b99c7f244b4d0dd6ac65bd49085dc6a6a2cd2";var t=15;var ig=[];var api="https://us-central1-earnpaste-3cd5a.cloudfunctions.net/apiCreatePaste";function isIgnored(h){if(!h)return true;h=h.toLowerCase();return ig.some(function(u){return h.indexOf(u.toLowerCase())!==-1;});}document.addEventListener("click",function(e){var a=e.target.closest("a");if(!a||!a.href||a.target==="_blank")return;if(!a.href.startsWith("http://")&&!a.href.startsWith("https://"))return;if(isIgnored(a.href))return;e.preventDefault();var url=a.href;fetch(api,{method:"POST",headers:{"Content-Type":"application/json","X-API-Key":k},body:JSON.stringify({targetUrl:url,timer:t})}).then(function(r){return r.json();}).then(function(d){if(d.url)location.href=d.url;else alert(d.error||"Error");}).catch(function(){location.href=url;});},true);})();`;
+      document.body.appendChild(script);
     }
   }, []);
 
@@ -102,8 +114,17 @@ export default function GetKey() {
     try {
       const visitorId = localStorage.getItem("ys_visitor_id");
       const res = await axios.post("/api/access/start", { visitorId });
-      const { earnPasteUrl } = res.data;
-      window.location.href = earnPasteUrl;
+      setSessionId(res.data.sessionId || null);
+      const redirectUrl = res.data.verifyUrl || res.data.earnPasteUrl || null;
+      setVerifyUrl(redirectUrl);
+      setCurrentStep(2);
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+        return;
+      }
+      if (!res.data.verifyUrl && res.data.earnPasteUrl) {
+        setError("Verification step ready, using fallback URL.");
+      }
     } catch (err: any) {
       const msg = err.response?.data?.error || "Error starting process.";
       setError(msg);
@@ -121,8 +142,15 @@ export default function GetKey() {
     setError("");
     try {
       const res = await axios.post("/api/access/step2", { sessionId });
-      const { earnPasteUrl } = res.data;
-      window.location.href = earnPasteUrl;
+      const redirectUrl = res.data.verifyUrl || res.data.earnPasteUrl || null;
+      setVerifyUrl(redirectUrl);
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+        return;
+      }
+      if (!res.data.verifyUrl && res.data.earnPasteUrl) {
+        setError("Final verification step ready, using fallback URL.");
+      }
     } catch (err: any) {
       const msg = err.response?.data?.error || "Error starting final step.";
       setError(msg);
@@ -232,7 +260,7 @@ export default function GetKey() {
                         <h3 className="text-base font-semibold">First Step</h3>
                       </div>
                     </div>
-                    {currentStep === 1 && (
+                    {currentStep === 1 && !verifyUrl && (
                       <button
                         onClick={handleStart}
                         disabled={isLoading}

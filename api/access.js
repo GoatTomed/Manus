@@ -75,6 +75,7 @@ const getSupabase = () => {
     
     if (!url || !key) {
       console.error("CRITICAL: Missing Supabase credentials!");
+      throw new Error("Missing Supabase credentials");
     }
 
     // Custom fetcher using axios to resolve persistent "TypeError: fetch failed"
@@ -233,6 +234,14 @@ export default async function handler(req, res) {
   const searchParams = url.searchParams;
 
   try {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      res.setHeader('Content-Type', 'text/html');
+      return res.status(500).send(getErrorPage('Server configuration error: missing Supabase credentials', {
+        message: 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment variables.',
+        path,
+      }));
+    }
+
     // GET /verify?wt=TOKEN - Verify token and advance step
     // Handle both /verify and /api/access.js (if rewrite passes destination path)
     if ((path === '/verify' || path === '/api/access.js' || path === '/api/access') && searchParams.has('wt')) {
@@ -635,6 +644,27 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: 'Not Found', path });
   } catch (error) {
     console.error('Handler error:', error);
-    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
+
+    const message = error?.message || 'Internal Server Error';
+    const isVerifyPage = path === '/verify' || (path === '/api/access' && searchParams.has('wt'));
+    const isConfigIssue = message.includes('Missing Supabase credentials') || message.toLowerCase().includes('invalid api key');
+
+    if (isVerifyPage && isConfigIssue) {
+      res.setHeader('Content-Type', 'text/html');
+      return res.status(500).send(getErrorPage('Server configuration error: invalid Supabase credentials', {
+        message,
+        path,
+      }));
+    }
+
+    if (isVerifyPage) {
+      res.setHeader('Content-Type', 'text/html');
+      return res.status(500).send(getErrorPage('Internal Server Error', {
+        message,
+        path,
+      }));
+    }
+
+    return res.status(500).json({ error: 'Internal Server Error', details: message });
   }
 }

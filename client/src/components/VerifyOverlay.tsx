@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 export function VerifyOverlay({
   step,
   onDone,
-  accent = "#06b6d4",
+  accent = "#00ABFF",
   duration = 3000,
 }: {
   step: number;
@@ -11,15 +11,13 @@ export function VerifyOverlay({
   accent?: string;
   duration?: number;
 }) {
-  const [statusMsg, setStatusMsg] = useState(
-    "Connecting to verification server..."
-  );
+  const [statusMsg, setStatusMsg] = useState("Connecting to verification server...");
 
   useEffect(() => {
     const messages = [
       "Connecting...",
-      "Generating link...",
-      "Preparing timer...",
+      "Generating your link...",
+      "Preparing verification...",
       "Redirecting...",
     ];
 
@@ -28,15 +26,7 @@ export function VerifyOverlay({
 
     const animate = () => {
       const t = Math.min((Date.now() - start) / duration, 1);
-
-      setStatusMsg(
-        messages[
-          Math.min(
-            Math.floor(t * messages.length),
-            messages.length - 1
-          )
-        ]
-      );
+      setStatusMsg(messages[Math.min(Math.floor(t * messages.length), messages.length - 1)]);
 
       if (t < 1) {
         frame = requestAnimationFrame(animate);
@@ -46,18 +36,13 @@ export function VerifyOverlay({
     };
 
     frame = requestAnimationFrame(animate);
-
     return () => cancelAnimationFrame(frame);
   }, [onDone, duration]);
 
   return (
     <>
       <style>{`
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       <div
@@ -65,102 +50,139 @@ export function VerifyOverlay({
           position: "fixed",
           inset: 0,
           zIndex: 9999,
-          background: "rgba(0,0,0,0.85)",
-          backdropFilter: "blur(20px)",
+          background: "rgba(0, 0, 0, 0.88)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          padding: "24px",
         }}
       >
         <div
           style={{
-            background: "rgba(10,10,10,0.75)",
-            border: `1px solid ${accent}33`,
-            borderRadius: 16,
-            padding: "40px 48px",
-            textAlign: "center",
-            backdropFilter: "blur(16px)",
-            boxShadow: `0 0 60px ${accent}18`,
+            position: "relative",
+            width: "100%",
+            maxWidth: 520,
+            background: "#060606",
+            border: `1px solid rgba(255,255,255,0.06)`,
+            borderRadius: 24,
+            padding: "36px 32px",
+            boxShadow: "0 0 70px rgba(0,0,0,0.35)",
           }}
         >
           <div
             style={{
-              position: "relative",
-              margin: "0 auto 28px",
-              width: 72,
-              height: 72,
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: 42,
+              height: 42,
+              borderTop: `2px solid ${accent}`,
+              borderLeft: `2px solid ${accent}`,
+              borderBottomRightRadius: 12,
             }}
-          >
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              width: 42,
+              height: 42,
+              borderTop: `2px solid ${accent}`,
+              borderRight: `2px solid ${accent}`,
+              borderBottomLeftRadius: 12,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              width: 42,
+              height: 42,
+              borderBottom: `2px solid ${accent}`,
+              borderLeft: `2px solid ${accent}`,
+              borderTopRightRadius: 12,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              width: 42,
+              height: 42,
+              borderBottom: `2px solid ${accent}`,
+              borderRight: `2px solid ${accent}`,
+              borderTopLeftRadius: 12,
+            }}
+          />
+
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
             <div
               style={{
-                width: 72,
-                height: 72,
-                borderRadius: 22,
-                background: `${accent}15`,
-                border: `1px solid ${accent}44`,
+                width: 76,
+                height: 76,
+                borderRadius: 18,
+                background: "rgba(255,255,255,0.04)",
+                border: `1px solid rgba(255,255,255,0.08)`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: accent,
               }}
             >
-              <svg
-                width="36"
-                height="36"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  background: accent,
+                  opacity: 0.08,
+                  position: "absolute",
+                }}
+              />
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  border: `2px solid ${accent}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
+                <div
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: 2,
+                    background: accent,
+                  }}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ width: "100%", textAlign: "center" }}>
+              <div style={{ color: "#f5f5f5", fontSize: 24, fontWeight: 900, marginBottom: 8 }}>
+                Verifying Step {step}
+              </div>
+              <div style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.7 }}>
+                {statusMsg}
+              </div>
             </div>
 
             <div
               style={{
-                position: "absolute",
-                inset: -10,
-                borderRadius: 34,
-                border: "3px solid transparent",
-                borderTopColor: accent,
-                animation: "spin 800ms linear infinite",
+                width: "100%",
+                height: 8,
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.05)",
+                overflow: "hidden",
               }}
-            />
-          </div>
-
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: accent,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              marginBottom: 10,
-            }}
-          >
-            Loading
-          </div>
-
-          <div
-            style={{
-              fontSize: 20,
-              fontWeight: 700,
-              color: "#fafafa",
-              letterSpacing: "-0.03em",
-              marginBottom: 8,
-            }}
-          >
-            Verifying Step {step}
-          </div>
-
-          <div
-            style={{
-              fontSize: 13.5,
-              color: "rgba(255,255,255,0.35)",
-              minHeight: 40,
-            }}
-          >
-            {statusMsg}
+            >
+              <div style={{ width: "100%", height: "100%", background: accent }} />
+            </div>
           </div>
         </div>
       </div>

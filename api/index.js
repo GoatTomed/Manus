@@ -171,6 +171,53 @@ export default async function handler(req, res) {
     }
   }
 
+  // Verify a key via website backend
+  if (path === '/api/verify-key' && req.method === 'POST') {
+    try {
+      const { key, robloxId } = req.body || {};
+      if (!key || typeof key !== 'string') {
+        return res.status(200).json({ valid: false, message: 'Missing key' });
+      }
+
+      const { data, error } = await supabase
+        .from('keys')
+        .select('key_value, expires_at, visitor_id, used_count')
+        .eq('key_value', key)
+        .single();
+
+      if (error) {
+        // If the key is not found, return a normalized invalid response
+        return res.status(200).json({ valid: false, message: 'Invalid key' });
+      }
+
+      if (!data || !data.key_value) {
+        return res.status(200).json({ valid: false, message: 'Invalid key' });
+      }
+
+      if (new Date(data.expires_at) < new Date()) {
+        return res.status(200).json({ valid: false, message: 'Key expired' });
+      }
+
+      const updates = {
+        last_used: new Date().toISOString(),
+        used_count: (data.used_count || 0) + 1,
+      };
+
+      if (robloxId) {
+        updates.visitor_id = String(robloxId);
+      }
+
+      await supabase
+        .from('keys')
+        .update(updates)
+        .eq('key_value', key);
+
+      return res.status(200).json({ valid: true, message: 'Key valid', expiresAt: data.expires_at });
+    } catch (error) {
+      return res.status(200).json({ valid: false, message: 'Verification failed' });
+    }
+  }
+
   // Main chat endpoint
   if (path === '/api/ai/chat' && req.method === 'POST') {
     try {
