@@ -6,7 +6,6 @@ export default function Verify() {
   const search = useSearch();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Verifying your access...");
-  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const params = new URLSearchParams(search);
@@ -17,10 +16,6 @@ export default function Verify() {
       setMessage("Invalid verification link.");
       return;
     }
-
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => Math.min(prev + Math.random() * 16, 92));
-    }, 240);
 
     const steps = [
       { delay: 600, message: "Initializing verification module..." },
@@ -36,7 +31,6 @@ export default function Verify() {
     );
 
     const redirectTimeout = window.setTimeout(() => {
-      setProgress(100);
       setStatus("success");
       setMessage("Verification complete. Redirecting...");
 
@@ -46,7 +40,6 @@ export default function Verify() {
     }, 3600);
 
     return () => {
-      clearInterval(progressInterval);
       timeouts.forEach((t) => clearTimeout(t));
       clearTimeout(redirectTimeout);
     };
@@ -56,11 +49,11 @@ export default function Verify() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#050505",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
+        background: "transparent",
       }}
     >
       <style>{`
@@ -72,11 +65,13 @@ export default function Verify() {
           position: "relative",
           width: "100%",
           maxWidth: "520px",
-          background: "#090909",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(8, 8, 12, 0.82)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: "24px",
           padding: "42px 32px",
-          boxShadow: "0 0 70px rgba(0,0,0,0.35)",
+          boxShadow: "0 0 80px rgba(0, 0, 0, 0.22)",
           overflow: "hidden",
         }}
       >
@@ -107,12 +102,6 @@ export default function Verify() {
               {status === "loading" ? "Verfiying" : status === "success" ? "Verification Complete" : "Verification Failed"}
             </h1>
           </div>
-
-          {status === "loading" && (
-            <div style={{ width: "100%", height: "6px", borderRadius: "999px", background: "rgba(255,255,255,0.05)", overflow: "hidden" }}>
-              <div style={{ width: `${progress}%`, height: "100%", borderRadius: "999px", background: "linear-gradient(90deg, #00ABFF, #0099EE)", transition: "width 0.25s ease-out" }} />
-            </div>
-          )}
 
           <div style={{ width: "100%", height: "120px" }} />
         </div>
