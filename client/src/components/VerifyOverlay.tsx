@@ -4,7 +4,7 @@ export function VerifyOverlay({
   step,
   onDone,
   accent = "#00ABFF",
-  duration = 3000,
+  duration = 2000,
 }: {
   step: number;
   onDone: () => void;
@@ -169,7 +169,7 @@ export function VerifyOverlay({
                     height: 12,
                     borderRadius: 2,
                     background: accent,
-                  }}
+                  }}>
                 </div>
               </div>
             </div>

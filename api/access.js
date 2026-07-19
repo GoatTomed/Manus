@@ -312,9 +312,12 @@ function generateVerificationToken() {
   return crypto.randomUUID();
 }
 
-// Helper function to generate a secure random key
+// Helper function to generate a secure random key in the format XXX-XXX-XXX
 function generateKey() {
-  return crypto.randomBytes(16).toString('hex').toUpperCase();
+  const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const bytes = crypto.randomBytes(9);
+  const chars = Array.from(bytes, (byte) => ALPHABET[byte % ALPHABET.length]);
+  return `${chars.slice(0, 3).join('')}-${chars.slice(3, 6).join('')}-${chars.slice(6, 9).join('')}`;
 }
 
 // Helper function to hash visitor ID for privacy
