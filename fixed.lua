@@ -249,7 +249,6 @@ local function loadLocalUILibrary()
                 if fnOk and type(fn) == "function" then
                     local resultOk, result = pcall(fn)
                     if resultOk and type(result) == "table" then
-                        print("[AH] Loaded local UI library:", path)
                         return result
                     end
                 end
@@ -1119,8 +1118,6 @@ if savedAccent and type(savedAccent) == "table" and #savedAccent == 3 then
     end
 end
 
-print("[AH] Inlined UI library loaded")
-
 local Lib = nil
 
 local State = {
@@ -1146,7 +1143,7 @@ local function Fire(remote, payload)
 end
 
 if type(UI) ~= "table" or type(UI.CreateWindow) ~= "function" then
-    warn("[AH] UI library not available or doesn't support CreateWindow")
+    warn("UI library not available or doesn't support CreateWindow")
     return
 end
 
@@ -1154,11 +1151,10 @@ local ok, windowResult = pcall(function()
     return UI:CreateWindow({ Title = "YouSuck", Width = 580, Height = 420 })
 end)
 if not ok or type(windowResult) ~= "table" then
-    warn("[AH] Failed to create window:", windowResult)
+    warn("Failed to create window:", windowResult)
     return
 end
 Window = windowResult
-print("[AH] Window created", Window, type(Window.SetOpen), type(Window.AddTab))
 
 local originalSetAccent = Window.SetAccent
 Window.SetAccent = function(self, color, skipSave)
@@ -1201,9 +1197,9 @@ local Card = make("Frame", { Name = "KeyCard", Size = UDim2.new(0, 380, 0, 220),
 make("UICorner", { CornerRadius = UDim.new(0, 12), Parent = Card })
 make("UIStroke", { Color = UI.Theme.Border, Thickness = 1, Parent = Card })
 make("TextLabel", { Name = "Title", Size = UDim2.new(1, -40, 0, 24), Position = UDim2.new(0, 20, 0, 16), BackgroundTransparency = 1, Text = "Enter access key", TextColor3 = UI.Theme.Text, Font = Enum.Font.Gotham, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Left, Parent = Card })
-local KeyBox = make("TextBox", { Name = "KeyBox", Size = UDim2.new(1, -40, 0, 36), Position = UDim2.new(0, 20, 0, 72), BackgroundColor3 = UI.Theme.Raised, BorderSizePixel = 0, Text = "", PlaceholderText = "XXX-XXX-XXX", TextColor3 = Color3.fromRGB(255,255,255), PlaceholderColor3 = UI.Theme.TextMid, Font = Enum.Font.Gotham, TextSize = 14, ClearTextOnFocus = false, Parent = Card })
+local KeyBox = make("TextBox", { Name = "KeyBox", Size = UDim2.new(1, -40, 0, 36), Position = UDim2.new(0, 20, 0, 72), BackgroundColor3 = UI.Theme.Raised, BorderSizePixel = 0, Text = "", PlaceholderText = "Your Key Here!", TextColor3 = Color3.fromRGB(255,255,255), PlaceholderColor3 = UI.Theme.TextMid, Font = Enum.Font.Gotham, TextSize = 14, ClearTextOnFocus = false, Parent = Card })
 make("UICorner", { CornerRadius = UDim.new(0, 10), Parent = KeyBox })
-local StatusLabel = make("TextLabel", { Name = "Status", Size = UDim2.new(1, -40, 0, 20), Position = UDim2.new(0, 20, 0, 116), BackgroundTransparency = 1, Text = "Please enter your site key.", TextColor3 = UI.Theme.TextMid, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = Card })
+local StatusLabel = make("TextLabel", { Name = "Status", Size = UDim2.new(1, -40, 0, 20), Position = UDim2.new(0, 20, 0, 116), BackgroundTransparency = 1, Text = "Enter your key to use this script.", TextColor3 = UI.Theme.TextMid, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = Card })
 local FetchBtn = make("TextButton", { Name = "FetchBtn", Size = UDim2.new(0, 120, 0, 34), Position = UDim2.new(0.5, -130, 1, -50), BackgroundColor3 = UI.Theme.Raised, AutoButtonColor = false, Text = "Get Key", TextColor3 = UI.Theme.Text, Font = Enum.Font.Gotham, TextSize = 14, Parent = Card })
 make("UICorner", { CornerRadius = UDim.new(0, 10), Parent = FetchBtn })
 local ValidateBtn = make("TextButton", { Name = "Validate", Size = UDim2.new(0, 120, 0, 34), Position = UDim2.new(0.5, 10, 1, -50), BackgroundColor3 = UI.Theme.Accent, AutoButtonColor = false, Text = "Verify", TextColor3 = Color3.fromRGB(15,15,15), Font = Enum.Font.Gotham, TextSize = 14, Parent = Card })
@@ -1279,46 +1275,241 @@ FetchBtn.MouseButton1Click:Connect(function()
     StatusLabel.Text = "Key URL copied to clipboard."
 end)
 
--- Robust safe HTTP GET wrapper (uses game:HttpGet or HttpService:GetAsync)
+local function hasRequestApi()
+    return (type(syn) == "table" and type(syn.request) == "function")
+        or (type(http) == "table" and type(http.request) == "function")
+        or type(http_request) == "function"
+        or (type(fluxus) == "table" and type(fluxus.request) == "function")
+        or (HttpService and type(HttpService.RequestAsync) == "function")
+end
+
 local function safeGet(url)
+    if type(syn) == "table" and type(syn.request) == "function" then
+        local ok, res = pcall(function()
+            return syn.request({ Url = url, Method = "GET" })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
+
+    if type(http) == "table" and type(http.request) == "function" then
+        local ok, res = pcall(function()
+            return http.request({ Url = url, Method = "GET" })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
+
+    if type(http_request) == "function" then
+        local ok, res = pcall(function()
+            return http_request({ Url = url, Method = "GET" })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
+
+    if type(fluxus) == "table" and type(fluxus.request) == "function" then
+        local ok, res = pcall(function()
+            return fluxus.request({ Url = url, Method = "GET" })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
+
+    if HttpService and type(HttpService.RequestAsync) == "function" then
+        local ok, res = pcall(function()
+            return HttpService:RequestAsync({ Url = url, Method = "GET", Headers = { ["Content-Type"] = "application/json" } })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
+
     if typeof(game) == "table" and type(game.HttpGet) == "function" then
         local ok, res = pcall(function() return game:HttpGet(url) end)
-        return ok, res
+        if ok then return true, res end
     end
+
     if HttpService and type(HttpService.GetAsync) == "function" then
         local ok, res = pcall(function() return HttpService:GetAsync(url, true) end)
-        return ok, res
+        if ok then return true, res end
     end
+
     return false, nil
 end
 
--- Robust safe HTTP POST wrapper (uses game:HttpPost or HttpService:PostAsync)
 local function safePost(url, bodyTable)
     local payload = ""
     local okEnc, enc = pcall(function() return HttpService:JSONEncode(bodyTable or {}) end)
     if okEnc and type(enc) == "string" then payload = enc else payload = "{}" end
 
+    local headers = { ["Content-Type"] = "application/json" }
+
+    if type(syn) == "table" and type(syn.request) == "function" then
+        local ok, res = pcall(function()
+            return syn.request({ Url = url, Method = "POST", Body = payload, Headers = headers })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
+
+    if type(http) == "table" and type(http.request) == "function" then
+        local ok, res = pcall(function()
+            return http.request({ Url = url, Method = "POST", Body = payload, Headers = headers })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
+
+    if type(http_request) == "function" then
+        local ok, res = pcall(function()
+            return http_request({ Url = url, Method = "POST", Body = payload, Headers = headers })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
+
+    if type(fluxus) == "table" and type(fluxus.request) == "function" then
+        local ok, res = pcall(function()
+            return fluxus.request({ Url = url, Method = "POST", Body = payload, Headers = headers })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
+
+    if HttpService and type(HttpService.RequestAsync) == "function" then
+        local ok, res = pcall(function()
+            return HttpService:RequestAsync({ Url = url, Method = "POST", Body = payload, Headers = headers })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
+
     if typeof(game) == "table" and type(game.HttpPost) == "function" then
         local ok, res = pcall(function() return game:HttpPost(url, payload) end)
-        return ok, res
+        if ok then return true, res end
     end
 
     if HttpService and type(HttpService.PostAsync) == "function" then
         local ok, res = pcall(function() return HttpService:PostAsync(url, payload, Enum.HttpContentType.ApplicationJson) end)
-        return ok, res
+        if ok then return true, res end
     end
 
-    -- Last resort: try GET fallback with query param
     local sep = url:find("%?") and "&" or "?"
-    local ok, res = pcall(function() return HttpService and HttpService:GetAsync(url .. sep .. "body=" .. HttpService:UrlEncode(payload), true) end)
-    return ok, res
+    local bodyParam = "body=" .. (HttpService and type(HttpService.UrlEncode) == "function" and HttpService:UrlEncode(payload) or payload)
+
+    if typeof(game) == "table" and type(game.HttpGet) == "function" then
+        local ok, res = pcall(function() return game:HttpGet(url .. sep .. bodyParam) end)
+        if ok then return true, res end
+    end
+
+    if HttpService and type(HttpService.GetAsync) == "function" then
+        local ok, res = pcall(function() return HttpService:GetAsync(url .. sep .. bodyParam, true) end)
+        if ok then return true, res end
+        return false, res
+    end
+
+    return false, "no supported HTTP post/get method available"
 end
 
--- Replace the original validator with a robust implementation that calls your site API
+local function formatDuration(seconds)
+    seconds = math.max(0, math.floor(seconds or 0))
+    local hours = math.floor(seconds / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
+    local secs = seconds % 60
+    if hours > 0 then
+        return string.format("%dh %dm", hours, minutes)
+    elseif minutes > 0 then
+        return string.format("%dm %ds", minutes, secs)
+    end
+    return string.format("%ds", secs)
+end
+
+local function showBottomRightNotification(text)
+    if not Window or not Window.Gui then return end
+    local existing = Window.Gui:FindFirstChild("SavedKeyNotice")
+    if existing then existing:Destroy() end
+
+    local note = make("Frame", {
+        Name = "SavedKeyNotice",
+        Size = UDim2.new(0, 340, 0, 56),
+        Position = UDim2.new(1, -360, 1, -80),
+        BackgroundColor3 = Color3.fromRGB(10, 25, 55),
+        BorderSizePixel = 0,
+        ZIndex = 1000,
+        Parent = Window.Gui,
+    })
+    make("UICorner", { CornerRadius = UDim.new(0, 14), Parent = note })
+    make("UIStroke", { Color = Color3.fromRGB(56, 189, 248), Thickness = 1, Parent = note })
+    make("TextLabel", {
+        Name = "NoticeText",
+        Size = UDim2.new(1, -24, 1, -24),
+        Position = UDim2.new(0, 12, 0, 12),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = Color3.fromRGB(191, 219, 254),
+        Font = Enum.Font.Gotham,
+        TextSize = 14,
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        Parent = note,
+    })
+
+    task.delay(5, function()
+        if note and note.Parent then
+            note:Destroy()
+        end
+    end)
+end
+
+local function parseIsoExpiration(iso)
+    if type(iso) ~= "string" then return nil end
+    local year, month, day, hour, min, sec = iso:match("^(%d+)%-(%d+)%-(%d+)T(%d+):(%d+):(%d+)")
+    if year then
+        return os.time({ year = tonumber(year), month = tonumber(month), day = tonumber(day), hour = tonumber(hour), min = tonumber(min), sec = tonumber(sec) })
+    end
+    if type(DateTime) == "table" and type(DateTime.fromIsoDate) == "function" then
+        local ok, dt = pcall(function() return DateTime.fromIsoDate(iso) end)
+        if ok and dt and type(dt.UnixTimestamp) == "number" then
+            return dt.UnixTimestamp
+        end
+    end
+    return nil
+end
+
+local function showSavedKeyExpiry(expiresAt)
+    local expirySec = parseIsoExpiration(expiresAt)
+    if not expirySec then return end
+    local remaining = expirySec - os.time()
+    if remaining <= 0 then return end
+    showBottomRightNotification("Saved key valid for " .. formatDuration(remaining) .. " more.")
+end
+
 local function normalizeKey(str)
     local s = tostring(str or "")
     s = s:gsub("^%s*(.-)%s*$", "%1")
-    s = s:gsub("%s+", "")
+    s = s:gsub("[%c%s]+", "")
+    s = s:gsub("[^A-Za-z0-9%-]", "")
     s = s:upper()
     return s
 end
@@ -1328,43 +1519,51 @@ Window:SetKeyValidator(function(key, callback)
         callback(true, "Test key accepted.")
         return true
     end
-    -- normalize and enforce format XXX-XXX-XXX only
+
     local norm = normalizeKey(key)
-    local isNew = norm:match("^[A-Z0-9]{3}%-[A-Z0-9]{3}%-[A-Z0-9]{3}$")
+
+    local isNew = norm:match("^[A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9]%-[A-Z0-9][A-Z0-9][A-Z0-9]$")
     if not isNew then
-        callback(false, "Key format invalid. Expected XXX-XXX-XXX (legacy keys are no longer supported)")
+        local reason = "Invalid key format. Expected 3 alphanumeric chars, dash, 3 chars, dash, 3 chars."
+        callback(false, reason)
         return false
     end
 
-    if not ((typeof(game) == "table" and type(game.HttpGet) == "function") or (HttpService and type(HttpService.GetAsync) == "function")) then
-        callback(false, "HTTP not available.")
+    if not hasRequestApi() and not ((typeof(game) == "table" and type(game.HttpGet) == "function") or (HttpService and type(HttpService.GetAsync) == "function")) then
+        local reason = "HTTP not available. Executor cannot reach validation server."
+        callback(false, reason)
         return false
     end
 
-    local url = string.format(VALIDATION_URL, "")
-    -- POST { key = norm } to the verification endpoint
+    local url = VALIDATION_URL
     local ok, response = safePost(url, { key = norm })
     if not ok or type(response) ~= "string" then
-        callback(false, "Validation server unreachable.")
+        local reason = "Validation server unreachable or request failed."
+        callback(false, reason)
         return false
     end
 
     local decodedOk, data = pcall(function() return HttpService:JSONDecode(response) end)
     if not decodedOk or type(data) ~= "table" then
-        callback(false, "Bad validation response.")
+        local reason = "Bad validation response from server."
+        callback(false, reason)
         return false
     end
 
-    -- Accept common response shapes: { valid=true } | { success=true } | { status="success" }
     local isValid = (data.valid == true) or (data.success == true) or (tostring(data.status or ""):lower() == "success")
     local message = tostring(data.message or data.error or (isValid and "Access granted." or "Invalid key."))
     if isValid then
+        if type(data.expiresAt) == "string" then
+            showSavedKeyExpiry(data.expiresAt)
+        elseif type(data.expires_at) == "string" then
+            showSavedKeyExpiry(data.expires_at)
+        end
         task.wait(0.7)
-        -- save normalized key rather than raw input
         pcall(function() saveKey(norm) end)
         callback(true, message)
         return true
     end
+
     callback(false, message)
     return false
 end)
