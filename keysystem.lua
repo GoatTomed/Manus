@@ -1421,3 +1421,5 @@ end
 
 Window:Notify("YouSuck UI loaded. Enter key to unlock.", "success", 4)
 Window:SetOpen(true)
+
+return UI
