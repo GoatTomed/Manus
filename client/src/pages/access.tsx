@@ -115,15 +115,15 @@ export default function GetKey() {
       const visitorId = localStorage.getItem("ys_visitor_id");
       const res = await axios.post("/api/access/start", { visitorId });
       setSessionId(res.data.sessionId || null);
-      const redirectUrl = res.data.verifyUrl || res.data.earnPasteUrl || null;
+      const redirectUrl = res.data.earnPasteUrl || res.data.verifyUrl || null;
       setVerifyUrl(redirectUrl);
       setCurrentStep(2);
       if (redirectUrl) {
         window.location.href = redirectUrl;
         return;
       }
-      if (!res.data.verifyUrl && res.data.earnPasteUrl) {
-        setError("Verification step ready, using fallback URL.");
+      if (!res.data.earnPasteUrl && res.data.verifyUrl) {
+        setError("Verification step ready, using direct verify URL.");
       }
     } catch (err: any) {
       const msg = err.response?.data?.error || "Error starting process.";
@@ -142,14 +142,14 @@ export default function GetKey() {
     setError("");
     try {
       const res = await axios.post("/api/access/step2", { sessionId });
-      const redirectUrl = res.data.verifyUrl || res.data.earnPasteUrl || null;
+      const redirectUrl = res.data.earnPasteUrl || res.data.verifyUrl || null;
       setVerifyUrl(redirectUrl);
       if (redirectUrl) {
         window.location.href = redirectUrl;
         return;
       }
-      if (!res.data.verifyUrl && res.data.earnPasteUrl) {
-        setError("Final verification step ready, using fallback URL.");
+      if (!res.data.earnPasteUrl && res.data.verifyUrl) {
+        setError("Final verification step ready, using direct verify URL.");
       }
     } catch (err: any) {
       const msg = err.response?.data?.error || "Error starting final step.";
