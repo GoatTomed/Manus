@@ -6,6 +6,5 @@
     {"source": "/api/access", "destination": "/api/access.js"},
     {"source": "/api/access/(.*)", "destination": "/api/access.js"},
     {"source": "/api/(.*)", "destination": "/api/index.js"},
-    {"source": "/scripts/(.*)", "destination": "/scripts/$1"},
-    {"source": "/((?!api|.*\\.lua).*)", "destination": "/index.html"}
+    {"source": "/((?!api)(?!.*\\.[^/]+$).*)$", "destination": "/index.html"}
   ]}
