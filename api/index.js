@@ -135,7 +135,18 @@ function getClientIp(req) {
 }
 
 function generateKey() {
-  return crypto.randomBytes(16).toString('hex').toUpperCase();
+  // Generate a human-friendly key in the form XXX-XXX-XXX (A-Z,0-9)
+  const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const parts = {}
+  let key = '';
+  const needed = 9; // 3 groups of 3
+  const bytes = crypto.randomBytes(needed);
+  for (let i = 0; i < needed; i++) {
+    const idx = bytes[i] % ALPHABET.length;
+    key = key + ALPHABET[idx];
+    if ((i + 1) % 3 === 0 && i < needed - 1) key = key + '-';
+  }
+  return key;
 }
 
 function hashVisitorId(visitorId) {
