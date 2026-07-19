@@ -20,19 +20,21 @@ export default function GetKey() {
     const checkExistingKey = async () => {
       try {
         const visitorId = localStorage.getItem("ys_visitor_id");
+        console.debug("access: checkExistingKey start", { visitorId });
         if (!visitorId) {
           setIsLoading(false);
           return;
         }
 
         const res = await axios.get(`/api/access/check?visitorId=${visitorId}`);
+        console.debug("access: checkExistingKey response", res.data);
         if (res.data.hasKey) {
           setGeneratedKey(res.data.key);
           setExpiresAt(res.data.expiresAt);
           setCurrentStep(3);
         }
       } catch (err) {
-        console.error("Error checking existing key:", err);
+        console.error("access: checkExistingKey error", err);
       } finally {
         setIsLoading(false);
       }
@@ -99,11 +101,14 @@ export default function GetKey() {
     setIsLoading(true);
     try {
       const visitorId = localStorage.getItem("ys_visitor_id");
+      console.debug("access: fetchResult start", { sid, visitorId });
       const res = await axios.get(`/api/access/result/${sid}?visitorId=${visitorId}`);
+      console.debug("access: fetchResult response", res.data);
       setGeneratedKey(res.data.key);
       // Use the expiresAt returned by the backend (handles key reuse correctly)
       setExpiresAt(res.data.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());
     } catch (err: any) {
+      console.error("access: fetchResult error", err);
       const msg = err.response?.data?.error || "Verification expired or error occurred.";
       setError(msg);
     } finally {
@@ -116,7 +121,9 @@ export default function GetKey() {
     setError("");
     try {
       const visitorId = localStorage.getItem("ys_visitor_id");
+      console.debug("access: handleStart start", { visitorId });
       const res = await axios.post("/api/access/start", { visitorId });
+      console.debug("access: handleStart response", res.data);
       setSessionId(res.data.sessionId || null);
       const redirectUrl = res.data.earnPasteUrl || res.data.verifyUrl || null;
       setVerifyUrl(redirectUrl);
@@ -129,6 +136,7 @@ export default function GetKey() {
         setError("Verification step ready, using direct verify URL.");
       }
     } catch (err: any) {
+      console.error("access: handleStart error", err);
       const msg = err.response?.data?.error || "Error starting process.";
       setError(msg);
       setIsLoading(false);
@@ -144,7 +152,9 @@ export default function GetKey() {
     setIsLoading(true);
     setError("");
     try {
+      console.debug("access: handleStep2 start", { sessionId });
       const res = await axios.post("/api/access/step2", { sessionId });
+      console.debug("access: handleStep2 response", res.data);
       const redirectUrl = res.data.earnPasteUrl || res.data.verifyUrl || null;
       setVerifyUrl(redirectUrl);
       if (redirectUrl) {
@@ -155,6 +165,7 @@ export default function GetKey() {
         setError("Final verification step ready, using direct verify URL.");
       }
     } catch (err: any) {
+      console.error("access: handleStep2 error", err);
       const msg = err.response?.data?.error || "Error starting final step.";
       setError(msg);
       setIsLoading(false);

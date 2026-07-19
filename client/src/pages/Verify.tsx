@@ -16,10 +16,12 @@ export default function Verify() {
     }
     const verifyToken = async () => {
       try {
+        console.debug("Verify page: starting token verification", { token });
         const res = await fetch(`/api/access/verify?wt=${encodeURIComponent(token)}`, {
           method: "GET",
           headers: { Accept: "application/json" },
         });
+        console.debug("Verify page: fetch response", { ok: res.ok, status: res.status });
 
         if (!res.ok) {
           setStatus("error");
@@ -27,6 +29,7 @@ export default function Verify() {
         }
 
         const data = await res.json();
+        console.debug("Verify page: parsed response", data);
         if (data.status === "success" && data.redirectUrl) {
           setStatus("success");
           window.setTimeout(() => {
@@ -37,6 +40,7 @@ export default function Verify() {
 
         setStatus("error");
       } catch (err) {
+        console.error("Verify page: verification error", err);
         setStatus("error");
       }
     };

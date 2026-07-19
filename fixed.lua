@@ -1359,11 +1359,14 @@ Window:SetKeyValidator(function(key, callback)
     local isValid = (data.valid == true) or (data.success == true) or (tostring(data.status or ""):lower() == "success")
     local message = tostring(data.message or data.error or (isValid and "Access granted." or "Invalid key."))
     if isValid then
+        task.wait(0.7)
         -- save normalized key rather than raw input
         pcall(function() saveKey(norm) end)
+        callback(true, message)
+        return true
     end
-    callback(isValid, message)
-    return isValid
+    callback(false, message)
+    return false
 end)
 
 SettingsTab = Window:AddPinnedTab({ Name = "Settings", Icon = getIcon("settings") or getIcon("sliders") or "" })
