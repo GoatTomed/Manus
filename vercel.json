@@ -5,5 +5,10 @@
     {"source": "/api/scripts", "destination": "/api/scripts.js"},
     {"source": "/api/access", "destination": "/api/access.js"},
     {"source": "/api/access/(.*)", "destination": "/api/access.js"},
-    {"source": "/api/(.*)", "destination": "/api/index.js"}
+    {"source": "/api/(.*)", "destination": "/api/index.js"},
+    {"source": "/test", "destination": "/index.html"},
+    {"source": "/test/(.*)", "destination": "/index.html"},
+    {"source": "/key-admin", "destination": "/index.html"},
+    {"source": "/key-admin/(.*)", "destination": "/index.html"},
+    {"source": "/(.*)", "destination": "/index.html"}
   ]}

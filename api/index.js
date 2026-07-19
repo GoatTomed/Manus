@@ -132,23 +132,10 @@ export default async function handler(req, res) {
     return res.status(200).json({ status: "ok", engine: "YouSuck Omniscient Native" });
   }
 
-  // IP gate for the admin key panel
-  if (path === '/api/check-access') {
-    const actualIp = getClientIp(req);
-    if (actualIp.includes(ALLOWED_IP)) {
-      return res.status(200).json({ allowed: true, ip: actualIp });
-    }
-    return res.status(403).json({ allowed: false, ip: actualIp });
-  }
-
-  // Admin-only instant key generation (IP restricted)
+  // Admin key generation endpoint
   if (path === '/api/admin/generate-key' && req.method === 'POST') {
-    const actualIp = getClientIp(req);
-    if (!actualIp.includes(ALLOWED_IP)) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
     try {
+      const actualIp = getClientIp(req);
       const visitorId = req.body?.visitorId || `ADMIN-${actualIp}`;
       const key = generateKey();
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
