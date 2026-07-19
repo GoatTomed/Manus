@@ -174,17 +174,26 @@ export default function GetKey() {
 
   const handleReset = async () => {
     setError("");
-    if (!sessionId) {
-      // no session to reset, just go back to step 1
-      setCurrentStep(1);
-      setVerifyUrl(null);
-      window.history.replaceState({}, document.title, window.location.pathname);
-      return;
-    }
-
     setResetting(true);
+
     try {
-      await axios.post('/api/access/reset', { sessionId });
+      const visitorId = localStorage.getItem("ys_visitor_id");
+      const payload: { sessionId?: string | null; visitorId?: string | null } = {};
+
+      if (sessionId) payload.sessionId = sessionId;
+      if (visitorId) payload.visitorId = visitorId;
+
+      if (!payload.sessionId && !payload.visitorId) {
+        setCurrentStep(1);
+        setSessionId(null);
+        setVerifyUrl(null);
+        setGeneratedKey('');
+        setExpiresAt(null);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+
+      await axios.post('/api/access/reset', payload);
       setCurrentStep(1);
       setSessionId(null);
       setVerifyUrl(null);

@@ -1679,9 +1679,20 @@ if savedKey and savedKey ~= "" then
                 Window:KeyValidationResult(v, m)
             end)
         end)
+
         if not success or res == false then
-            Overlay.Visible = true
-            StatusLabel.Text = "Saved key is invalid or expired."
+            if StatusLabel.Text:find("Validation server unreachable") or StatusLabel.Text:find("HTTP not available") then
+                Overlay.Visible = false
+                StatusLabel.Text = "Saved key could not be verified, using cached login."
+                Window.KeyValidated = true
+                if not heartbeatStarted then
+                    heartbeatStarted = true
+                    startClientHeartbeat()
+                end
+            else
+                Overlay.Visible = true
+                StatusLabel.Text = "Saved key is invalid or expired."
+            end
         elseif success and res == true and not heartbeatStarted then
             heartbeatStarted = true
             startClientHeartbeat()
