@@ -1160,6 +1160,10 @@ local function Fire(remote, payload)
     end
 end
 
+-- Auto key system initialization disabled - library returns UI only
+-- Uncomment below to enable key verification UI on load
+
+--[[
 if type(UI) ~= "table" or type(UI.CreateWindow) ~= "function" then
     return
 end
@@ -1421,5 +1425,6 @@ end
 
 Window:Notify("YouSuck UI loaded. Enter key to unlock.", "success", 4)
 Window:SetOpen(true)
+--]]
 
 return UI
