@@ -149,7 +149,8 @@ export default async function handler(req, res) {
   }
 
   req.body = await parseJsonBody(req);
-  const url = new URL(req.url, `http://${req.headers.host}`);
+  const hostname = req.headers.host || "localhost";
+  const url = new URL(req.url, `http://${hostname}`);
   const path = url.pathname;
 
   // Health check

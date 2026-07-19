@@ -49,61 +49,48 @@ export default function Verify() {
     <div
       style={{
         minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: "grid",
+        placeItems: "center",
         padding: "24px",
-        background: "transparent",
+        background: "#080808",
+        backgroundImage:
+          "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
+        backgroundSize: "56px 56px",
       }}
     >
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          maxWidth: "520px",
-          background: "rgba(8, 8, 12, 0.82)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: "24px",
-          padding: "42px 32px",
-          boxShadow: "0 0 80px rgba(0, 0, 0, 0.22)",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-          <div
-            style={{
-              width: "80px",
-              height: "80px",
-              borderRadius: "18px",
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {status === "loading" ? (
-              <Loader2 size={40} style={{ color: "#00ABFF", animation: "spin 1.5s linear infinite" }} />
-            ) : status === "success" ? (
-              <CheckCircle2 size={40} style={{ color: "#22c55e" }} />
-            ) : (
-              <AlertCircle size={40} style={{ color: "#ef4444" }} />
-            )}
-          </div>
+      <div style={{ width: "100%", maxWidth: "520px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, paddingTop: 120 }}>
+        <div
+          style={{
+            width: "88px",
+            height: "88px",
+            borderRadius: "24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.09)",
+          }}
+        >
+          {status === "loading" ? (
+            <Loader2 size={44} style={{ color: "#00ABFF", animation: "spin 1.5s linear infinite" }} />
+          ) : status === "success" ? (
+            <CheckCircle2 size={44} style={{ color: "#22c55e" }} />
+          ) : (
+            <AlertCircle size={44} style={{ color: "#ef4444" }} />
+          )}
+        </div>
 
-          <div style={{ textAlign: "center", width: "100%" }}>
-            <h1 style={{ margin: 0, fontSize: "28px", fontWeight: 900, color: "#f5f5f5", letterSpacing: "-0.02em" }}>
-              {status === "loading" ? "Verfiying" : status === "success" ? "Verification Complete" : "Verification Failed"}
-            </h1>
-          </div>
-
-          <div style={{ width: "100%", height: "120px" }} />
+        <div style={{ width: "100%", textAlign: "center" }}>
+          <h1 style={{ margin: 0, fontSize: "2.4rem", fontWeight: 900, color: "#f5f5f5", letterSpacing: "-0.03em" }}>
+            {status === "loading" ? "Verifying" : status === "success" ? "Verification Complete" : "Verification Failed"}
+          </h1>
+          <p style={{ margin: "16px auto 0", maxWidth: "420px", lineHeight: 1.6, color: "rgba(255,255,255,0.72)", fontSize: "1rem" }}>
+            {message}
+          </p>
         </div>
       </div>
     </div>
