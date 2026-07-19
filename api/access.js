@@ -619,6 +619,32 @@ export default async function handler(req, res) {
       return res.status(400).json({ status: 'error', message: 'Unknown verification step' });
     }
 
+    // POST /api/access/reset - Reset a session's step and allow re-verification
+    if (path === '/api/access/reset' && req.method === 'POST') {
+      let body = '';
+      try {
+        for await (const chunk of req) body += chunk;
+        const json = body ? JSON.parse(body) : {};
+        const sessionId = json.sessionId || json.session || null;
+        if (!sessionId) return res.status(400).json({ status: 'error', message: 'Missing sessionId' });
+
+        if (useLocalDb) {
+          // reset session step and clear tokens for this session
+          updateLocalSession(sessionId, { step: 0 });
+          const tokens = localTokens.filter(t => t.session_id === sessionId);
+          tokens.forEach(t => updateLocalToken(t.token, { is_used: false }));
+        } else {
+          await robustQuery(getSupabase().from('key_sessions').update({ step: 0 }).eq('session_id', sessionId));
+          await robustQuery(getSupabase().from('verification_tokens').update({ is_used: false }).eq('session_id', sessionId));
+        }
+
+        return res.status(200).json({ status: 'success' });
+      } catch (err) {
+        console.error('Reset session error:', err);
+        return res.status(500).json({ status: 'error', message: 'Failed to reset session' });
+      }
+    }
+
     // GET /api/access/check - Check if visitor already has a valid key
     if (path === '/api/access/check' && req.method === 'GET') {
       const visitorId = searchParams.get('visitorId');

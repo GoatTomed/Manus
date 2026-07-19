@@ -13,6 +13,7 @@ export default function GetKey() {
   const [error, setError] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
@@ -51,6 +52,8 @@ export default function GetKey() {
       setCurrentStep(2);
       setSessionId(session);
       setIsLoading(false);
+      // Clear URL query to avoid leaking session info
+      window.history.replaceState({}, document.title, window.location.pathname);
     } else {
       checkExistingKey();
     }
@@ -158,6 +161,33 @@ export default function GetKey() {
     }
   };
 
+  const handleReset = async () => {
+    setError("");
+    if (!sessionId) {
+      // no session to reset, just go back to step 1
+      setCurrentStep(1);
+      setVerifyUrl(null);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    setResetting(true);
+    try {
+      await axios.post('/api/access/reset', { sessionId });
+      setCurrentStep(1);
+      setSessionId(null);
+      setVerifyUrl(null);
+      setGeneratedKey('');
+      setExpiresAt(null);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (err: any) {
+      const msg = err.response?.data?.error || 'Failed to reset session.';
+      setError(msg);
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedKey);
     setCopied(true);
@@ -172,14 +202,24 @@ export default function GetKey() {
     <div className="dot-grid-bg min-h-screen flex flex-col font-sans text-white">
       <main className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-2xl">
-          {/* Back Button */}
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-[#00ABFF] transition-colors mb-8 no-underline"
-          >
-            <ArrowLeft size={16} />
-            Return Home
-          </Link>
+          <div className="flex items-center justify-between mb-8">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-[#00ABFF] transition-colors no-underline"
+            >
+              <ArrowLeft size={16} />
+              Return Home
+            </Link>
+            <div>
+              <button
+                onClick={handleReset}
+                disabled={resetting}
+                className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-red-400 transition-colors no-underline"
+              >
+                Reset Steps
+              </button>
+            </div>
+          </div>
 
           <div className="border border-white/[0.08] rounded-2xl p-8 bg-white/[0.02]">
             {/* Header */}
