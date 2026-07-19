@@ -1161,7 +1161,6 @@ local function Fire(remote, payload)
 end
 
 if type(UI) ~= "table" or type(UI.CreateWindow) ~= "function" then
-    warn("[AH] UI library not available or doesn't support CreateWindow")
     return
 end
 
@@ -1180,7 +1179,6 @@ else
         return UI:CreateWindow({ Title = "YouSuck", Width = 580, Height = 420 })
     end)
     if not ok or type(windowResult) ~= "table" then
-        warn("[AH] Failed to create window:", windowResult)
         return
     end
     Window = windowResult
