@@ -473,7 +473,9 @@ export default async function handler(req, res) {
         const redirectUrl = new URL('/access', origin);
         redirectUrl.searchParams.set('step', '2');
         redirectUrl.searchParams.set('session', sessionId);
-        return res.redirect(302, redirectUrl.toString());
+        res.setHeader('Location', redirectUrl.toString());
+        res.statusCode = 302;
+        return res.end();
       }
 
       if (stepParam === 2) {
@@ -481,7 +483,9 @@ export default async function handler(req, res) {
         const redirectUrl = new URL('/access', origin);
         redirectUrl.searchParams.set('completed', 'true');
         redirectUrl.searchParams.set('session', sessionId);
-        return res.redirect(302, redirectUrl.toString());
+        res.setHeader('Location', redirectUrl.toString());
+        res.statusCode = 302;
+        return res.end();
       }
     }
 
