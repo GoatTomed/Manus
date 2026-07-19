@@ -37,7 +37,7 @@ function getErrorPage(errorMsg, debugInfo) {
       <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp" alt="Logo" class="logo">
     </div>
     <h1>You<span class="primary">Suck</span></h1>
-    <button onclick="copyIssue(this, ${JSON.stringify(errorMsg)})" class="btn btn-copy">Copy Issue</button>
+    <button onclick="copyIssue(this, '${errorMsg.replace(/'/g, "\\'")}'" class="btn btn-copy">Copy Issue</button>
     <a href="/" class="btn btn-secondary">Return Home</a>
   </div>
   <script>
@@ -46,6 +46,10 @@ function getErrorPage(errorMsg, debugInfo) {
         const originalText = btn.textContent;
         btn.textContent = 'Copied!';
         setTimeout(() => { btn.textContent = originalText; }, 2000);
+      }).catch(err => {
+        console.error('Copy failed:', err);
+        btn.textContent = 'Copy failed';
+        setTimeout(() => { btn.textContent = 'Copy Issue'; }, 2000);
       });
     }
   </script>
