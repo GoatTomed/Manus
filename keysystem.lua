@@ -1160,10 +1160,6 @@ local function Fire(remote, payload)
     end
 end
 
--- Auto key system initialization disabled - library returns UI only
--- Uncomment below to enable key verification UI on load
-
---[[
 if type(UI) ~= "table" or type(UI.CreateWindow) ~= "function" then
     return
 end
@@ -1192,239 +1188,18 @@ else
     _G.YouSuckUI_Window = Window
 end
 
-local originalSetAccent = Window.SetAccent
-Window.SetAccent = function(self, color, skipSave)
-    if originalSetAccent then
-        originalSetAccent(self, color, skipSave)
-    end
-    if not skipSave then
-        local settings = getSavedSettings()
-        settings.Accent = { math.floor(color.R * 255 + 0.5), math.floor(color.G * 255 + 0.5), math.floor(color.B * 255 + 0.5) }
-        saveSettings(settings)
-    end
-end
-
-if savedSettings.ToggleKey and type(savedSettings.ToggleKey) == "string" and Enum.KeyCode[savedSettings.ToggleKey] then
-    Window.ToggleKey = Enum.KeyCode[savedSettings.ToggleKey]
-end
-
-local function make(class, props)
-    local obj = Instance.new(class)
-    for k, v in pairs(props or {}) do obj[k] = v end
-    return obj
-end
-
 local savedKey = getSavedKey()
 
+-- Simple pitch black verify overlay
 local Overlay = make("Frame", { 
-    Name = "KeyOverlay", 
+    Name = "VerifyOverlay", 
     Size = UDim2.new(1,0,1,0), 
     Position = UDim2.new(0,0,0,0), 
     BackgroundColor3 = Color3.fromRGB(0,0,0), 
-    BackgroundTransparency = 0.55, 
+    BackgroundTransparency = 0,
     ZIndex = 999,
     Visible = (savedKey == nil or savedKey == ""),
     Parent = Window.Main 
 })
-make("UICorner", { CornerRadius = UDim.new(0, 12), Parent = Overlay })
-local Blocker = make("TextButton", { Name = "Blocker", Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, AutoButtonColor = false, Text = "", Parent = Overlay })
-
-local Card = make("Frame", { Name = "KeyCard", Size = UDim2.new(0, 380, 0, 220), Position = UDim2.new(0.5, -190, 0.5, -110), BackgroundColor3 = UI.Theme.Surface, Parent = Overlay })
-make("UICorner", { CornerRadius = UDim.new(0, 12), Parent = Card })
-make("UIStroke", { Color = UI.Theme.Border, Thickness = 1, Parent = Card })
-make("TextLabel", { Name = "Title", Size = UDim2.new(1, -40, 0, 24), Position = UDim2.new(0, 20, 0, 16), BackgroundTransparency = 1, Text = "Enter access key", TextColor3 = UI.Theme.Text, Font = Enum.Font.Gotham, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Left, Parent = Card })
-local KeyBox = make("TextBox", { Name = "KeyBox", Size = UDim2.new(1, -40, 0, 36), Position = UDim2.new(0, 20, 0, 72), BackgroundColor3 = UI.Theme.Raised, BorderSizePixel = 0, Text = "", PlaceholderText = "Your Key Here!", TextColor3 = Color3.fromRGB(255,255,255), PlaceholderColor3 = UI.Theme.TextMid, Font = Enum.Font.Gotham, TextSize = 14, ClearTextOnFocus = false, Parent = Card })
-make("UICorner", { CornerRadius = UDim.new(0, 10), Parent = KeyBox })
-local StatusLabel = make("TextLabel", { Name = "Status", Size = UDim2.new(1, -40, 0, 20), Position = UDim2.new(0, 20, 0, 116), BackgroundTransparency = 1, Text = "Please enter your site key.", TextColor3 = UI.Theme.TextMid, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = Card })
-local FetchBtn = make("TextButton", { Name = "FetchBtn", Size = UDim2.new(0, 120, 0, 34), Position = UDim2.new(0.5, -130, 1, -50), BackgroundColor3 = UI.Theme.Raised, AutoButtonColor = false, Text = "Get Key", TextColor3 = UI.Theme.Text, Font = Enum.Font.Gotham, TextSize = 14, Parent = Card })
-make("UICorner", { CornerRadius = UDim.new(0, 10), Parent = FetchBtn })
-local ValidateBtn = make("TextButton", { Name = "Validate", Size = UDim2.new(0, 120, 0, 34), Position = UDim2.new(0.5, 10, 1, -50), BackgroundColor3 = UI.Theme.Accent, AutoButtonColor = false, Text = "Verify", TextColor3 = Color3.fromRGB(15,15,15), Font = Enum.Font.Gotham, TextSize = 14, Parent = Card })
-make("UICorner", { CornerRadius = UDim.new(0, 10), Parent = ValidateBtn })
-
-local CloseBtn = make("TextButton", {
-    Name = "CloseBtn",
-    Size = UDim2.new(0, 22, 0, 22),
-    Position = UDim2.new(1, -30, 0, 8),
-    BackgroundColor3 = Color3.fromRGB(239, 68, 68),
-    AutoButtonColor = false,
-    Text = "X",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 11,
-    TextXAlignment = Enum.TextXAlignment.Center,
-    TextYAlignment = Enum.TextYAlignment.Center,
-    Parent = Card
-})
-make("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = CloseBtn })
-make("UIStroke", { Color = Color3.fromRGB(180, 40, 40), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = CloseBtn })
-
-CloseBtn.MouseEnter:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(220, 50, 50) }):Play()
-end)
-CloseBtn.MouseLeave:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(239, 68, 68) }):Play()
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    animateClick(CloseBtn)
-    task.wait(0.1)
-    if Window.Gui then
-        Window.Gui:Destroy()
-    end
-end)
-
-local function showRightToast(msg)
-    local screenGui = Window.Gui
-    if not screenGui then return end
-    local existing = screenGui:FindFirstChild("RightToast")
-    if existing then existing:Destroy() end
-    local toast = make("Frame", {
-        Name = "RightToast",
-        Size = UDim2.new(0, 240, 0, 48),
-        Position = UDim2.new(1, 10, 0.5, -24),
-        BackgroundColor3 = UI.Theme.Surface,
-        BorderSizePixel = 0,
-        ZIndex = 1000,
-        Parent = screenGui
-    })
-    make("UICorner", { CornerRadius = UDim.new(0, 8), Parent = toast })
-    make("UIStroke", { Color = UI.Theme.Error, Thickness = 1.5, Parent = toast })
-    make("TextLabel", {
-        Size = UDim2.new(1, -20, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        BackgroundTransparency = 1,
-        Text = msg,
-        TextColor3 = UI.Theme.Text,
-        Font = Enum.Font.GothamBold,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Center,
-        ZIndex = 1001,
-        Parent = toast
-    })
-    local info = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-    local tweenIn = TweenService:Create(toast, info, { Position = UDim2.new(1, -260, 0.5, -24) })
-    tweenIn:Play()
-    task.delay(3, function()
-        if toast and toast.Parent then
-            local tweenOut = TweenService:Create(toast, info, { Position = UDim2.new(1, 10, 0.5, -24) })
-            tweenOut:Play()
-            tweenOut.Completed:Wait()
-            if toast and toast.Parent then
-                toast:Destroy()
-            end
-        end
-    end)
-end
-
-Blocker.MouseButton1Click:Connect(function()
-    showRightToast("Redeem A Key")
-end)
-
-Window.KeyValidated = false
-Window._keyValidator = nil
-function Window:SetKeyValidator(fn) self._keyValidator = fn end
-function Window:KeyValidationResult(valid, message)
-    if valid then
-        Overlay.Visible = false
-        Window.KeyValidated = true
-        StatusLabel.Text = message or "Access granted."
-        local enteredKey = tostring(KeyBox.Text or ""):gsub("^%s*(.-)%s*$", "%1")
-        if enteredKey ~= "" and enteredKey ~= "test" then
-            saveKey(enteredKey)
-        end
-    else
-        StatusLabel.Text = message or "Invalid key."
-    end
-end
-
-ValidateBtn.MouseButton1Click:Connect(function()
-    animateClick(ValidateBtn)
-    local key = tostring(KeyBox.Text or ""):gsub("^%s*(.-)%s*$", "%1")
-    if key == "" then StatusLabel.Text = "Enter a key to continue."; return end
-    if type(Window._keyValidator) ~= "function" then StatusLabel.Text = "No validator configured."; return end
-    StatusLabel.Text = "Validating..."
-    local ok, res = pcall(function() return Window._keyValidator(key, function(v, m) Window:KeyValidationResult(v, m) end) end)
-    if not ok then StatusLabel.Text = "Validation error." end
-    if ok and type(res) == "boolean" then Window:KeyValidationResult(res) end
-end)
-
-FetchBtn.MouseButton1Click:Connect(function()
-    animateClick(FetchBtn)
-    if setclipboard then pcall(setclipboard, "https://yoursuck.vercel.app/") end
-    StatusLabel.Text = "Key URL copied to clipboard."
-end)
-
-Window:SetKeyValidator(function(key, callback)
-    if key == "test" then
-        callback(true, "Test key accepted.")
-        return true
-    end
-
-    if typeof(game.HttpGet) ~= "function" then
-        callback(false, "HTTP not available.")
-        return false
-    end
-
-    local success, response = pcall(function()
-        return game:HttpGet(string.format(VALIDATION_URL, HttpService:UrlEncode(key)))
-    end)
-    if not success or type(response) ~= "string" then
-        callback(false, "Validation server unreachable.")
-        return false
-    end
-
-    local ok, data = pcall(function()
-        return HttpService:JSONDecode(response)
-    end)
-    if not ok or type(data) ~= "table" then
-        callback(false, "Bad validation response.")
-        return false
-    end
-
-    local isValid = data.valid == true
-    callback(isValid, tostring(data.message or (isValid and "Access granted." or "Invalid key.")))
-    return isValid
-end)
-
-SettingsTab = Window:AddPinnedTab({ Name = "Settings", Icon = getIcon("settings") or getIcon("sliders") or "" })
-local ThemeSection = SettingsTab:AddSection({ Name = "Apparence", Side = 1 })
-ThemeSection:AddColorPicker({ Name = "Accent Color", Default = savedSettings.Accent or {247,197,46}, Callback = function(v)
-    if type(v) == "table" and #v == 3 then
-        Window:SetAccent(Color3.fromRGB(v[1], v[2], v[3]))
-    end
-end })
-
-local HideUISection = SettingsTab:AddSection({ Name = "Hide UI", Side = 1 })
-HideUISection:AddKeybind({ Default = savedSettings.ToggleKey or "RightShift", Callback = function(v)
-    if type(v) == "string" and Enum.KeyCode[v] then
-        Window.ToggleKey = Enum.KeyCode[v]
-        local settings = getSavedSettings()
-        settings.ToggleKey = v
-        saveSettings(settings)
-        if Window and typeof(Window.Notify) == "function" then
-            Window:Notify("Hide UI key saved.", "success", 2)
-        end
-    end
-end })
-
-if savedKey and savedKey ~= "" then
-    StatusLabel.Text = "Validating saved key..."
-    task.spawn(function()
-        task.wait(0.2)
-        local success, res = pcall(function()
-            return Window._keyValidator(savedKey, function(v, m)
-                Window:KeyValidationResult(v, m)
-            end)
-        end)
-        if not success or res == false then
-            Overlay.Visible = true
-            StatusLabel.Text = "Saved key is invalid or expired."
-        end
-    end)
-end
-
-Window:Notify("YouSuck UI loaded. Enter key to unlock.", "success", 4)
-Window:SetOpen(true)
---]]
 
 return UI
