@@ -1371,10 +1371,12 @@ Window:SetKeyValidator(function(key, callback)
         callback(true, "Test key accepted.")
         return true
     end
-    -- normalize and enforce format XXX-XXX-XXX (alphanumeric)
+    -- normalize and allow either XXX-XXX-XXX or legacy 32-char hex
     local norm = normalizeKey(key)
-    if not norm:match("^[A-Z0-9]{3}%-[A-Z0-9]{3}%-[A-Z0-9]{3}$") then
-        callback(false, "Key format invalid. Expected XXX-XXX-XXX")
+    local isNew = norm:match("^[A-Z0-9]{3}%-[A-Z0-9]{3}%-[A-Z0-9]{3}$")
+    local isLegacyHex = norm:match("^[A-F0-9]{32}$")
+    if not isNew and not isLegacyHex then
+        callback(false, "Key format invalid. Expected XXX-XXX-XXX or legacy 32-char hex")
         return false
     end
 
