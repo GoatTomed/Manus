@@ -42,15 +42,53 @@ function getErrorPage(errorMsg, debugInfo) {
   </div>
   <script>
     function copyIssue(btn, msg) {
-      navigator.clipboard.writeText(msg).then(() => {
-        const originalText = btn.textContent;
-        btn.textContent = 'Copied!';
-        setTimeout(() => { btn.textContent = originalText; }, 2000);
-      }).catch(err => {
-        console.error('Copy failed:', err);
-        btn.textContent = 'Copy failed';
-        setTimeout(() => { btn.textContent = 'Copy Issue'; }, 2000);
-      });
+      // Try modern Clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(msg).then(() => {
+          showCopySuccess(btn);
+        }).catch(() => {
+          // Fallback to textarea method if clipboard fails
+          fallbackCopy(msg, btn);
+        });
+      } else {
+        // Fallback for older browsers
+        fallbackCopy(msg, btn);
+      }
+    }
+    
+    function fallbackCopy(text, btn) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      
+      try {
+        textarea.select();
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showCopySuccess(btn);
+        } else {
+          showCopyFailed(btn);
+        }
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+        showCopyFailed(btn);
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+    
+    function showCopySuccess(btn) {
+      const originalText = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = originalText; }, 2000);
+    }
+    
+    function showCopyFailed(btn) {
+      const originalText = btn.textContent;
+      btn.textContent = 'Copy failed';
+      setTimeout(() => { btn.textContent = originalText; }, 2000);
     }
   </script>
 </body>
