@@ -222,6 +222,19 @@ local function makeStubWindow(cfg)
     return Window
 end
 
+local function getGlobalUILibrary()
+    if type(getgenv) == "function" then
+        local g = getgenv()
+        if type(g.YouSuckUI) == "table" and type(g.YouSuckUI.CreateWindow) == "function" then
+            return g.YouSuckUI
+        end
+    end
+    if type(_G) == "table" and type(_G.YouSuckUI) == "table" and type(_G.YouSuckUI.CreateWindow) == "function" then
+        return _G.YouSuckUI
+    end
+    return nil
+end
+
 local function loadLocalUILibrary()
     if type(readfile) ~= "function" or type(isfile) ~= "function" or type(loadstring) ~= "function" then
         return nil
@@ -259,7 +272,7 @@ local function loadLocalUILibrary()
     return nil
 end
 
-UI = loadLocalUILibrary() or (function()
+UI = getGlobalUILibrary() or loadLocalUILibrary() or (function()
     if typeof(Font) ~= "table" or type(Font.new) ~= "function" then
         Font = Font or {}
         Font.new = function(...) return Enum.Font.Gotham end
@@ -1106,6 +1119,11 @@ UI = loadLocalUILibrary() or (function()
         return UI.Flags[name]
     end
 
+    if type(getgenv) == "function" then
+        getgenv().YouSuckUI = UI
+    end
+    _G.YouSuckUI = UI
+
     return UI
 end)()
 
@@ -1150,14 +1168,30 @@ if type(UI) ~= "table" or type(UI.CreateWindow) ~= "function" then
     return
 end
 
-local ok, windowResult = pcall(function()
-    return UI:CreateWindow({ Title = "YouSuck", Width = 580, Height = 420 })
-end)
-if not ok or type(windowResult) ~= "table" then
-    warn("[AH] Failed to create window:", windowResult)
-    return
+local existingWindow = nil
+if type(getgenv) == "function" then
+    existingWindow = getgenv().YouSuckUI_Window
 end
-Window = windowResult
+if (not existingWindow or type(existingWindow) ~= "table") and type(_G) == "table" then
+    existingWindow = _G.YouSuckUI_Window
+end
+
+if existingWindow and type(existingWindow.Gui) == "userdata" then
+    Window = existingWindow
+else
+    local ok, windowResult = pcall(function()
+        return UI:CreateWindow({ Title = "YouSuck", Width = 580, Height = 420 })
+    end)
+    if not ok or type(windowResult) ~= "table" then
+        warn("[AH] Failed to create window:", windowResult)
+        return
+    end
+    Window = windowResult
+    if type(getgenv) == "function" then
+        getgenv().YouSuckUI_Window = Window
+    end
+    _G.YouSuckUI_Window = Window
+end
 print("[AH] Window created", Window, type(Window.SetOpen), type(Window.AddTab))
 
 local originalSetAccent = Window.SetAccent

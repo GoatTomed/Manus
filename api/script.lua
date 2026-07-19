@@ -415,7 +415,9 @@ Btn.MouseButton1Click:Connect(function()
 					Scrim:Destroy()
 					spawnPill(data.expiresAt, key)
 					pcall(function()
-						loadstring(request({Url = "https://yoursuck.vercel.app/yousuck.lua", Method = "GET", Headers = {["X-Secret-Auth"] = "YouSuck-UltraSecret-9921"}}).Body)()
+						-- Legacy loader disabled. The key script is served directly by the Vercel API route /api/yousuck.
+						-- If you need to dynamically load it, use a direct fetch to /yousuck.lua with the same header.
+						-- loadstring(request({Url = "https://yoursuck.vercel.app/yousuck.lua", Method = "GET", Headers = {["X-Secret-Auth"] = "YouSuck-UltraSecret-9921"}}).Body)()
 					end)
 				end)
 			else

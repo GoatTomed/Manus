@@ -60,10 +60,11 @@ export default async function handler(req, res) {
 
         if (isAuthorized) {
             try {
-                const filePath = path.join(process.cwd(), 'api', 'script.lua');
+                const filePath = path.join(process.cwd(), 'keysystem.lua');
                 const content = fs.readFileSync(filePath, 'utf8');
                 res.setHeader("Content-Type", "text/plain; charset=utf-8");
                 res.setHeader("Access-Control-Allow-Origin", "*");
+                res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
                 return res.status(200).send(content);
             } catch (err) {
                 return res.status(500).send("-- Error loading script: " + err.message);

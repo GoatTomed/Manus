@@ -1,6 +1,14 @@
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
 const ALLOWED_IP = "24.49.252.230";
 const SECRET_KEY = "YouSuck-UltraSecret-9921";
 const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZdJJc5x8KiqieXexEyT/yousuck-logo-v3-UfpH3hrPHAYBWPNbmh6WvM.webp";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const KEYSYSTEM_PATH = path.join(__dirname, "..", "keysystem.lua");
 
 import { createClient } from "@supabase/supabase-js";
 import axios from "axios";
@@ -45,87 +53,6 @@ const supabase = createClient(
 
 // ─── Script Lua servi après validation de la clé ──────────────────────────────
 // Ce script tourne côté Roblox : il vérifie le PlaceId et charge le bon script.
-const LUA_SCRIPT = `local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local Player = Players.LocalPlayer
-
-local C = {
-    Surface = Color3.fromRGB(15, 15, 15),
-    Border = Color3.fromRGB(38, 38, 38),
-    Primary = Color3.fromRGB(1, 168, 225),
-    Text = Color3.fromRGB(240, 240, 240),
-    TextMid = Color3.fromRGB(150, 150, 150),
-    Success = Color3.fromRGB(34, 197, 94),
-    Error = Color3.fromRGB(239, 68, 68),
-}
-
-local function tw(obj, goal, t, style, dir)
-    TweenService:Create(obj, TweenInfo.new(t or 0.18, style or Enum.EasingStyle.Quart, dir or Enum.EasingDirection.Out), goal):Play()
-end
-local function corner(p, r) local c = Instance.new("UICorner", p) c.CornerRadius = UDim.new(0, r or 6) return c end
-local function stroke(p, col, thick) local s = Instance.new("UIStroke", p) s.Color = col or C.Border s.Thickness = thick or 1 return s end
-local function frm(parent, props)
-    local f = Instance.new("Frame", parent)
-    f.BorderSizePixel = 0
-    for k, v in pairs(props) do f[k] = v end
-    return f
-end
-local function lbl(parent, props)
-    local l = Instance.new("TextLabel", parent)
-    l.BackgroundTransparency = 1
-    l.BorderSizePixel = 0
-    for k, v in pairs(props) do l[k] = v end
-    return l
-end
-
-local Gui = Instance.new("ScreenGui")
-Gui.Name = "ToastGui"
-Gui.ResetOnSpawn = false
-Gui.IgnoreGuiInset = true
-Gui.DisplayOrder = 999
-Gui.Parent = Player:WaitForChild("PlayerGui")
-
-local function toast(msg, col, duration)
-    col = col or C.Primary; duration = duration or 3
-    local T = frm(Gui, {
-        Size = UDim2.new(0, 260, 0, 44),
-        Position = UDim2.new(0.5, -130, 1, 10),
-        BackgroundColor3 = C.Surface,
-        ZIndex = 20,
-    })
-    corner(T, 8); stroke(T, col, 1)
-    local Acc = frm(T, {Size=UDim2.new(0,3,1,-16), Position=UDim2.new(0,7,0,8), BackgroundColor3=col, ZIndex=21})
-    corner(Acc, 2)
-    lbl(T, {Size=UDim2.new(1,-22,1,0), Position=UDim2.new(0,18,0,0), Text=msg, TextColor3=C.Text, TextSize=12, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=22})
-    tw(T, {Position=UDim2.new(0.5,-130,1,-54)}, 0.35, Enum.EasingStyle.Back)
-    task.delay(duration, function()
-        tw(T, {Position=UDim2.new(0.5,-130,1,10), BackgroundTransparency=1}, 0.3)
-        task.delay(0.35, function() T:Destroy() end)
-    end)
-end
-
--- Table des jeux supportés : PlaceId => URL du script
-local GAMES = {
-    [79268393072444] = "https://pastebin.com/raw/e8cVpx8u",
-    -- Ajoute d'autres jeux ici :
-    -- [AUTRE_PLACE_ID] = "https://ton-autre-script.com/raw",
-}
-
-local placeId = game.PlaceId
-local scriptUrl = GAMES[placeId] or "https://pastebin.com/raw/e8cVpx8u" -- Default script for all games
-
-print("[YouSuck] Place ID: " .. tostring(placeId) .. " — Loading script...")
-toast("Launching Script...", C.Success, 5)
-task.wait(1)
-local ok, err = pcall(function()
-    loadstring(game:HttpGet(scriptUrl))()
-end)
-if not ok then
-    warn("[YouSuck] Error loading script: " .. tostring(err))
-    toast("Script load error. Check output.", C.Error, 5)
-end
-`;
-
 export default async function handler(req, res) {
     try {
         const authHeader = req.headers["x-secret-auth"] || "";
@@ -138,10 +65,11 @@ export default async function handler(req, res) {
         const isAuthorized = authHeader === SECRET_KEY || isRoblox || isMe;
 
         if (isAuthorized) {
+            const luaScript = fs.readFileSync(KEYSYSTEM_PATH, "utf8");
             res.setHeader("Content-Type", "text/plain; charset=utf-8");
             res.setHeader("Access-Control-Allow-Origin", "*");
             res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-            return res.status(200).send(LUA_SCRIPT);
+            return res.status(200).send(luaScript);
         }
 
         // Log unauthorized attempt
