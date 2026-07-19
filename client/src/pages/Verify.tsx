@@ -66,6 +66,11 @@ export default function Verify() {
           )}
         </div>
 
+        <div style={{ width: "100%", textAlign: "center" }}>
+          <h1 style={{ margin: 0, fontSize: "2.4rem", fontWeight: 900, color: "#f5f5f5", letterSpacing: "-0.03em" }}>
+            {status === "loading" ? "Verifying" : status === "success" ? "Verification Complete" : "Verification Failed"}
+          </h1>
+        </div>
       </div>
     </div>
   );
