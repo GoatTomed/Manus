@@ -138,6 +138,11 @@ export default function Track() {
           setClientUptimes(prev => {
             const next = { ...prev };
             data.forEach(c => {
+              // On initial load after a refresh, reset displayed uptime to 0
+              if (loading) {
+                next[c.id] = 0;
+                return;
+              }
               const serverUptime = Number(c.uptime || 0);
               const existing = Number(prev[c.id] || 0);
               next[c.id] = Math.max(existing, serverUptime);
@@ -223,7 +228,7 @@ export default function Track() {
     ).sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime());
   }, [storedUsers, userQuery]);
 
-  const onlineNow = (robloxId: string) => clients.find(c => c.robloxId === robloxId);
+  const onlineNow = (robloxId: string) => clients.find(c => String(c.robloxId) === String(robloxId));
   const selectedUserData = selectedUser ? storedUsers[selectedUser] : null;
 
   async function sendCommand(robloxId: string | undefined, type: string, script = "") {
@@ -329,8 +334,7 @@ export default function Track() {
                     <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} />
                       <div>
-                        <div style={{ fontSize: "16px", fontWeight: "800" }}>{c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : "Unknown User"}</div>
-                        <div style={{ fontSize: "12px", color: "#71717a" }}>ID: {c.robloxId}</div>
+                          <div style={{ fontSize: "16px", fontWeight: "800" }}>{c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : "Unknown User"}</div>
                       </div>
                     </div>
                     <div className="card-info-row">
@@ -361,7 +365,7 @@ export default function Track() {
                       <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} />
                       <div>
                         <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{selectedClient.name && selectedClient.name !== "Player" && selectedClient.name.trim() !== "" ? selectedClient.name : "Unknown User"}</h1>
-                        <p style={{ color: "#71717a", fontSize: "16px" }}>{selectedClient.robloxId}</p>
+                        {/* ID removed from detail header to avoid exposing raw numeric ids */}
                         <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
                           <span className="status-badge active">Online</span>
                           <span className="executor-badge">{selectedClient.executor}</span>
@@ -415,7 +419,6 @@ export default function Track() {
                     <RobloxAvatar robloxId={u.roblox_id} size={48} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: "16px", fontWeight: "800" }}>{u.roblox_name}</div>
-                      <div style={{ fontSize: "12px", color: "#71717a" }}>{u.roblox_id}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       {timeAgo(u.last_seen, !!onlineNow(u.roblox_id))}
@@ -434,23 +437,26 @@ export default function Track() {
         <div className="profile-sidebar animate-slide-in">
           <button className="btn-secondary" style={{ marginBottom: "32px" }} onClick={() => setSelectedUser(null)}>Close</button>
           <div className="profile-card" style={{ textAlign: "center", marginBottom: "32px" }}>
-            <RobloxAvatar robloxId={selectedUserData.roblox_id} size={100} />
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <RobloxAvatar robloxId={selectedUserData.roblox_id} size={100} />
+            </div>
             <h2 style={{ fontSize: "24px", fontWeight: "900", marginTop: "16px" }}>{selectedUserData.roblox_name}</h2>
-            <p style={{ color: "#71717a" }}>{selectedUserData.roblox_id}</p>
             <div style={{ marginTop: "16px" }}>{timeAgo(selectedUserData.last_seen, !!onlineNow(selectedUserData.roblox_id))}</div>
           </div>
           <div style={labelStyle}>Game History</div>
           <div className="user-list">
-            {selectedUserData.sessions.map((s, i) => (
-              <div key={i} className="user-row" style={{ background: i === 0 && onlineNow(selectedUserData.roblox_id) ? "rgba(0,171,255,0.05)" : "rgba(255,255,255,0.01)" }}>
-                <GameIcon placeId={s.place_id} size={40} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "14px", fontWeight: "800" }}>{s.place_name}</div>
-                  <div style={{ fontSize: "11px", color: "#71717a" }}>{timeAgo(s.connected_at)}</div>
+            {selectedUserData.sessions
+              .filter(s => s.place_name && !s.place_name.toLowerCase().includes("unknown"))
+              .map((s, i) => (
+                <div key={i} className="user-row" style={{ background: i === 0 && onlineNow(selectedUserData.roblox_id) ? "rgba(0,171,255,0.05)" : "rgba(255,255,255,0.01)" }}>
+                  <GameIcon placeId={s.place_id} size={40} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "14px", fontWeight: "800" }}>{s.place_name}</div>
+                    <div style={{ fontSize: "11px", color: "#71717a" }}>{timeAgo(s.connected_at, !!onlineNow(selectedUserData.roblox_id))}</div>
+                  </div>
+                  {i === 0 && onlineNow(selectedUserData.roblox_id) && <span className="status-badge active">Current</span>}
                 </div>
-                {i === 0 && onlineNow(selectedUserData.roblox_id) && <span className="status-badge active">Current</span>}
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       )}
