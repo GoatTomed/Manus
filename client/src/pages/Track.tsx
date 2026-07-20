@@ -53,7 +53,7 @@ function GameIcon({ placeId, size = 72 }: { placeId: string; size?: number }) {
     if (!placeId) return;
     fetch(`/api/roblox-gameicon?placeId=${placeId}`)
       .then(r => r.json())
-      .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
+                        <div style={{ fontSize: "12px", color: "#71717a" }}>ID: {c.robloxId}</div>
       .catch(() => {});
   }, [placeId]);
   return (
@@ -329,7 +329,7 @@ export default function Track() {
                     <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} />
                       <div>
-                        <div style={{ fontSize: "16px", fontWeight: "800" }}>{c.name}</div>
+                        <div style={{ fontSize: "16px", fontWeight: "800" }}>{c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : "Unknown User"}</div>
                         <div style={{ fontSize: "12px", color: "#71717a" }}>ID: {c.robloxId}</div>
                       </div>
                     </div>
@@ -360,7 +360,7 @@ export default function Track() {
                     <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} />
                       <div>
-                        <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{selectedClient.name}</h1>
+                        <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{selectedClient.name && selectedClient.name !== "Player" && selectedClient.name.trim() !== "" ? selectedClient.name : "Unknown User"}</h1>
                         <p style={{ color: "#71717a", fontSize: "16px" }}>{selectedClient.robloxId}</p>
                         <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
                           <span className="status-badge active">Online</span>
