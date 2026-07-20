@@ -100,13 +100,11 @@ export default function Track() {
   const [showPalette, setShowPalette] = useState(false);
   const [paletteSearch, setPaletteSearch] = useState("");
 
-  const ALLOWED_IP = "24.49.252.230";
-
+  // Previously the UI was gated by a fixed IP check which could prevent the
+  // page from rendering in many environments (blocked requests, CORS, etc.).
+  // Remove the gating and allow the app to show the Track UI by default.
   useEffect(() => {
-    fetch("https://api.ipify.org?format=json")
-      .then(r => r.json())
-      .then((data: any) => { if (data?.ip !== ALLOWED_IP) setAccessDenied(true); setAccessChecked(true); })
-      .catch(() => setAccessChecked(true));
+    setAccessChecked(true);
   }, []);
 
   useEffect(() => {
