@@ -1726,6 +1726,22 @@ if savedKey and savedKey ~= "" then
         end)
         debugPrint("SavedKey validation pcall result", tostring(success), tostring(res))
 
+        -- If validator returned synchronously, handle that immediately
+        if success and type(res) == "boolean" then
+            debugPrint("SavedKey: validator returned synchronously", tostring(res))
+            if res == true then
+                if not heartbeatStarted then
+                    heartbeatStarted = true
+                    startClientHeartbeat()
+                end
+                return
+            else
+                showKeyOverlay(true)
+                setStatus("Saved key is invalid or expired.")
+                return
+            end
+        end
+
         -- Wait for async callback to call Window:KeyValidationResult, up to timeout
         local waited = 0
         local interval = 0.25

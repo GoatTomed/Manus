@@ -25,6 +25,7 @@ export default function handler(req, res) {
   if (req.method === "POST" && !req.query.command) {
     try {
       const data = req.body;
+      console.log("/api/clients: heartbeat received", data && data.robloxId, data && data.gameId);
       const client = {
         id: "c-" + Math.random().toString(36).substring(2, 9),
         name: data.robloxName || "Player",
@@ -32,6 +33,8 @@ export default function handler(req, res) {
         placeId: String(data.gameId || ""),
         av: (data.robloxName || "??").substring(0, 2).toUpperCase(),
         avc: "av-green",
+        avatarUrl: `/api/roblox-avatar?userId=${encodeURIComponent(data.robloxId || "")}`,
+        gameIconUrl: `/api/roblox-gameicon?placeId=${encodeURIComponent(data.gameId || "")}`,
         lastHeartbeat: Date.now(),
         uptime: data.uptime || 0,
         executor: data.executor || "Unknown",

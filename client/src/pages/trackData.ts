@@ -6,6 +6,8 @@ export type Client = {
   placeId: string;
   av: string;
   avc: "av-blue" | "av-green" | "av-amber";
+  avatarUrl?: string;
+  gameIconUrl?: string;
   robloxId?: string;
   lastHeartbeat?: number;
   uptime?: number;
