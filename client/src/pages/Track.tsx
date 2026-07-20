@@ -53,7 +53,7 @@ function GameIcon({ placeId, size = 72 }: { placeId: string; size?: number }) {
     if (!placeId) return;
     fetch(`/api/roblox-gameicon?placeId=${placeId}`)
       .then(r => r.json())
-                        <div style={{ fontSize: "12px", color: "#71717a" }}>ID: {c.robloxId}</div>
+      .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
       .catch(() => {});
   }, [placeId]);
   return (
