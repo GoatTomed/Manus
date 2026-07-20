@@ -1719,6 +1719,7 @@ if savedKey and savedKey ~= "" then
     task.spawn(function()
         task.wait(0.2)
         debugPrint("SavedKey: starting validation for key", tostring(savedKey))
+        debugPrint("SavedKey: hasRequestApi?", tostring(hasRequestApi()))
         local success, res = pcall(function()
             return Window._keyValidator(savedKey, function(v, m)
                 Window:KeyValidationResult(v, m)
@@ -1801,5 +1802,25 @@ Window.Notify = function() end
 
 -- Window loaded
 Window:SetOpen(true)
+
+-- End of fixed.lua
+
+-- One-time connectivity diagnostic to help debug heartbeat issues
+task.spawn(function()
+    task.wait(0.5)
+    debugPrint("ConnectivityTest: hasRequestApi?", tostring(hasRequestApi()))
+    local ok, body = pcall(function() return safeGet(CLIENT_HEARTBEAT_URL) end)
+    if not ok then
+        debugPrint("ConnectivityTest: safeGet threw", tostring(body))
+    else
+        -- safeGet returns (ok, body) sometimes
+        if type(body) == "table" then
+            debugPrint("ConnectivityTest: safeGet result table", tostring(body))
+        else
+            local innerOk = tostring(body and (type(body) == "string" and "len=" .. tostring(#body) or tostring(body)) or "nil")
+            debugPrint("ConnectivityTest: safeGet returned", innerOk)
+        end
+    end
+end)
 
 -- End of fixed.lua
