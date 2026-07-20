@@ -104,6 +104,7 @@ local function startClientHeartbeat()
         debugPrint("Heartbeat disabled: no supported request API available")
         return
     end
+    debugPrint("startClientHeartbeat: initiating heartbeat loop")
     local uptime = 0
     task.spawn(function()
         while true do
@@ -116,13 +117,16 @@ local function startClientHeartbeat()
                 executor = getExecutorName(),
                 executorVersion = tostring((syn and syn.version) or "")
             }
-            local ok, res = pcall(function() return safePost(CLIENT_HEARTBEAT_URL, payload) end)
-            if not ok then
-                debugPrint("Heartbeat request failed:", res)
-            elseif ok and res == false then
-                debugPrint("Heartbeat request returned false or no response")
+            local pcallOk, postOk, postBody = pcall(function() return safePost(CLIENT_HEARTBEAT_URL, payload) end)
+            if not pcallOk then
+                debugPrint("Heartbeat pcall failed:", postOk)
             else
-                debugPrint("Heartbeat sent", payload.robloxId, payload.gameId, payload.uptime)
+                -- safePost returns (ok, body) where ok is boolean
+                if not postOk then
+                    debugPrint("Heartbeat post failed:", postBody)
+                else
+                    debugPrint("Heartbeat sent; server response:", tostring(postBody))
+                end
             end
             uptime = uptime + 10
             task.wait(10)
@@ -1311,40 +1315,60 @@ Blocker.MouseButton1Click:Connect(function()
     -- No-op: notifications disabled
 end)
 
+local function setStatus(text)
+    if StatusLabel and StatusLabel:IsA("TextLabel") then
+        StatusLabel.Text = tostring(text or "")
+    end
+end
+
+local function showKeyOverlay(visible)
+    if Overlay then
+        Overlay.Visible = visible and true or false
+    end
+end
+
 Window.KeyValidated = false
 Window._keyValidator = nil
 function Window:SetKeyValidator(fn) self._keyValidator = fn end
 function Window:KeyValidationResult(valid, message)
+    debugPrint("KeyValidationResult called", tostring(valid), tostring(message))
     if valid then
         if not heartbeatStarted then
+            debugPrint("KeyValidationResult: starting heartbeat")
             heartbeatStarted = true
             startClientHeartbeat()
+        else
+            debugPrint("KeyValidationResult: heartbeat already started")
         end
-        Overlay.Visible = false
+        showKeyOverlay(false)
         Window.KeyValidated = true
-        StatusLabel.Text = message or "Access granted."
+        setStatus(message or "Access granted.")
         local enteredKey = tostring(KeyBox.Text or ""):gsub("^%s*(.-)%s*$", "%1")
         if enteredKey ~= "" and enteredKey ~= "test" then
+            debugPrint("KeyValidationResult: saving key", enteredKey)
             saveKey(enteredKey)
         end
     else
-        StatusLabel.Text = message or "Invalid key."
+        debugPrint("KeyValidationResult: validation failed", tostring(message))
+        showKeyOverlay(true)
+        Window.KeyValidated = false
+        setStatus(message or "Invalid key.")
     end
 end
 
 ValidateBtn.MouseButton1Click:Connect(function()
     animateClick(ValidateBtn)
     local key = tostring(KeyBox.Text or ""):gsub("^%s*(.-)%s*$", "%1")
-    if key == "" then StatusLabel.Text = "Enter a key to continue."; return end
+    if key == "" then setStatus("Enter a key to continue."); return end
     if type(Window._keyValidator) ~= "function" then
-        StatusLabel.Text = "Validation disabled: validator missing. Reload the script."
+        setStatus("Validation disabled: validator missing. Reload the script.")
         debugPrint("Key validator missing", Window._keyValidator)
         return
     end
-    StatusLabel.Text = "Validating..."
+    setStatus("Validating...")
     local ok, res = pcall(function() return Window._keyValidator(key, function(v, m) Window:KeyValidationResult(v, m) end) end)
     if not ok then
-        StatusLabel.Text = "Validation error: " .. tostring(res)
+        setStatus("Validation error: " .. tostring(res))
         debugPrint("Key validation threw error", res)
         return
     end
@@ -1353,7 +1377,7 @@ ValidateBtn.MouseButton1Click:Connect(function()
         return
     end
     if type(res) ~= "boolean" then
-        StatusLabel.Text = "Validation failed unexpectedly."
+        setStatus("Validation failed unexpectedly.")
         debugPrint("Validator returned unexpected result", res)
     end
 end)
@@ -1636,6 +1660,7 @@ Window:SetKeyValidator(function(key, callback)
 
     local url = VALIDATION_URL
     local ok, response = safePost(url, { key = norm })
+    debugPrint("Validator: safePost returned", tostring(ok), (type(response) == "string" and ("len=" .. tostring(#response)) or tostring(response)))
     if not ok or type(response) ~= "string" then
         local reason = "Validation server unreachable or request failed."
         callback(false, reason)
@@ -1689,27 +1714,34 @@ HideUISection:AddKeybind({ Default = savedSettings.ToggleKey or "RightShift", Ca
 end })
 
 if savedKey and savedKey ~= "" then
-    StatusLabel.Text = "Validating saved key..."
+    setStatus("Validating saved key...")
+    showKeyOverlay(false)
     task.spawn(function()
         task.wait(0.2)
+        debugPrint("SavedKey: starting validation for key", tostring(savedKey))
         local success, res = pcall(function()
             return Window._keyValidator(savedKey, function(v, m)
                 Window:KeyValidationResult(v, m)
             end)
         end)
+        debugPrint("SavedKey validation pcall result", tostring(success), tostring(res))
 
         if not success or res == false then
-            if StatusLabel.Text:find("Validation server unreachable") or StatusLabel.Text:find("HTTP not available") or StatusLabel.Text:find("request failed") then
-                Overlay.Visible = false
-                StatusLabel.Text = "Saved key could not be verified, using cached login."
+            local currentStatus = tostring(StatusLabel.Text or "")
+            local offline = currentStatus:find("Validation server unreachable")
+                or currentStatus:find("HTTP not available")
+                or currentStatus:find("request failed")
+
+            if offline then
+                setStatus("Saved key could not be verified, using cached login.")
                 Window.KeyValidated = true
                 if not heartbeatStarted then
                     heartbeatStarted = true
                     startClientHeartbeat()
                 end
             else
-                Overlay.Visible = true
-                StatusLabel.Text = "Saved key is invalid or expired."
+                showKeyOverlay(true)
+                setStatus("Saved key is invalid or expired.")
             end
         elseif success and res == true and not heartbeatStarted then
             heartbeatStarted = true

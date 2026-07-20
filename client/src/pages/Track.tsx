@@ -64,7 +64,6 @@ function GameIcon({ placeId, size = 72 }: { placeId: string; size?: number }) {
 }
 
 type ConnLog = { id: string; roblox_id: string; roblox_name: string; place_id: string; place_name: string; executor: string; connected_at: string; uptime: number; };
-type KeyRecord = { id: string; key_value: string; is_used: boolean; created_at: string; redeemed_by?: string; };
 type StoredUser = { roblox_id: string; roblox_name: string; last_seen: string; sessions: ConnLog[]; };
 
 function loadStoredUsers(): Record<string, StoredUser> {
@@ -119,13 +118,9 @@ export default function Track() {
     return () => {};
   }, []);
 
-  const fetchKeys = async () => {
-    // Intentionally left empty; the Track page now only supports Clients and Users views.
-  };
-
   useEffect(() => {
     if (homeView === "users") {
-      // keep the users view reactive if needed in the future
+      // the users view remains available as the second tab
     }
   }, [homeView]);
 
