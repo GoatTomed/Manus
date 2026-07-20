@@ -151,18 +151,27 @@ export default function Track() {
             data.forEach(c => {
               if (!c.robloxId) return;
               const existing = updated[c.robloxId];
+              const lastConnectSamePlace = existing?.sessions?.[0]?.place_id === c.placeId;
+              const displayName = c.name && c.name !== "Player" ? c.name : (c.robloxId ? `#${c.robloxId}` : "Player");
               const sessionEntry: ConnLog = {
-                id: c.id, roblox_id: c.robloxId, roblox_name: c.name,
-                place_id: c.placeId, place_name: c.place,
+                id: c.id,
+                roblox_id: c.robloxId,
+                roblox_name: displayName,
+                place_id: c.placeId,
+                place_name: c.place,
                 executor: c.executor || "Unknown",
-                connected_at: existing?.sessions?.[0]?.connected_at || new Date().toISOString(),
+                connected_at: lastConnectSamePlace
+                  ? existing.sessions[0].connected_at
+                  : new Date().toISOString(),
                 uptime: c.uptime || 0,
               };
               updated[c.robloxId] = {
                 roblox_id: c.robloxId,
-                roblox_name: c.name,
+                roblox_name: displayName,
                 last_seen: new Date().toISOString(),
-                sessions: existing ? [sessionEntry, ...existing.sessions.filter(s => s.place_id !== c.placeId)].slice(0, 20) : [sessionEntry],
+                sessions: existing
+                  ? [sessionEntry, ...existing.sessions.filter(s => s.place_id !== c.placeId)].slice(0, 20)
+                  : [sessionEntry],
               };
             });
             saveStoredUsers(updated);
