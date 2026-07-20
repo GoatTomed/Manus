@@ -320,8 +320,8 @@ export default function Track() {
                   </div>
                   <div className="glass-card" style={{ padding: "0", overflow: "hidden" }}>
                     <div style={{ padding: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <h3 style={{ fontSize: "16px", fontWeight: "800" }}>Execute Script</h3>
-                      <button className="btn-execute" style={{ width: "auto", padding: "8px 24px" }} onClick={() => sendCommand(selectedClient.robloxId, "execute", scriptInput)}>Execute</button>
+                      <h3 style={{ fontSize: "16px", fontWeight: "800" }}>Remote Console</h3>
+                      <button className="btn-execute" style={{ width: "auto", padding: "8px 24px" }} onClick={() => sendCommand(selectedClient.robloxId, "execute", scriptInput)}>Run</button>
                     </div>
                     <textarea 
                       className="console-textarea" 

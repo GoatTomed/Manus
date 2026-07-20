@@ -28,9 +28,9 @@ export default function handler(req, res) {
       console.log("/api/clients: heartbeat received", data && data.robloxId, data && data.gameId);
       const client = {
         id: "c-" + Math.random().toString(36).substring(2, 9),
-        name: data.robloxName || "Player",
-        place: data.gameName || "Unknown Game",
-        placeId: String(data.gameId || ""),
+        name: data.robloxName || data.name || "Player",
+        place: data.gameName || data.placeName || data.place || data.place_name || "Unknown Game",
+        placeId: String(data.gameId || data.placeId || data.place_id || ""),
         av: (data.robloxName || "??").substring(0, 2).toUpperCase(),
         avc: "av-green",
         avatarUrl: `/api/roblox-avatar?userId=${encodeURIComponent(data.robloxId || "")}`,
@@ -51,11 +51,16 @@ export default function handler(req, res) {
 
   // POST /api/clients?command=1 - send command to client
   if (req.method === "POST" && req.query.command) {
-    const { robloxId, type, script } = req.body;
-    if (!robloxId) return res.status(400).json({ error: "No robloxId" });
-    if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
-    commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
-    return res.status(200).json({ success: true });
+    try {
+      const { robloxId, type, script } = req.body;
+      console.log("/api/clients: command queued", robloxId, type);
+      if (!robloxId) return res.status(400).json({ error: "No robloxId" });
+      if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
+      commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
+      return res.status(200).json({ success: true });
+    } catch (e) {
+      return res.status(500).json({ success: false, error: e.message });
+    }
   }
 
   return res.status(405).json({ error: "Method not allowed" });

