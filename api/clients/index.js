@@ -27,10 +27,11 @@ export default function handler(req, res) {
       const data = req.body;
       console.log("/api/clients: heartbeat received", data && data.robloxId, data && data.gameId);
       const placeId = String(data.gameId || data.placeId || data.place_id || "");
+      const placeName = data.gameName || data.placeName || data.place || data.place_name || (placeId ? `Place ${placeId}` : "");
       const client = {
-        id: "c-" + Math.random().toString(36).substring(2, 9),
+        id: data.robloxId ? `c-${String(data.robloxId)}` : "c-" + Math.random().toString(36).substring(2, 9),
         name: data.robloxName || data.name || "Player",
-        place: data.gameName || data.placeName || data.place || data.place_name || data.name || "Unknown Game",
+        place: placeName || "Unknown Game",
         placeId,
         av: (data.robloxName || "??").substring(0, 2).toUpperCase(),
         avc: "av-green",

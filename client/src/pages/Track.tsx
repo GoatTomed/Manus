@@ -137,9 +137,15 @@ export default function Track() {
         if (res.ok) {
           const data: Client[] = await res.json();
           setClients(data);
-          const newUptimes: Record<string, number> = {};
-          data.forEach(c => { newUptimes[c.id] = c.uptime || 0; });
-          setClientUptimes(prev => ({ ...prev, ...newUptimes }));
+          setClientUptimes(prev => {
+            const next = { ...prev };
+            data.forEach(c => {
+              const serverUptime = Number(c.uptime || 0);
+              const existing = Number(prev[c.id] || 0);
+              next[c.id] = Math.max(existing, serverUptime);
+            });
+            return next;
+          });
           setStoredUsers(prev => {
             const updated = { ...prev };
             data.forEach(c => {
@@ -215,12 +221,31 @@ export default function Track() {
 
   async function sendCommand(robloxId: string | undefined, type: string, script = "") {
     if (!robloxId) return false;
-    const res = await fetch("/api/clients?command=1", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ robloxId, type, script }),
-    });
-    return res.ok;
+    try {
+      const res = await fetch("/api/clients?command=1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ robloxId, type: type.toLowerCase(), script }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        console.warn("Command send failed", type, robloxId, err);
+        return false;
+      }
+      const data = await res.json().catch(() => null);
+      return data?.success === true || res.ok;
+    } catch (error) {
+      console.warn("Command send error", error);
+      return false;
+    }
+  }
+
+  async function handleClientCommand(type: string, script = "") {
+    if (!selectedClient?.robloxId) return;
+    const ok = await sendCommand(selectedClient.robloxId, type, script);
+    if (!ok && typeof alert !== "undefined") {
+      alert(`Failed to send ${type} command.`);
+    }
   }
 
   async function broadcastAnnouncement() {
@@ -351,18 +376,17 @@ export default function Track() {
                   </div>
                 </div>
                 <div className="profile-card">
-                  <div style={labelStyle}>Current Game</div>
                   <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "32px" }}>
                     <GameIcon placeId={selectedClient.placeId} size={64} />
                     <div>
-                      <div style={{ fontSize: "16px", fontWeight: "800" }}>{selectedClient.place}</div>
-                      <div style={{ fontSize: "12px", color: "#52525b" }}>{selectedClient.placeId}</div>
+                      <div style={{ fontSize: "16px", fontWeight: "800" }}>{selectedClient.place || (selectedClient.placeId ? `Place ${selectedClient.placeId}` : "Unknown Game")}</div>
+                      {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
                     </div>
                   </div>
                   <div style={labelStyle}>Actions</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <button className="btn-action danger" onClick={() => sendCommand(selectedClient.robloxId, "kick")}>Kick Player</button>
-                    <button className="btn-action danger" onClick={() => sendCommand(selectedClient.robloxId, "ban")}>Ban Player</button>
+                    <button className="btn-action danger" onClick={() => { void handleClientCommand("kick"); }}>Kick Player</button>
+                    <button className="btn-action danger" onClick={() => { void handleClientCommand("ban"); }}>Ban Player</button>
                   </div>
                 </div>
               </div>
