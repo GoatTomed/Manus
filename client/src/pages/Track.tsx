@@ -1,14 +1,13 @@
 // Track.tsx
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Client } from "./trackData";
 import "./Track.css";
 
-type HomeView = "clients" | "users" | "keys" | "stats";
+type HomeView = "clients" | "users";
 
 const homeNav: { id: HomeView; label: string; icon: string }[] = [
   { id: "clients", label: "Clients", icon: "ti-users" },
   { id: "users", label: "Users", icon: "ti-user-circle" },
-  { id: "keys", label: "Keys", icon: "ti-key" },
 ];
 
 function formatUptime(seconds: number) {
@@ -27,7 +26,7 @@ function timeAgo(ts: number | string, isOnline: boolean = false) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-function RobloxAvatar({ robloxId, size = 40 }: { robloxId: string; size?: number }) {
+function RobloxAvatar({ robloxId, size = 40 }: { robloxId?: string | null; size?: number }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!robloxId) return;
@@ -36,9 +35,14 @@ function RobloxAvatar({ robloxId, size = 40 }: { robloxId: string; size?: number
       .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
       .catch(() => {});
   }, [robloxId]);
+  const fallbackLabel = robloxId ? robloxId.toString().slice(0, 2).toUpperCase() : "?";
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {url ? <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-user" style={{ fontSize: size * 0.5 }}></i>}
+      {url ? (
+        <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : (
+        <span style={{ color: "#8b8b8b", fontSize: size * 0.45, fontWeight: 700 }}>{fallbackLabel}</span>
+      )}
     </div>
   );
 }
@@ -81,15 +85,10 @@ export default function Track() {
   const [clientUptimes, setClientUptimes] = useState<Record<string, number>>({});
   const [clientQuery, setClientQuery] = useState("");
   const [userQuery, setUserQuery] = useState("");
-  const [connLogs, setConnLogs] = useState<ConnLog[]>([]);
-  const [accessDenied, setAccessDenied] = useState(false);
+    const [accessDenied, setAccessDenied] = useState(false);
   const [accessChecked, setAccessChecked] = useState(false);
   const [scriptInput, setScriptInput] = useState("");
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [keys, setKeys] = useState<KeyRecord[]>([]);
-  const [keysLoading, setKeysLoading] = useState(false);
-  const [selectedKey, setSelectedKey] = useState<KeyRecord | null>(null);
-  const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const [storedUsers, setStoredUsers] = useState<Record<string, StoredUser>>(loadStoredUsers);
   const [announcementText, setAnnouncementText] = useState("");
   const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
@@ -101,49 +100,33 @@ export default function Track() {
   useEffect(() => {
     fetch("https://api.ipify.org?format=json")
       .then(r => r.json())
-      .then(data => { if (data.ip !== ALLOWED_IP) setAccessDenied(true); setAccessChecked(true); })
+      .then((data: any) => { if (data?.ip !== ALLOWED_IP) setAccessDenied(true); setAccessChecked(true); })
       .catch(() => setAccessChecked(true));
   }, []);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: any) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setShowPalette(true);
       }
       if (e.key === "Escape") setShowPalette(false);
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    if (typeof window !== "undefined") {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+    return () => {};
   }, []);
 
-  const fetchLogs = async () => {
-    try {
-      const res = await fetch('/api/connection-logs');
-      if (res.ok) { const data: ConnLog[] = await res.json(); setConnLogs(data); }
-    } catch (e: any) { console.error("Error fetching logs:", e.message); }
-  };
-
   const fetchKeys = async () => {
-    setKeysLoading(true);
-    try { const res = await fetch('/api/keys'); if (res.ok) setKeys(await res.json()); }
-    catch (e: any) { console.error("Error fetching keys:", e.message); } finally { setKeysLoading(false); }
-  };
-
-  const deleteKey = async (keyValue: string) => {
-    setDeletingKey(keyValue);
-    try {
-      const res = await fetch(`/api/analytics/keys/${encodeURIComponent(keyValue)}`, { method: "DELETE" });
-      if (res.ok) {
-        setKeys(prev => prev.filter(k => k.key_value !== keyValue));
-        if (selectedKey?.key_value === keyValue) setSelectedKey(null);
-      }
-    } catch (e: any) { console.error("Error deleting key:", e.message); } finally { setDeletingKey(null); }
+    // Intentionally left empty; the Track page now only supports Clients and Users views.
   };
 
   useEffect(() => {
-    if (homeView === "server" || homeView === "users") fetchLogs();
-    if (homeView === "keys") fetchKeys();
+    if (homeView === "users") {
+      // keep the users view reactive if needed in the future
+    }
   }, [homeView]);
 
   useEffect(() => {
@@ -216,7 +199,8 @@ export default function Track() {
   const onlineNow = (robloxId: string) => clients.find(c => c.robloxId === robloxId);
   const selectedUserData = selectedUser ? storedUsers[selectedUser] : null;
 
-  async function sendCommand(robloxId: string, type: string, script = "") {
+  async function sendCommand(robloxId: string | undefined, type: string, script = "") {
+    if (!robloxId) return false;
     const res = await fetch("/api/clients?command=1", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -229,12 +213,12 @@ export default function Track() {
     if (!announcementText.trim()) return;
     setSendingAnnouncement(true);
     try {
-      const promises = clients.map(c => sendCommand(c.robloxId, "announcement", announcementText));
+      const promises = clients.map(c => c.robloxId ? sendCommand(c.robloxId, "announcement", announcementText) : Promise.resolve(false));
       await Promise.all(promises);
       setAnnouncementText("");
-      alert("Announcement sent to all active clients!");
+      if (typeof alert !== "undefined") alert("Announcement sent to all active clients!");
     } catch (e) {
-      alert("Failed to send announcement.");
+      if (typeof alert !== "undefined") alert("Failed to send announcement.");
     } finally {
       setSendingAnnouncement(false);
     }
@@ -259,7 +243,7 @@ export default function Track() {
             <button
               key={item.id}
               className={`sidebar-item ${homeView === item.id && !inClientMode ? "active" : ""}`}
-              onClick={() => { setHomeView(item.id); setInClientMode(false); setSelectedUser(null); setSelectedKey(null); }}
+              onClick={() => { setHomeView(item.id); setInClientMode(false); setSelectedUser(null); }}
             >
               <i className={`ti ${item.icon}`}></i>
               {item.label}
@@ -276,7 +260,7 @@ export default function Track() {
                 <h1 style={{ fontSize: "32px", fontWeight: "900" }}>Clients</h1>
                 <div className="search-container">
                   <i className="ti ti-search" style={{ color: "#52525b" }}></i>
-                  <input placeholder="Search clients..." value={clientQuery} onChange={e => setClientQuery(e.target.value)} />
+                  <input placeholder="Search clients..." value={clientQuery} onChange={e => setClientQuery((e.target as HTMLInputElement).value)} />
                 </div>
               </div>
               <div className="dashboard-summary">
@@ -297,7 +281,7 @@ export default function Track() {
                 {filteredClients.map(c => (
                   <div key={c.id} className="glass-card" onClick={() => { setSelectedClient(c); setInClientMode(true); }}>
                     <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                      <RobloxAvatar robloxId={c.robloxId} size={48} />
+                      <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} />
                       <div>
                         <div style={{ fontSize: "16px", fontWeight: "800" }}>{c.name}</div>
                         <div style={{ fontSize: "12px", color: "#71717a" }}>ID: {c.robloxId}</div>
@@ -328,7 +312,7 @@ export default function Track() {
                 <div>
                   <div className="glass-card" style={{ padding: "40px", marginBottom: "40px" }}>
                     <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
-                      <RobloxAvatar robloxId={selectedClient.robloxId} size={120} />
+                      <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} />
                       <div>
                         <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{selectedClient.name}</h1>
                         <p style={{ color: "#71717a", fontSize: "16px" }}>{selectedClient.robloxId}</p>
@@ -349,7 +333,7 @@ export default function Track() {
                       style={{ margin: "0", border: "none", width: "100%", height: "300px" }}
                       placeholder="Paste your script here..."
                       value={scriptInput}
-                      onChange={e => setScriptInput(e.target.value)}
+                      onChange={e => setScriptInput((e.target as HTMLTextAreaElement).value)}
                     />
                   </div>
                 </div>
@@ -378,7 +362,7 @@ export default function Track() {
                 <h1 style={{ fontSize: "32px", fontWeight: "900" }}>Users</h1>
                 <div className="search-container">
                   <i className="ti ti-search" style={{ color: "#52525b" }}></i>
-                  <input placeholder="Search users..." value={userQuery} onChange={e => setUserQuery(e.target.value)} />
+                  <input placeholder="Search users..." value={userQuery} onChange={e => setUserQuery((e.target as HTMLInputElement).value)} />
                 </div>
               </div>
               <div className="user-list">
@@ -398,41 +382,7 @@ export default function Track() {
             </div>
           )}
 
-          {homeView === "keys" && (
-            <div className="view active animate-slide-in">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "40px" }}>
-                <h1 style={{ fontSize: "32px", fontWeight: "900" }}>Keys</h1>
-                <button className="btn-primary" onClick={fetchKeys}>Refresh Keys</button>
-              </div>
-              <div className="logs-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Key Value</th>
-                      <th>Redeemed By</th>
-                      <th>Created At</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {keys.map(k => (
-                      <tr key={k.id} onClick={() => setSelectedKey(k)} style={{ cursor: "pointer" }}>
-                        <td style={{ fontFamily: "monospace", fontWeight: "800", color: "#00ABFF" }}>{k.key_value}</td>
-                        <td>{k.redeemed_by ? <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><RobloxAvatar robloxId={k.redeemed_by} size={24} /> {k.redeemed_by}</div> : "Available"}</td>
-                        <td style={{ color: "#71717a" }}>{timeAgo(k.created_at)}</td>
-                        <td><span className={`status-badge ${k.is_used ? "used" : "active"}`}>{k.is_used ? "Used" : "Available"}</span></td>
-                        <td><button className="btn-delete" onClick={(e) => { e.stopPropagation(); deleteKey(k.key_value); }}>{deletingKey === k.key_value ? "..." : "Delete"}</button></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-
-        </div>
+          </div>
       </main>
 
       {/* ── SIDEBARS DE DÉTAILS ── */}
@@ -461,29 +411,6 @@ export default function Track() {
         </div>
       )}
 
-      {selectedKey && (
-        <div className="profile-sidebar animate-slide-in">
-          <button className="btn-secondary" style={{ marginBottom: "32px" }} onClick={() => setSelectedKey(null)}>Close</button>
-          <div className="profile-card" style={{ textAlign: "center", marginBottom: "32px" }}>
-            <h2 style={{ fontSize: "18px", fontWeight: "900" }}>Key Details</h2>
-            <code style={{ color: "#00ABFF", fontSize: "16px", fontWeight: "800", display: "block", margin: "16px 0" }}>{selectedKey.key_value}</code>
-            <span className={`status-badge ${selectedKey.is_used ? "used" : "active"}`}>{selectedKey.is_used ? "Used" : "Available"}</span>
-          </div>
-          {selectedKey.redeemed_by && (
-            <>
-              <div style={labelStyle}>Redeemed By</div>
-              <div className="user-row" onClick={() => { setSelectedUser(selectedKey.redeemed_by!); setSelectedKey(null); }}>
-                <RobloxAvatar robloxId={selectedKey.redeemed_by} size={40} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "14px", fontWeight: "800" }}>{selectedKey.redeemed_by}</div>
-                </div>
-                <i className="ti ti-chevron-right"></i>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
       {/* ── COMMAND PALETTE ── */}
       {showPalette && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "15vh" }} onClick={() => setShowPalette(false)}>
@@ -495,13 +422,13 @@ export default function Track() {
                 placeholder="Search actions or users..." 
                 style={{ background: "none", border: "none", color: "white", fontSize: "18px", width: "100%", outline: "none" }}
                 value={paletteSearch}
-                onChange={e => setPaletteSearch(e.target.value)}
+                onChange={e => setPaletteSearch((e.target as HTMLInputElement).value)}
               />
             </div>
             <div style={{ padding: "12px", maxHeight: "400px", overflowY: "auto" }}>
               <div style={labelStyle}>Quick Actions</div>
-              <button className="sidebar-item" onClick={() => { setHomeView("keys"); setShowPalette(false); }}>
-                <i className="ti ti-plus"></i> Generate New Key
+              <button className="sidebar-item" onClick={() => { setHomeView("clients"); setShowPalette(false); }}>
+                <i className="ti ti-refresh"></i> Refresh Clients
               </button>
 
             </div>

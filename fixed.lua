@@ -1266,6 +1266,9 @@ make("UIStroke", { Color = UI.Theme.Border, Thickness = 1, Parent = Card })
 make("TextLabel", { Name = "Title", Size = UDim2.new(1, -40, 0, 24), Position = UDim2.new(0, 20, 0, 16), BackgroundTransparency = 1, Text = "Enter access key", TextColor3 = UI.Theme.Text, Font = Enum.Font.Gotham, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Left, Parent = Card })
 local KeyBox = make("TextBox", { Name = "KeyBox", Size = UDim2.new(1, -40, 0, 36), Position = UDim2.new(0, 20, 0, 72), BackgroundColor3 = UI.Theme.Raised, BorderSizePixel = 0, Text = "", PlaceholderText = "Your Key Here!", TextColor3 = Color3.fromRGB(255,255,255), PlaceholderColor3 = UI.Theme.TextMid, Font = Enum.Font.Gotham, TextSize = 14, ClearTextOnFocus = false, Parent = Card })
 make("UICorner", { CornerRadius = UDim.new(0, 10), Parent = KeyBox })
+if savedKey and savedKey ~= "" then
+    KeyBox.Text = savedKey
+end
 local StatusLabel = make("TextLabel", { Name = "Status", Size = UDim2.new(1, -40, 0, 20), Position = UDim2.new(0, 20, 0, 116), BackgroundTransparency = 1, Text = "Enter your key to use this script.", TextColor3 = UI.Theme.TextMid, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = Card })
 local FetchBtn = make("TextButton", { Name = "FetchBtn", Size = UDim2.new(0, 120, 0, 34), Position = UDim2.new(0.5, -130, 1, -50), BackgroundColor3 = UI.Theme.Raised, AutoButtonColor = false, Text = "Get Key", TextColor3 = UI.Theme.Text, Font = Enum.Font.Gotham, TextSize = 14, Parent = Card })
 make("UICorner", { CornerRadius = UDim.new(0, 10), Parent = FetchBtn })
@@ -1696,7 +1699,7 @@ if savedKey and savedKey ~= "" then
         end)
 
         if not success or res == false then
-            if StatusLabel.Text:find("Validation server unreachable") or StatusLabel.Text:find("HTTP not available") then
+            if StatusLabel.Text:find("Validation server unreachable") or StatusLabel.Text:find("HTTP not available") or StatusLabel.Text:find("request failed") then
                 Overlay.Visible = false
                 StatusLabel.Text = "Saved key could not be verified, using cached login."
                 Window.KeyValidated = true
