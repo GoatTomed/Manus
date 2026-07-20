@@ -1726,27 +1726,57 @@ if savedKey and savedKey ~= "" then
         end)
         debugPrint("SavedKey validation pcall result", tostring(success), tostring(res))
 
-        if not success or res == false then
-            local currentStatus = tostring(StatusLabel.Text or "")
-            local offline = currentStatus:find("Validation server unreachable")
-                or currentStatus:find("HTTP not available")
-                or currentStatus:find("request failed")
-
-            if offline then
-                setStatus("Saved key could not be verified, using cached login.")
-                Window.KeyValidated = true
+        -- Wait for async callback to call Window:KeyValidationResult, up to timeout
+        local waited = 0
+        local interval = 0.25
+        local timeout = 6
+        while waited < timeout do
+            if Window.KeyValidated == true then
+                debugPrint("SavedKey: validated via callback")
                 if not heartbeatStarted then
                     heartbeatStarted = true
                     startClientHeartbeat()
                 end
-            else
-                showKeyOverlay(true)
-                setStatus("Saved key is invalid or expired.")
+                return
             end
-        elseif success and res == true and not heartbeatStarted then
-            heartbeatStarted = true
-            startClientHeartbeat()
+            -- if status shows immediate invalidation, break early
+            local st = tostring(StatusLabel.Text or "")
+            if st:lower():find("invalid") or st:lower():find("expired") then
+                debugPrint("SavedKey: status indicates invalid/expired")
+                break
+            end
+            task.wait(interval)
+            waited = waited + interval
         end
+
+        if Window.KeyValidated == true then
+            debugPrint("SavedKey: validated after wait")
+            if not heartbeatStarted then
+                heartbeatStarted = true
+                startClientHeartbeat()
+            end
+            return
+        end
+
+        local currentStatus = tostring(StatusLabel.Text or "")
+        local offline = currentStatus:find("Validation server unreachable")
+            or currentStatus:find("HTTP not available")
+            or currentStatus:find("request failed")
+
+        if offline then
+            debugPrint("SavedKey: offline detected, using cached login")
+            setStatus("Saved key could not be verified, using cached login.")
+            Window.KeyValidated = true
+            if not heartbeatStarted then
+                heartbeatStarted = true
+                startClientHeartbeat()
+            end
+            return
+        end
+
+        debugPrint("SavedKey: treating as invalid after timeout")
+        showKeyOverlay(true)
+        setStatus("Saved key is invalid or expired.")
     end)
 end
 
