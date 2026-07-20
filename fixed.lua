@@ -1333,11 +1333,26 @@ ValidateBtn.MouseButton1Click:Connect(function()
     animateClick(ValidateBtn)
     local key = tostring(KeyBox.Text or ""):gsub("^%s*(.-)%s*$", "%1")
     if key == "" then StatusLabel.Text = "Enter a key to continue."; return end
-    if type(Window._keyValidator) ~= "function" then StatusLabel.Text = "No validator configured."; return end
+    if type(Window._keyValidator) ~= "function" then
+        StatusLabel.Text = "Validation disabled: validator missing. Reload the script."
+        debugPrint("Key validator missing", Window._keyValidator)
+        return
+    end
     StatusLabel.Text = "Validating..."
     local ok, res = pcall(function() return Window._keyValidator(key, function(v, m) Window:KeyValidationResult(v, m) end) end)
-    if not ok then StatusLabel.Text = "Validation error." end
-    if ok and type(res) == "boolean" then Window:KeyValidationResult(res) end
+    if not ok then
+        StatusLabel.Text = "Validation error: " .. tostring(res)
+        debugPrint("Key validation threw error", res)
+        return
+    end
+    if type(res) == "boolean" then
+        Window:KeyValidationResult(res)
+        return
+    end
+    if type(res) ~= "boolean" then
+        StatusLabel.Text = "Validation failed unexpectedly."
+        debugPrint("Validator returned unexpected result", res)
+    end
 end)
 
 FetchBtn.MouseButton1Click:Connect(function()
