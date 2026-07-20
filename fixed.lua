@@ -24,6 +24,14 @@ local CLIENT_HEARTBEAT_URL = "https://yoursuck.vercel.app/api/clients"
 local heartbeatStarted = false
 local savedKeyHandled = false
 
+local function debugPrint(...)
+    local parts = {}
+    for i = 1, select("#", ...) do
+        parts[i] = tostring(select(i, ...))
+    end
+    pcall(function() print("[YouSuck] " .. table.concat(parts, " ")) end)
+end
+
 -- Print heartbeat endpoint for debugging
 debugPrint("CLIENT_HEARTBEAT_URL=", CLIENT_HEARTBEAT_URL)
 
@@ -141,14 +149,6 @@ local function saveSettings(settings)
     end
 end
 
-local function debugPrint(...)
-    local parts = {}
-    for i = 1, select("#", ...) do
-        parts[i] = tostring(select(i, ...))
-    end
-    pcall(function() print("[YouSuck] " .. table.concat(parts, " ")) end)
-end
-
 local function getExecutorName()
     if type(syn) == "table" then return "Synapse" end
     if type(secure_load) == "function" then return "Sentinel" end
@@ -167,7 +167,7 @@ end
 local function getGameName()
     local name = "Roblox"
     local ok, info = pcall(function()
-        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId, Enum.InfoType.Asset)
     end)
     if ok and type(info) == "table" and type(info.Name) == "string" and info.Name ~= "" then
         return info.Name

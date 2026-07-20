@@ -87,6 +87,12 @@ export default function Track() {
     const [accessDenied, setAccessDenied] = useState(false);
   const [accessChecked, setAccessChecked] = useState(false);
   const [scriptInput, setScriptInput] = useState("");
+
+  const pushTrackUrl = (robloxId?: string) => {
+    if (typeof window === "undefined") return;
+    const url = robloxId ? `/track?u=${encodeURIComponent(robloxId)}` : "/track";
+    window.history.replaceState({}, "", url);
+  };
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [storedUsers, setStoredUsers] = useState<Record<string, StoredUser>>(loadStoredUsers);
   const [announcementText, setAnnouncementText] = useState("");
@@ -162,7 +168,20 @@ export default function Track() {
     fetchClients();
     const interval = setInterval(fetchClients, 1000);
     return () => clearInterval(interval);
-  }, [selectedClient]);
+  }, []);
+
+  useEffect(() => {
+    if (selectedClient || !clients.length) return;
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const u = params.get("u");
+    if (!u) return;
+    const match = clients.find(c => String(c.robloxId) === u);
+    if (match) {
+      setSelectedClient(match);
+      setInClientMode(true);
+    }
+  }, [clients, selectedClient]);
 
   useEffect(() => {
     const timer = setInterval(() => { 
@@ -274,7 +293,7 @@ export default function Track() {
               </div>
               <div className="client-grid">
                 {filteredClients.map(c => (
-                  <div key={c.id} className="glass-card" onClick={() => { setSelectedClient(c); setInClientMode(true); }}>
+                  <div key={c.id} className="glass-card" onClick={() => { setSelectedClient(c); setInClientMode(true); pushTrackUrl(c.robloxId); }}>
                     <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} />
                       <div>
@@ -300,7 +319,7 @@ export default function Track() {
 
           {inClientMode && selectedClient && (
             <div className="view active animate-slide-in">
-              <button className="btn-secondary" style={{ marginBottom: "32px" }} onClick={() => setInClientMode(false)}>
+              <button className="btn-secondary" style={{ marginBottom: "32px" }} onClick={() => { setInClientMode(false); setSelectedClient(null); pushTrackUrl(); }}>
                 <i className="ti ti-arrow-left"></i> Back to Clients
               </button>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: "40px" }}>
@@ -319,8 +338,7 @@ export default function Track() {
                     </div>
                   </div>
                   <div className="glass-card" style={{ padding: "0", overflow: "hidden" }}>
-                    <div style={{ padding: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <h3 style={{ fontSize: "16px", fontWeight: "800" }}>Remote Console</h3>
+                    <div style={{ padding: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
                       <button className="btn-execute" style={{ width: "auto", padding: "8px 24px" }} onClick={() => sendCommand(selectedClient.robloxId, "execute", scriptInput)}>Run</button>
                     </div>
                     <textarea 

@@ -26,15 +26,16 @@ export default function handler(req, res) {
     try {
       const data = req.body;
       console.log("/api/clients: heartbeat received", data && data.robloxId, data && data.gameId);
+      const placeId = String(data.gameId || data.placeId || data.place_id || "");
       const client = {
         id: "c-" + Math.random().toString(36).substring(2, 9),
         name: data.robloxName || data.name || "Player",
-        place: data.gameName || data.placeName || data.place || data.place_name || "Unknown Game",
-        placeId: String(data.gameId || data.placeId || data.place_id || ""),
+        place: data.gameName || data.placeName || data.place || data.place_name || data.name || "Unknown Game",
+        placeId,
         av: (data.robloxName || "??").substring(0, 2).toUpperCase(),
         avc: "av-green",
         avatarUrl: `/api/roblox-avatar?userId=${encodeURIComponent(data.robloxId || "")}`,
-        gameIconUrl: `/api/roblox-gameicon?placeId=${encodeURIComponent(data.gameId || "")}`,
+        gameIconUrl: placeId ? `/api/roblox-gameicon?placeId=${encodeURIComponent(placeId)}` : "",
         lastHeartbeat: Date.now(),
         uptime: data.uptime || 0,
         executor: data.executor || "Unknown",
