@@ -1,7 +1,85 @@
+import { createClient } from "@supabase/supabase-js";
+
 let activeClients = [];
 const commandQueue = {};
 
-export default function handler(req, res) {
+const SUPABASE_URL = typeof process !== "undefined" ? process.env.SUPABASE_URL : undefined;
+const SUPABASE_KEY = typeof process !== "undefined" ? process.env.SUPABASE_SERVICE_ROLE_KEY : undefined;
+
+function normalizeSupabaseUrl(url) {
+  if (!url) return "";
+  let u = String(url).trim();
+  if (!u.startsWith("http")) u = `https://${u}`;
+  if (u.endsWith("/")) u = u.slice(0, -1);
+  if (u.includes(".supabase.co")) {
+    const match = u.match(/https?:\/\/([a-z0-9]+)\.supabase\.co/i);
+    if (match && match[1]) u = `https://${match[1]}.supabase.co`;
+  }
+  return u;
+}
+
+const supabase = SUPABASE_URL && SUPABASE_KEY
+  ? createClient(normalizeSupabaseUrl(SUPABASE_URL), SUPABASE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  : null;
+
+async function enqueueCommand(robloxId, type, script) {
+  if (!robloxId) return false;
+  if (!supabase) {
+    if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
+    commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
+    return true;
+  }
+
+  try {
+    const { error } = await supabase.from("client_commands").insert([{ roblox_id: robloxId, type, script: script || "", created_at: new Date().toISOString(), delivered: false }]);
+    if (error) {
+      console.warn("Supabase command insert failed, falling back to in-memory queue:", error.message || error);
+      if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
+      commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
+    }
+    return true;
+  } catch (e) {
+    console.warn("Supabase command enqueue exception, falling back to in-memory queue:", e);
+    if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
+    commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
+    return true;
+  }
+}
+
+async function dequeueCommands(robloxId) {
+  const local = commandQueue[robloxId] || [];
+  commandQueue[robloxId] = [];
+  if (!supabase) return local;
+
+  try {
+    const { data, error } = await supabase
+      .from("client_commands")
+      .select("id,type,script")
+      .eq("roblox_id", robloxId)
+      .eq("delivered", false)
+      .order("created_at", { ascending: true });
+    if (error) {
+      console.warn("Supabase command fetch failed, using local queue:", error.message || error);
+      return local;
+    }
+    const commands = Array.isArray(data) ? data.map(item => ({ type: item.type, script: item.script || "" })) : [];
+    const ids = Array.isArray(data) ? data.map(item => item.id).filter(id => id != null) : [];
+    if (ids.length > 0) {
+      const { error: updateError } = await supabase.from("client_commands").update({ delivered: true, delivered_at: new Date().toISOString() }).in("id", ids);
+      if (updateError) {
+        console.warn("Supabase command mark-delivered failed:", updateError.message || updateError);
+      }
+    }
+    return local.concat(commands);
+  } catch (e) {
+    console.warn("Supabase command dequeue exception, using local queue:", e);
+    return local;
+  }
+}
+
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
 
@@ -16,8 +94,8 @@ export default function handler(req, res) {
   // GET /api/clients?commands=1&robloxId=xxx - poll commands (called by Lua)
   if (req.method === "GET" && req.query.commands) {
     const { robloxId } = req.query;
-    const cmds = commandQueue[robloxId] || [];
-    commandQueue[robloxId] = [];
+    if (!robloxId) return res.status(400).json({ error: "No robloxId" });
+    const cmds = await dequeueCommands(robloxId);
     return res.status(200).json({ commands: cmds });
   }
 
@@ -57,8 +135,7 @@ export default function handler(req, res) {
       const { robloxId, type, script } = req.body;
       console.log("/api/clients: command queued", robloxId, type);
       if (!robloxId) return res.status(400).json({ error: "No robloxId" });
-      if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
-      commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
+      await enqueueCommand(robloxId, type, script);
       return res.status(200).json({ success: true });
     } catch (e) {
       return res.status(500).json({ success: false, error: e.message });

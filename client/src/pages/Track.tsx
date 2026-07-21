@@ -5,6 +5,17 @@ import "./Track.css";
 
 type HomeView = "clients" | "users";
 
+const DEFAULT_API_BASE = "https://yoursuck.vercel.app";
+
+function resolveApiUrl(path: string) {
+  if (typeof window === "undefined") return DEFAULT_API_BASE + path;
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1" || host.startsWith("192.168.")) {
+    return path;
+  }
+  return DEFAULT_API_BASE + path;
+}
+
 const homeNav: { id: HomeView; label: string; icon: string }[] = [
   { id: "clients", label: "Clients", icon: "ti-users" },
   { id: "users", label: "Users", icon: "ti-user-circle" },
@@ -26,17 +37,17 @@ function timeAgo(ts: number | string, isOnline: boolean = false) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-const API_BASE = "https://yoursuck.vercel.app";
-
-function RobloxAvatar({ robloxId, size = 40 }: { robloxId?: string | null; size?: number }) {
+function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocalApi?: boolean }) {
+  const { robloxId, size = 40, useLocalApi = false } = props;
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!robloxId) return;
-    fetch(`/api/roblox-avatar?userId=${robloxId}`)
+    const apiUrl = useLocalApi ? `/api/roblox-avatar?userId=${robloxId}` : resolveApiUrl(`/api/roblox-avatar?userId=${robloxId}`);
+    fetch(apiUrl)
       .then(r => r.json())
       .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
       .catch(() => {});
-  }, [robloxId]);
+  }, [robloxId, useLocalApi]);
   const fallbackLabel = robloxId ? robloxId.toString().slice(0, 2).toUpperCase() : "?";
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -45,33 +56,21 @@ function RobloxAvatar({ robloxId, size = 40 }: { robloxId?: string | null; size?
       ) : (
         <span style={{ color: "#8b8b8b", fontSize: size * 0.45, fontWeight: 700 }}>{fallbackLabel}</span>
       )}
-      <div style={{ position: "fixed", left: 12, bottom: 12, background: "rgba(0,0,0,0.7)", padding: 12, borderRadius: 8, zIndex: 2000, color: "#fff", fontSize: 12, maxWidth: 420 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <input type="checkbox" checked={useLocalApi} onChange={e => setUseLocalApi((e.target as HTMLInputElement).checked)} />
-          Use Local API
-        </label>
-        <div style={{ marginTop: 8 }}>
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>Last Command</div>
-          <pre style={{ whiteSpace: "pre-wrap", maxHeight: 160, overflow: "auto", margin: 0 }}>{lastCommandLog ? JSON.stringify(lastCommandLog, null, 2) : "(none)"}</pre>
-        </div>
-        <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-          <button className="btn-secondary" onClick={() => { console.log(clients); alert(JSON.stringify(clients.slice(0,5))); }}>Dump Clients</button>
-          <button className="btn-secondary" onClick={() => { setLastCommandLog(null); }}>Clear</button>
-        </div>
-      </div>
     </div>
   );
 }
 
-function GameIcon({ placeId, size = 72 }: { placeId: string; size?: number }) {
+function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean }) {
+  const { placeId, size = 72, useLocalApi = false } = props;
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!placeId) return;
-    fetch(`/api/roblox-gameicon?placeId=${placeId}`)
+    const apiUrl = useLocalApi ? `/api/roblox-gameicon?placeId=${placeId}` : resolveApiUrl(`/api/roblox-gameicon?placeId=${placeId}`);
+    fetch(apiUrl)
       .then(r => r.json())
       .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
       .catch(() => {});
-  }, [placeId]);
+  }, [placeId, useLocalApi]);
   return (
     <div style={{ width: size, height: size, borderRadius: "4px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", flexShrink: 0, background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", justifyContent: "center" }}>
       {url ? <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-device-gamepad" style={{ fontSize: size * 0.35, color: "#52525b" }}></i>}
@@ -111,9 +110,14 @@ export default function Track() {
     const url = robloxId ? `/track?u=${encodeURIComponent(robloxId)}` : "/track";
     window.history.replaceState({}, "", url);
   };
-  const [useLocalApi, setUseLocalApi] = useState(false);
+  const [useLocalApi, setUseLocalApi] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const host = window.location.hostname;
+    return host === "localhost" || host === "127.0.0.1" || host.startsWith("192.168.");
+  });
+  const getApiUrl = (path: string) => useLocalApi ? path : resolveApiUrl(path);
+  const getApiUrls = (path: string) => useLocalApi ? [path, resolveApiUrl(path)] : [resolveApiUrl(path)];
   const [lastCommandLog, setLastCommandLog] = useState<any>(null);
-  const apiBase = useLocalApi ? "" : "https://yoursuck.vercel.app";
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [storedUsers, setStoredUsers] = useState<Record<string, StoredUser>>(loadStoredUsers);
   const [robloxNameCache, setRobloxNameCache] = useState<Record<string, string>>({});
@@ -152,39 +156,46 @@ export default function Track() {
 
   const fetchRobloxName = async (userId: string) => {
     if (!userId || robloxNameCache[userId]) return;
-    try {
-      const res = await fetch(`${apiBase}/api/roblox-user?userId=${encodeURIComponent(userId)}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data && typeof data.name === "string" && data.name.trim() !== "") {
-        setRobloxNameCache(prev => ({ ...prev, [userId]: data.name }));
+    const endpoints = getApiUrls(`/api/roblox-user?userId=${encodeURIComponent(userId)}`);
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data && typeof data.name === "string" && data.name.trim() !== "") {
+          setRobloxNameCache(prev => ({ ...prev, [userId]: data.name }));
+          return;
+        }
+      } catch (error) {
+        // try next endpoint
       }
-    } catch (error) {
-      console.warn("Failed to fetch Roblox name for", userId, error);
     }
+    console.warn("Failed to fetch Roblox name for", userId);
   };
 
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const res = await fetch(`${apiBase}/api/clients`);
+        let res = await fetch(getApiUrl(`/api/clients`));
+        if (!res.ok && useLocalApi) {
+          res = await fetch(resolveApiUrl(`/api/clients`));
+        }
         if (res.ok) {
           const data: Client[] = await res.json();
           setClients(data);
           const namesToFetch: string[] = [];
           // Record base uptime from server and timestamp of receipt so we can display a smooth increment locally
           const ts = Date.now();
-          setClientUptimes(prevUT => {
+              setClientUptimes(prevUT => {
             const nextUT: Record<string, number> = { ...prevUT };
             setClientUptimeAt(prevAt => {
               const nextAt: Record<string, number> = { ...prevAt };
               data.forEach(c => {
                 const serverUptime = Number(c.uptime || 0);
-                // if server uptime changed, reset the 'at' timestamp so elapsed starts from now
                 if (prevUT[c.id] !== serverUptime) {
                   nextAt[c.id] = ts;
-                } else {
-                  if (typeof nextAt[c.id] === "undefined") nextAt[c.id] = ts;
+                } else if (typeof nextAt[c.id] === "undefined") {
+                  nextAt[c.id] = ts;
                 }
                 nextUT[c.id] = serverUptime;
               });
@@ -291,11 +302,9 @@ export default function Track() {
     }
     try {
       const body = JSON.stringify({ robloxId, type: type.toLowerCase(), script });
-      const tryUrls = [] as string[];
-      if (apiBase) tryUrls.push(`${apiBase}/api/clients?command=1`);
-      tryUrls.push(`/api/clients?command=1`);
+      const urls = getApiUrls(`/api/clients?command=1`);
       let lastErr: any = null;
-      for (const url of tryUrls) {
+      for (const url of urls) {
         try {
           console.log("sendCommand->", url, body);
           const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
@@ -307,8 +316,15 @@ export default function Track() {
             continue;
           }
           const data = await res.json().catch(() => null);
+          const okResponse = data?.success === true;
+          if (!okResponse) {
+            lastErr = { url, status: res.status, body: data };
+            console.warn("Command endpoint returned non-success response", url, data);
+            setLastCommandLog({ url, ok: false, status: res.status, body: data });
+            continue;
+          }
           setLastCommandLog({ url, ok: true, status: res.status, body: data });
-          return data?.success === true || res.ok;
+          return true;
         } catch (e) {
           lastErr = e;
           console.warn("Command send exception", url, e);
@@ -321,6 +337,7 @@ export default function Track() {
       return false;
     } catch (error) {
       console.warn("Command send error", error);
+      setLastCommandLog({ ok: false, error: String(error) });
       return false;
     }
   }
@@ -424,7 +441,7 @@ export default function Track() {
                 {filteredClients.map(c => (
                   <div key={c.id} className="glass-card" onClick={() => { setSelectedClient(c); setInClientMode(true); pushTrackUrl(c.robloxId); }}>
                     <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                      <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} />
+                      <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} useLocalApi={useLocalApi} />
                       <div>
                           <div style={{ fontSize: "16px", fontWeight: "800" }}>{
                             (() => {
@@ -477,7 +494,7 @@ export default function Track() {
                 <div>
                   <div className="glass-card" style={{ padding: "40px", marginBottom: "40px" }}>
                     <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
-                      <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} />
+                      <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} />
                       <div>
                         <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>
                           {(() => {
@@ -491,13 +508,16 @@ export default function Track() {
                           <span className="status-badge active">Online</span>
                           <span className="executor-badge">{selectedClient.executor}</span>
                         </div>
+                        <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
+                          <div style={{ fontSize: "14px", color: "#a5b4fc" }}><strong>Total Uptime:</strong> {formatUptime((storedUsers[selectedClient.robloxId || ""]?.sessions || []).reduce((sum, s) => sum + (s.uptime || 0), 0))}</div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
                 <div className="profile-card">
                   <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "32px" }}>
-                    <GameIcon placeId={selectedClient.placeId} size={64} />
+                    <GameIcon placeId={selectedClient.placeId} size={64} useLocalApi={useLocalApi} />
                     <div>
                         <div style={{ fontSize: "16px", fontWeight: "800" }}>{
                           (selectedClient.place && !/unknown/i.test(selectedClient.place) && !/^[0-9]+$/.test(selectedClient.place))
@@ -545,7 +565,7 @@ export default function Track() {
               <div className="user-list">
                 {filteredUsers.map(u => (
                   <div key={u.roblox_id} className={`user-row ${selectedUser === u.roblox_id ? "active" : ""}`} onClick={() => setSelectedUser(u.roblox_id)}>
-                    <RobloxAvatar robloxId={u.roblox_id} size={48} />
+                    <RobloxAvatar robloxId={u.roblox_id} size={48} useLocalApi={useLocalApi} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: "16px", fontWeight: "800" }}>{u.roblox_name}</div>
                     </div>
@@ -567,7 +587,7 @@ export default function Track() {
           <button className="btn-secondary" style={{ marginBottom: "32px" }} onClick={() => setSelectedUser(null)}>Close</button>
           <div className="profile-card" style={{ textAlign: "center", marginBottom: "32px" }}>
             <div style={{ display: "flex", justifyContent: "center" }}>
-              <RobloxAvatar robloxId={selectedUserData.roblox_id} size={100} />
+              <RobloxAvatar robloxId={selectedUserData.roblox_id} size={100} useLocalApi={useLocalApi} />
             </div>
             <h2 style={{ fontSize: "24px", fontWeight: "900", marginTop: "16px" }}>{selectedUserData.roblox_name}</h2>
             <div style={{ marginTop: "16px" }}>{timeAgo(selectedUserData.last_seen, !!onlineNow(selectedUserData.roblox_id))}</div>
@@ -578,7 +598,7 @@ export default function Track() {
               .filter(s => s.place_name && !s.place_name.toLowerCase().includes("unknown"))
               .map((s, i) => (
                 <div key={i} className="user-row" style={{ background: i === 0 && onlineNow(selectedUserData.roblox_id) ? "rgba(0,171,255,0.05)" : "rgba(255,255,255,0.01)" }}>
-                  <GameIcon placeId={s.place_id} size={40} />
+                  <GameIcon placeId={s.place_id} size={40} useLocalApi={useLocalApi} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "14px", fontWeight: "800" }}>{s.place_name}</div>
                     <div style={{ fontSize: "11px", color: "#71717a" }}>{timeAgo(s.connected_at, !!onlineNow(selectedUserData.roblox_id))}</div>
@@ -614,6 +634,20 @@ export default function Track() {
           </div>
         </div>
       )}
+      <div style={{ position: "fixed", left: 12, bottom: 12, background: "rgba(0,0,0,0.7)", padding: 12, borderRadius: 8, zIndex: 2000, color: "#fff", fontSize: 12, maxWidth: 420 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input type="checkbox" checked={useLocalApi} onChange={e => setUseLocalApi((e.target as HTMLInputElement).checked)} />
+          Use Local API
+        </label>
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>Last Command</div>
+          <pre style={{ whiteSpace: "pre-wrap", maxHeight: 160, overflow: "auto", margin: 0 }}>{lastCommandLog ? JSON.stringify(lastCommandLog, null, 2) : "(none)"}</pre>
+        </div>
+        <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+          <button className="btn-secondary" onClick={() => { console.log(clients); alert(JSON.stringify(clients.slice(0,5))); }}>Dump Clients</button>
+          <button className="btn-secondary" onClick={() => { setLastCommandLog(null); }}>Clear</button>
+        </div>
+      </div>
     </div>
   );
 }
