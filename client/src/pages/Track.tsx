@@ -26,11 +26,13 @@ function timeAgo(ts: number | string, isOnline: boolean = false) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+const API_BASE = "https://yoursuck.vercel.app";
+
 function RobloxAvatar({ robloxId, size = 40 }: { robloxId?: string | null; size?: number }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!robloxId) return;
-    fetch(`/api/roblox-avatar?userId=${robloxId}`)
+    fetch(`${API_BASE}/api/roblox-avatar?userId=${robloxId}`)
       .then(r => r.json())
       .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
       .catch(() => {});
@@ -51,7 +53,7 @@ function GameIcon({ placeId, size = 72 }: { placeId: string; size?: number }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!placeId) return;
-    fetch(`/api/roblox-gameicon?placeId=${placeId}`)
+    fetch(`${API_BASE}/api/roblox-gameicon?placeId=${placeId}`)
       .then(r => r.json())
       .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
       .catch(() => {});
@@ -134,7 +136,7 @@ export default function Track() {
   const fetchRobloxName = async (userId: string) => {
     if (!userId || robloxNameCache[userId]) return;
     try {
-      const res = await fetch(`/api/roblox-user?userId=${encodeURIComponent(userId)}`);
+      const res = await fetch(`${API_BASE}/api/roblox-user?userId=${encodeURIComponent(userId)}`);
       if (!res.ok) return;
       const data = await res.json();
       if (data && typeof data.name === "string" && data.name.trim() !== "") {
@@ -148,7 +150,7 @@ export default function Track() {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const res = await fetch('/api/clients');
+        const res = await fetch(`${API_BASE}/api/clients`);
         if (res.ok) {
           const data: Client[] = await res.json();
           setClients(data);
@@ -180,7 +182,7 @@ export default function Track() {
               const rawName = c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : (robloxNameCache[c.robloxId] || "Unknown User");
               let displayName = (rawName || "").toString().replace(/^#+\s*/, "");
               if (/^[0-9]+$/.test(displayName)) displayName = robloxNameCache[c.robloxId] || "Unknown User";
-              const sessionEntry: ConnLog = {
+                  const sessionEntry: ConnLog = {
                 id: c.id,
                 roblox_id: c.robloxId,
                 roblox_name: displayName,
@@ -261,7 +263,7 @@ export default function Track() {
   async function sendCommand(robloxId: string | undefined, type: string, script = "") {
     if (!robloxId) return false;
     try {
-      const res = await fetch("/api/clients?command=1", {
+      const res = await fetch(`${API_BASE}/api/clients?command=1`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ robloxId, type: type.toLowerCase(), script }),
@@ -372,13 +374,28 @@ export default function Track() {
                     <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} />
                       <div>
-                          <div style={{ fontSize: "16px", fontWeight: "800" }}>{c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : "Unknown User"}</div>
+                          <div style={{ fontSize: "16px", fontWeight: "800" }}>{
+                            (() => {
+                              const raw = c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : (robloxNameCache[c.robloxId || ""] || "Unknown User");
+                              let out = (raw || "").toString().replace(/^#+\s*/, "");
+                              if (/^[0-9]+$/.test(out)) out = robloxNameCache[c.robloxId || ""] || "Unknown User";
+                              return out;
+                            })()
+                          }</div>
                       </div>
                     </div>
                     <div className="card-info-row">
                       <div>
                         <div style={labelStyle}>Current Game</div>
-                        <div style={{ fontSize: "13px", fontWeight: "700" }}>{c.place}</div>
+                        <div style={{ fontSize: "13px", fontWeight: "700" }}>{
+                          (() => {
+                            const p = c.place || "";
+                            if (!p || p === "Unknown Game") {
+                              return c.placeId ? `Place ${c.placeId}` : "Unknown Game";
+                            }
+                            return p;
+                          })()
+                        }</div>
                       </div>
                       <div style={{ textAlign: "right" }}>
                         <div style={labelStyle}>Uptime</div>
@@ -441,6 +458,7 @@ export default function Track() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                     <button className="btn-action danger" onClick={() => { void handleClientCommand("kick"); }}>Kick Player</button>
                     <button className="btn-action danger" onClick={() => { void handleClientCommand("ban"); }}>Ban Player</button>
+                    <button className="btn-action" onClick={() => { void handleClientCommand("unban"); }}>Unban Player</button>
                   </div>
                 </div>
               </div>
