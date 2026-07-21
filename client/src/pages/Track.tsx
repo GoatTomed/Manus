@@ -1,5 +1,5 @@
 // Track.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Client } from "./trackData";
 import "./Track.css";
 
@@ -35,6 +35,34 @@ function timeAgo(ts: number | string, isOnline: boolean = false) {
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function normalizeClientName(name: string | undefined, robloxId?: string, cache: Record<string, string> = {}) {
+  const raw = name && name !== "Player" && name.trim() !== "" ? name : cache[robloxId || ""];
+  let result = raw ? raw.toString().replace(/^#+\s*/, "") : "";
+  if (!result || /^[0-9]+$/.test(result)) {
+    if (cache[robloxId || ""]) return cache[robloxId || ""];
+    if (robloxId) return `#${robloxId}`;
+    return "Unknown User";
+  }
+  return result;
+}
+
+function normalizeClientPlace(place: string | undefined, placeId: string | undefined) {
+  const normalized = place?.trim() || "";
+  if (normalized && !/unknown/i.test(normalized) && !/^[0-9]+$/.test(normalized) && normalized !== "Roblox") {
+    return normalized;
+  }
+  if (placeId && placeId.trim() !== "") {
+    return `Place ${placeId}`;
+  }
+  return "Unknown Game";
+}
+
+function getSessionTotal(sessions: ConnLog[] = [], excludeId?: string) {
+  return sessions
+    .filter(session => session.id !== excludeId)
+    .reduce((sum, session) => sum + (session.uptime || 0), 0);
 }
 
 function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocalApi?: boolean }) {
@@ -121,6 +149,8 @@ export default function Track() {
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [storedUsers, setStoredUsers] = useState<Record<string, StoredUser>>(loadStoredUsers);
   const [robloxNameCache, setRobloxNameCache] = useState<Record<string, string>>({});
+  const robloxNameCacheRef = useRef<Record<string, string>>(robloxNameCache);
+  useEffect(() => { robloxNameCacheRef.current = robloxNameCache; }, [robloxNameCache]);
   const [announcementText, setAnnouncementText] = useState("");
   const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
@@ -184,20 +214,18 @@ export default function Track() {
           const data: Client[] = await res.json();
           setClients(data);
           const namesToFetch: string[] = [];
-          // Record base uptime from server and timestamp of receipt so we can display a smooth increment locally
           const ts = Date.now();
-              setClientUptimes(prevUT => {
-            const nextUT: Record<string, number> = { ...prevUT };
+          setClientUptimes(prevUT => {
+            const nextUT: Record<string, number> = {};
             setClientUptimeAt(prevAt => {
               const nextAt: Record<string, number> = { ...prevAt };
               data.forEach(c => {
                 const serverUptime = Number(c.uptime || 0);
-                if (prevUT[c.id] !== serverUptime) {
-                  nextAt[c.id] = ts;
-                } else if (typeof nextAt[c.id] === "undefined") {
+                const prevUptime = Number(prevUT[c.id] ?? -1);
+                nextUT[c.id] = serverUptime;
+                if (prevUptime !== serverUptime || typeof nextAt[c.id] === "undefined") {
                   nextAt[c.id] = ts;
                 }
-                nextUT[c.id] = serverUptime;
               });
               return nextAt;
             });
@@ -207,29 +235,25 @@ export default function Track() {
             const updated = { ...prev };
             data.forEach(c => {
               if (!c.robloxId) return;
-              // If name is missing, 'Player', purely numeric, or prefixed with '#', fetch Roblox name
-              const maybeName = c.name || "";
-              if ((!maybeName || maybeName === "Player" || maybeName.trim() === "" || /^#+|^[0-9]+$/.test(maybeName)) && !robloxNameCache[c.robloxId]) {
+              const normalizedName = normalizeClientName(c.name, c.robloxId, robloxNameCache);
+              if ((!c.name || c.name === "Player" || c.name.trim() === "" || /^#+|^[0-9]+$/.test(c.name)) && !cache[c.robloxId]) {
                 namesToFetch.push(c.robloxId);
               }
               const existing = updated[c.robloxId];
-              // Normalize display name: strip leading hashes and ignore purely-numeric names
-              const rawName = c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : (robloxNameCache[c.robloxId] || "Unknown User");
-              let displayName = (rawName || "").toString().replace(/^#+\s*/, "");
-              if (/^[0-9]+$/.test(displayName)) displayName = robloxNameCache[c.robloxId] || "Unknown User";
-                  const sessionEntry: ConnLog = {
+              const normalizedName = normalizeClientName(c.name, c.robloxId, cache);
+              const sessionEntry: ConnLog = {
                 id: c.id,
                 roblox_id: c.robloxId,
-                roblox_name: displayName,
+                roblox_name: normalizedName,
                 place_id: c.placeId,
-                place_name: c.place,
+                place_name: normalizeClientPlace(c.place, c.placeId),
                 executor: c.executor || "Unknown",
                 connected_at: new Date().toISOString(),
                 uptime: c.uptime || 0,
               };
               updated[c.robloxId] = {
                 roblox_id: c.robloxId,
-                roblox_name: displayName,
+                roblox_name: normalizedName,
                 last_seen: new Date().toISOString(),
                 sessions: existing
                   ? [sessionEntry, ...existing.sessions.filter(s => s.place_id !== c.placeId)].slice(0, 20)
@@ -443,29 +467,13 @@ export default function Track() {
                     <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} useLocalApi={useLocalApi} />
                       <div>
-                          <div style={{ fontSize: "16px", fontWeight: "800" }}>{
-                            (() => {
-                              const raw = c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : (robloxNameCache[c.robloxId || ""] || "Unknown User");
-
-                              let out = (raw || "").toString().replace(/^#+\s*/, "");
-                              if (/^[0-9]+$/.test(out)) out = robloxNameCache[c.robloxId || ""] || "Unknown User";
-                              return out;
-                            })()
-                          }</div>
+                          <div style={{ fontSize: "16px", fontWeight: "800" }}>{normalizeClientName(c.name, c.robloxId, robloxNameCache)}</div>
                       </div>
                     </div>
                     <div className="card-info-row">
                       <div>
                         <div style={labelStyle}>Current Game</div>
-                        <div style={{ fontSize: "13px", fontWeight: "700" }}>{
-                          (() => {
-                            const p = c.place || "";
-                            if (!p || p === "Unknown Game") {
-                              return c.placeId ? `Place ${c.placeId}` : "Unknown Game";
-                            }
-                            return p;
-                          })()
-                        }</div>
+                        <div style={{ fontSize: "13px", fontWeight: "700" }}>{normalizeClientPlace(c.place, c.placeId)}</div>
                       </div>
                       <div style={{ textAlign: "right" }}>
                         <div style={labelStyle}>Uptime</div>
@@ -477,6 +485,9 @@ export default function Track() {
                             return formatUptime(base + elapsed);
                           })()
                         }</div>
+                        <div style={{ fontSize: "11px", color: "#8b8b8b", marginTop: "4px" }}>
+                          Total: {formatUptime(getSessionTotal(storedUsers[c.robloxId || ""]?.sessions || [], c.id) + Number(clientUptimes[c.id] || 0) + Math.max(0, Math.floor((now - Number(clientUptimeAt[c.id] || now)) / 1000)))}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -496,20 +507,21 @@ export default function Track() {
                     <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} />
                       <div>
-                        <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>
-                          {(() => {
-                            const raw = selectedClient.name && selectedClient.name !== "Player" && selectedClient.name.trim() !== "" ? selectedClient.name : (robloxNameCache[selectedClient.robloxId || ""] || "Unknown User");
-                            let out = (raw || "").toString().replace(/^#+\s*/, "");
-                            if (/^[0-9]+$/.test(out)) out = robloxNameCache[selectedClient.robloxId || ""] || "Unknown User";
-                            return out;
-                          })()}
-                        </h1>
+                        <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{normalizeClientName(selectedClient.name, selectedClient.robloxId, robloxNameCache)}</h1>
                         <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
                           <span className="status-badge active">Online</span>
                           <span className="executor-badge">{selectedClient.executor}</span>
                         </div>
                         <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
-                          <div style={{ fontSize: "14px", color: "#a5b4fc" }}><strong>Total Uptime:</strong> {formatUptime((storedUsers[selectedClient.robloxId || ""]?.sessions || []).reduce((sum, s) => sum + (s.uptime || 0), 0))}</div>
+                          <div style={{ fontSize: "14px", color: "#a5b4fc" }}>
+                            <strong>Total Uptime:</strong> {(() => {
+                              const storedTotal = getSessionTotal(storedUsers[selectedClient.robloxId || ""]?.sessions || [], selectedClient.id);
+                              const base = Number(clientUptimes[selectedClient.id] || 0);
+                              const at = Number(clientUptimeAt[selectedClient.id] || now);
+                              const elapsed = Math.max(0, Math.floor((now - at) / 1000));
+                              return formatUptime(storedTotal + base + elapsed);
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -519,11 +531,7 @@ export default function Track() {
                   <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "32px" }}>
                     <GameIcon placeId={selectedClient.placeId} size={64} useLocalApi={useLocalApi} />
                     <div>
-                        <div style={{ fontSize: "16px", fontWeight: "800" }}>{
-                          (selectedClient.place && !/unknown/i.test(selectedClient.place) && !/^[0-9]+$/.test(selectedClient.place))
-                            ? selectedClient.place
-                            : (selectedClient.placeId ? `Place ${selectedClient.placeId}` : "Unknown Game")
-                        }</div>
+                        <div style={{ fontSize: "16px", fontWeight: "800" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</div>
                       {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
                     </div>
                   </div>
