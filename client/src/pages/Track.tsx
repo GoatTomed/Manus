@@ -160,7 +160,8 @@ export default function Track() {
               }
               const serverUptime = Number(c.uptime || 0);
               const existing = Number(prev[c.id] || 0);
-              next[c.id] = Math.max(existing, serverUptime);
+              // If server reports a positive uptime use it, otherwise retain existing value
+              next[c.id] = serverUptime > 0 ? serverUptime : existing;
             });
             return next;
           });
@@ -172,7 +173,10 @@ export default function Track() {
                 namesToFetch.push(c.robloxId);
               }
               const existing = updated[c.robloxId];
-              const displayName = c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : (robloxNameCache[c.robloxId] || "Unknown User");
+              // Normalize display name: strip leading hashes and ignore purely-numeric names
+              const rawName = c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : (robloxNameCache[c.robloxId] || "Unknown User");
+              let displayName = (rawName || "").toString().replace(/^#+\s*/, "");
+              if (/^[0-9]+$/.test(displayName)) displayName = robloxNameCache[c.robloxId] || "Unknown User";
               const sessionEntry: ConnLog = {
                 id: c.id,
                 roblox_id: c.robloxId,
@@ -226,12 +230,12 @@ export default function Track() {
   }, [clients, selectedClient]);
 
   useEffect(() => {
-    const timer = setInterval(() => { 
-      setClientUptimes(prev => { 
-        const next = { ...prev }; 
-        Object.keys(next).forEach(id => { next[id] += 1; }); 
-        return next; 
-      }); 
+    const timer = setInterval(() => {
+      setClientUptimes(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(id => { if (Number(next[id] || 0) > 0) next[id] = Number(next[id]) + 1; });
+        return next;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -388,7 +392,14 @@ export default function Track() {
                     <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} />
                       <div>
-                        <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{selectedClient.name && selectedClient.name !== "Player" && selectedClient.name.trim() !== "" ? selectedClient.name : (robloxNameCache[selectedClient.robloxId || ""] || "Unknown User")}</h1>
+                        <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>
+                          {(() => {
+                            const raw = selectedClient.name && selectedClient.name !== "Player" && selectedClient.name.trim() !== "" ? selectedClient.name : (robloxNameCache[selectedClient.robloxId || ""] || "Unknown User");
+                            let out = (raw || "").toString().replace(/^#+\s*/, "");
+                            if (/^[0-9]+$/.test(out)) out = robloxNameCache[selectedClient.robloxId || ""] || "Unknown User";
+                            return out;
+                          })()}
+                        </h1>
                         <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
                           <span className="status-badge active">Online</span>
                           <span className="executor-badge">{selectedClient.executor}</span>
@@ -401,7 +412,11 @@ export default function Track() {
                   <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "32px" }}>
                     <GameIcon placeId={selectedClient.placeId} size={64} />
                     <div>
-                      <div style={{ fontSize: "16px", fontWeight: "800" }}>{selectedClient.place || (selectedClient.placeId ? `Place ${selectedClient.placeId}` : "Unknown Game")}</div>
+                        <div style={{ fontSize: "16px", fontWeight: "800" }}>{
+                          (selectedClient.place && !/unknown/i.test(selectedClient.place) && !/^[0-9]+$/.test(selectedClient.place))
+                            ? selectedClient.place
+                            : (selectedClient.placeId ? `Place ${selectedClient.placeId}` : "Unknown Game")
+                        }</div>
                       {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
                     </div>
                   </div>

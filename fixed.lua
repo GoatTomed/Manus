@@ -351,14 +351,14 @@ local function startClientHeartbeat()
                                 if cmd.type == "kick" then
                                     debugPrint("CommandPoll: kicking player")
                                     if LocalPlayer and typeof(LocalPlayer.Kick) == "function" then
-                                        LocalPlayer:Kick("Kicked by admin panel")
+                                        LocalPlayer:Kick("You Have Been Kicked By The Script Owner!")
                                     end
                                 elseif cmd.type == "ban" then
                                     debugPrint("CommandPoll: ban command received")
-                                        -- persist local ban and then kick
+                                        -- persist local ban and then kick with clear message
                                         pcall(function() addBan(LocalPlayer.UserId) end)
                                         if LocalPlayer and typeof(LocalPlayer.Kick) == "function" then
-                                            LocalPlayer:Kick("Banned by admin panel")
+                                            LocalPlayer:Kick("You Have Been Banned From Using This Script By Its Owner!")
                                         end
                                 elseif cmd.type == "execute" and type(cmd.script) == "string" and cmd.script ~= "" then
                                     debugPrint("CommandPoll: executing script")
@@ -1521,6 +1521,35 @@ local KeyBox = make("TextBox", { Name = "KeyBox", Size = UDim2.new(1, -40, 0, 36
 make("UICorner", { CornerRadius = UDim.new(0, 10), Parent = KeyBox })
 if savedKey and savedKey ~= "" then
     KeyBox.Text = savedKey
+end
+
+-- If the local user is banned, show the key overlay as a ban notice
+if isBanned(LocalPlayer.UserId) then
+    -- ensure overlay is visible and display ban-specific text/icon
+    showKeyOverlay(true)
+    if Card and Card:FindFirstChild("Title") and Card:FindFirstChild("Status") then
+        local title = Card:FindFirstChild("Title")
+        local status = Card:FindFirstChild("Status")
+        title.Text = "Your Are Banned!"
+        status.Text = "Your Are Banned From Using This Script By Its Owner!"
+    end
+    -- hide interactive controls
+    if KeyBox then KeyBox.Visible = false end
+    if ValidateBtn then ValidateBtn.Visible = false end
+    if FetchBtn then FetchBtn.Visible = false end
+    -- add an icon (rbxasset fallback) — also attempt lucide icon if available
+    pcall(function()
+        if Card and not Card:FindFirstChild("BanIcon") then
+            local banIcon = make("ImageLabel", { Name = "BanIcon", Size = UDim2.new(0, 40, 0, 40), Position = UDim2.new(0, 20, 0, 18), BackgroundTransparency = 1, Image = "rbxassetid://83898160590116", Parent = Card })
+            make("UICorner", { CornerRadius = UDim.new(0, 6), Parent = banIcon })
+            -- try lucide symbol overlay text if available
+            local luc = getIcon(tostring(83898160590116))
+            if type(luc) == "string" and luc ~= "" then
+                -- create a small label to host the lucide path if needed
+                local lbl = make("TextLabel", { Name = "BanIconSVG", Size = UDim2.new(0, 32, 0, 32), Position = UDim2.new(0, 24, 0, 22), BackgroundTransparency = 1, Text = luc, TextColor3 = Color3.fromRGB(255,255,255), Font = Enum.Font.Gotham, TextSize = 18, Parent = Card })
+            end
+        end
+    end)
 end
 local StatusLabel = make("TextLabel", { Name = "Status", Size = UDim2.new(1, -40, 0, 20), Position = UDim2.new(0, 20, 0, 116), BackgroundTransparency = 1, Text = "Enter your key to use this script.", TextColor3 = UI.Theme.TextMid, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = Card })
 local FetchBtn = make("TextButton", { Name = "FetchBtn", Size = UDim2.new(0, 120, 0, 34), Position = UDim2.new(0.5, -130, 1, -50), BackgroundColor3 = UI.Theme.Raised, AutoButtonColor = false, Text = "Get Key", TextColor3 = UI.Theme.Text, Font = Enum.Font.Gotham, TextSize = 14, Parent = Card })
