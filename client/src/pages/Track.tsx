@@ -156,19 +156,24 @@ export default function Track() {
           setClients(data);
           const namesToFetch: string[] = [];
           // Record base uptime from server and timestamp of receipt so we can display a smooth increment locally
-          setClientUptimes(prev => {
-            const next = { ...prev };
-            data.forEach(c => {
-              const serverUptime = Number(c.uptime || 0);
-              next[c.id] = serverUptime;
+          const ts = Date.now();
+          setClientUptimes(prevUT => {
+            const nextUT: Record<string, number> = { ...prevUT };
+            setClientUptimeAt(prevAt => {
+              const nextAt: Record<string, number> = { ...prevAt };
+              data.forEach(c => {
+                const serverUptime = Number(c.uptime || 0);
+                // if server uptime changed, reset the 'at' timestamp so elapsed starts from now
+                if (prevUT[c.id] !== serverUptime) {
+                  nextAt[c.id] = ts;
+                } else {
+                  if (typeof nextAt[c.id] === "undefined") nextAt[c.id] = ts;
+                }
+                nextUT[c.id] = serverUptime;
+              });
+              return nextAt;
             });
-            return next;
-          });
-          setClientUptimeAt(prev => {
-            const next = { ...prev };
-            const ts = Date.now();
-            data.forEach(c => { next[c.id] = ts; });
-            return next;
+            return nextUT;
           });
           setStoredUsers(prev => {
             const updated = { ...prev };
@@ -261,7 +266,10 @@ export default function Track() {
   const selectedUserData = selectedUser ? storedUsers[selectedUser] : null;
 
   async function sendCommand(robloxId: string | undefined, type: string, script = "") {
-    if (!robloxId) return false;
+    if (!robloxId) {
+      console.warn("sendCommand: missing robloxId", type);
+      return false;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/clients?command=1`, {
         method: "POST",
@@ -282,7 +290,14 @@ export default function Track() {
   }
 
   async function handleClientCommand(type: string, script = "") {
-    if (!selectedClient?.robloxId) return;
+    if (!selectedClient) {
+      if (typeof alert !== "undefined") alert("No client selected.");
+      return;
+    }
+    if (!selectedClient.robloxId) {
+      if (typeof alert !== "undefined") alert("Selected client has no robloxId.");
+      return;
+    }
     const ok = await sendCommand(selectedClient.robloxId, type, script);
     if (!ok && typeof alert !== "undefined") {
       alert(`Failed to send ${type} command.`);
