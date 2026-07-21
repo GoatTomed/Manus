@@ -153,6 +153,15 @@ function hashVisitorId(visitorId) {
   return crypto.createHash('sha256').update(String(visitorId)).digest('hex');
 }
 
+function normalizeKey(str) {
+  const raw = String(str || '').toUpperCase();
+  const trimmed = raw.replace(/[^A-Z0-9]/g, '');
+  if (/^[A-Z0-9]{9}$/.test(trimmed)) {
+    return trimmed.replace(/(...)(...)(...)/, '$1-$2-$3');
+  }
+  return raw.replace(/[^A-Z0-9-]/g, '');
+}
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -213,12 +222,11 @@ export default async function handler(req, res) {
         return res.status(200).json({ valid: false, message: 'Missing key' });
       }
 
-      const raw = String(key || '');
-      const searchKey = raw.trim().toUpperCase();
+      const searchKey = normalizeKey(key);
       const newFormat = /^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/;
 
       if (!newFormat.test(searchKey)) {
-        return res.status(200).json({ valid: false, message: 'Invalid key format' });
+        return res.status(200).json({ valid: false, message: 'Invalid key format. Use XXX-XXX-XXX.' });
       }
 
       const { data, error } = await supabase

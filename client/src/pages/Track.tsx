@@ -95,6 +95,7 @@ export default function Track() {
   };
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [storedUsers, setStoredUsers] = useState<Record<string, StoredUser>>(loadStoredUsers);
+  const [robloxNameCache, setRobloxNameCache] = useState<Record<string, string>>({});
   const [announcementText, setAnnouncementText] = useState("");
   const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
@@ -128,6 +129,20 @@ export default function Track() {
     }
   }, [homeView]);
 
+  const fetchRobloxName = async (userId: string) => {
+    if (!userId || robloxNameCache[userId]) return;
+    try {
+      const res = await fetch(`/api/roblox-user?userId=${encodeURIComponent(userId)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && typeof data.name === "string" && data.name.trim() !== "") {
+        setRobloxNameCache(prev => ({ ...prev, [userId]: data.name }));
+      }
+    } catch (error) {
+      console.warn("Failed to fetch Roblox name for", userId, error);
+    }
+  };
+
   useEffect(() => {
     const fetchClients = async () => {
       try {
@@ -135,10 +150,10 @@ export default function Track() {
         if (res.ok) {
           const data: Client[] = await res.json();
           setClients(data);
+          const namesToFetch: string[] = [];
           setClientUptimes(prev => {
             const next = { ...prev };
             data.forEach(c => {
-              // On initial load after a refresh, reset displayed uptime to 0
               if (loading) {
                 next[c.id] = 0;
                 return;
@@ -153,9 +168,11 @@ export default function Track() {
             const updated = { ...prev };
             data.forEach(c => {
               if (!c.robloxId) return;
+              if ((!c.name || c.name === "Player" || c.name.trim() === "") && !robloxNameCache[c.robloxId]) {
+                namesToFetch.push(c.robloxId);
+              }
               const existing = updated[c.robloxId];
-              const lastConnectSamePlace = existing?.sessions?.[0]?.place_id === c.placeId;
-              const displayName = c.name && c.name !== "Player" ? c.name : (c.robloxId ? `#${c.robloxId}` : "Player");
+              const displayName = c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : (robloxNameCache[c.robloxId] || "Unknown User");
               const sessionEntry: ConnLog = {
                 id: c.id,
                 roblox_id: c.robloxId,
@@ -163,9 +180,7 @@ export default function Track() {
                 place_id: c.placeId,
                 place_name: c.place,
                 executor: c.executor || "Unknown",
-                connected_at: lastConnectSamePlace
-                  ? existing.sessions[0].connected_at
-                  : new Date().toISOString(),
+                connected_at: new Date().toISOString(),
                 uptime: c.uptime || 0,
               };
               updated[c.robloxId] = {
@@ -180,6 +195,7 @@ export default function Track() {
             saveStoredUsers(updated);
             return updated;
           });
+          namesToFetch.forEach(id => void fetchRobloxName(id));
         }
       } catch (e: any) { console.error("Error fetching clients:", e.message); } finally { setLoading(false); }
     };
@@ -198,6 +214,14 @@ export default function Track() {
     if (match) {
       setSelectedClient(match);
       setInClientMode(true);
+    }
+  }, [clients, selectedClient]);
+
+  useEffect(() => {
+    if (!selectedClient) return;
+    const updated = clients.find(c => String(c.robloxId) === String(selectedClient.robloxId));
+    if (updated && (updated.place !== selectedClient.place || updated.name !== selectedClient.name || updated.executor !== selectedClient.executor || updated.placeId !== selectedClient.placeId)) {
+      setSelectedClient(updated);
     }
   }, [clients, selectedClient]);
 
@@ -364,26 +388,13 @@ export default function Track() {
                     <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} />
                       <div>
-                        <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{selectedClient.name && selectedClient.name !== "Player" && selectedClient.name.trim() !== "" ? selectedClient.name : "Unknown User"}</h1>
-                        {/* ID removed from detail header to avoid exposing raw numeric ids */}
+                        <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{selectedClient.name && selectedClient.name !== "Player" && selectedClient.name.trim() !== "" ? selectedClient.name : (robloxNameCache[selectedClient.robloxId || ""] || "Unknown User")}</h1>
                         <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
                           <span className="status-badge active">Online</span>
                           <span className="executor-badge">{selectedClient.executor}</span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="glass-card" style={{ padding: "0", overflow: "hidden" }}>
-                    <div style={{ padding: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-                      <button className="btn-execute" style={{ width: "auto", padding: "8px 24px" }} onClick={() => sendCommand(selectedClient.robloxId, "execute", scriptInput)}>Run</button>
-                    </div>
-                    <textarea 
-                      className="console-textarea" 
-                      style={{ margin: "0", border: "none", width: "100%", height: "300px" }}
-                      placeholder="Paste your script here..."
-                      value={scriptInput}
-                      onChange={e => setScriptInput((e.target as HTMLTextAreaElement).value)}
-                    />
                   </div>
                 </div>
                 <div className="profile-card">

@@ -10,6 +10,71 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 
+local function debugPrint(...) end
+
+local function hasFileReadApi()
+    return type(readfile) == "function" or type(read_file) == "function"
+end
+
+local function hasFileWriteApi()
+    return type(writefile) == "function" or type(write_file) == "function"
+end
+
+local function isFile(path)
+    if type(isfile) == "function" then return isfile(path) end
+    if type(is_file) == "function" then return is_file(path) end
+    return false
+end
+
+local function readFile(path)
+    if type(readfile) == "function" then
+        return pcall(readfile, path)
+    end
+    if type(read_file) == "function" then
+        return pcall(read_file, path)
+    end
+    return false, nil
+end
+
+local function writeFile(path, contents)
+    if type(writefile) == "function" then
+        return pcall(writefile, path, contents)
+    end
+    if type(write_file) == "function" then
+        return pcall(write_file, path, contents)
+    end
+    return false
+end
+
+local function readBanList()
+    if not hasFileReadApi() then return {} end
+    local ok, content = readFile(BAN_FILE)
+    if not ok or type(content) ~= "string" or content == "" then return {} end
+    local decodedOk, t = pcall(function() return HttpService:JSONDecode(content) end)
+    if decodedOk and type(t) == "table" then return t end
+    return {}
+end
+
+local function addBan(id)
+    if not hasFileWriteApi() then return false end
+    local list = readBanList()
+    id = tostring(id or "")
+    for _, v in ipairs(list) do if tostring(v) == id then return true end end
+    table.insert(list, id)
+    local ok, encoded = pcall(function() return HttpService:JSONEncode(list) end)
+    if not ok or type(encoded) ~= "string" then return false end
+    local wrote = writeFile(BAN_FILE, encoded)
+    if not wrote then return false end
+    return true
+end
+
+local function isBanned(id)
+    local list = readBanList()
+    id = tostring(id or "")
+    for _, v in ipairs(list) do if tostring(v) == id then return true end end
+    return false
+end
+
 while not Players.LocalPlayer do
     task.wait(0.1)
 end
@@ -17,7 +82,6 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Immediately enforce local bans if present
 if isBanned(LocalPlayer.UserId) then
-    debugPrint("Local ban detected for user", tostring(LocalPlayer.UserId), "kicking")
     pcall(function()
         if typeof(LocalPlayer.Kick) == "function" then LocalPlayer:Kick("You are banned from using this script.") end
     end)
@@ -33,16 +97,7 @@ local CLIENT_HEARTBEAT_URL = "https://yoursuck.vercel.app/api/clients"
 local heartbeatStarted = false
 local savedKeyHandled = false
 
-local function debugPrint(...)
-    local parts = {}
-    for i = 1, select("#", ...) do
-        parts[i] = tostring(select(i, ...))
-    end
-    pcall(function() print("[YouSuck] " .. table.concat(parts, " ")) end)
-end
-
--- Print heartbeat endpoint for debugging
-debugPrint("CLIENT_HEARTBEAT_URL=", CLIENT_HEARTBEAT_URL)
+local function debugPrint(...) end
 
 local function hasFileReadApi()
     return type(readfile) == "function" or type(read_file) == "function"
@@ -174,6 +229,29 @@ local function addBan(id)
     for _, v in ipairs(list) do if tostring(v) == id then return true end end
     table.insert(list, id)
     local ok, encoded = pcall(function() return HttpService:JSONEncode(list) end)
+    if not ok or type(encoded) ~= "string" then debugPrint("Ban: encode failed") return false end
+    local wrote = writeFile(BAN_FILE, encoded)
+    if not wrote then debugPrint("Ban: writefile failed") return false end
+    return true
+end
+
+local function removeBan(id)
+    if not hasFileWriteApi() then debugPrint("Ban: no file write API available") return false end
+    local list = readBanList()
+    id = tostring(id or "")
+    local newList = {}
+    local removed = false
+    for _, v in ipairs(list) do
+        if tostring(v) ~= id then
+            table.insert(newList, v)
+        else
+            removed = true
+        end
+    end
+    if not removed then
+        return true
+    end
+    local ok, encoded = pcall(function() return HttpService:JSONEncode(newList) end)
     if not ok or type(encoded) ~= "string" then debugPrint("Ban: encode failed") return false end
     local wrote = writeFile(BAN_FILE, encoded)
     if not wrote then debugPrint("Ban: writefile failed") return false end
@@ -498,7 +576,7 @@ local function loadLocalUILibrary()
     return nil
 end
 
-UI = loadLocalUILibrary() or (function()
+UI = (function()
     if typeof(Font) ~= "table" or type(Font.new) ~= "function" then
         Font = Font or {}
         Font.new = function(...) return Enum.Font.Gotham end
@@ -508,7 +586,7 @@ UI = loadLocalUILibrary() or (function()
     local TweenService = game:GetService("TweenService")
     local UserInputService = game:GetService("UserInputService")
     local HttpService = game:GetService("HttpService")
-    local Player = Players.LocalPlayer
+    local Player = LocalPlayer or Players.LocalPlayer or Players.PlayerAdded:Wait()
 
     local Theme = {
         BG = Color3.fromRGB(18, 18, 18),
@@ -589,7 +667,7 @@ UI = loadLocalUILibrary() or (function()
 
         Window.ToggleKey = cfg.ToggleKey or Enum.KeyCode.RightShift
 
-        local parentGui = Player:WaitForChild("PlayerGui")
+        local parentGui = Player:FindFirstChild("PlayerGui") or Player:WaitForChild("PlayerGui")
         local Gui = new("ScreenGui", {
             Name = "YouSuckUI",
             ResetOnSpawn = false,
@@ -1384,7 +1462,8 @@ end
 
 if type(UI) ~= "table" or type(UI.CreateWindow) ~= "function" then
     warn("UI library not available or doesn't support CreateWindow")
-    return
+    -- fallback to stub window if UI library fails
+    UI = loadLocalUILibrary() or UI
 end
 
 local ok, windowResult = pcall(function()
@@ -1803,8 +1882,11 @@ local function normalizeKey(str)
     local s = tostring(str or "")
     s = s:gsub("^%s*(.-)%s*$", "%1")
     s = s:gsub("[%c%s]+", "")
-    s = s:gsub("[^A-Za-z0-9%-]", "")
+    s = s:gsub("[^A-Za-z0-9]", "")
     s = s:upper()
+    if #s == 9 then
+        s = s:gsub("(...)(...)(...)", "%1-%2-%3")
+    end
     return s
 end
 
