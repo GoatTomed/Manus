@@ -82,6 +82,8 @@ export default function Track() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [clientUptimes, setClientUptimes] = useState<Record<string, number>>({});
+  const [clientUptimeAt, setClientUptimeAt] = useState<Record<string, number>>({});
+  const [now, setNow] = useState<number>(Date.now());
   const [clientQuery, setClientQuery] = useState("");
   const [userQuery, setUserQuery] = useState("");
     const [accessDenied, setAccessDenied] = useState(false);
@@ -151,18 +153,19 @@ export default function Track() {
           const data: Client[] = await res.json();
           setClients(data);
           const namesToFetch: string[] = [];
+          // Record base uptime from server and timestamp of receipt so we can display a smooth increment locally
           setClientUptimes(prev => {
             const next = { ...prev };
             data.forEach(c => {
-              if (loading) {
-                next[c.id] = 0;
-                return;
-              }
               const serverUptime = Number(c.uptime || 0);
-              const existing = Number(prev[c.id] || 0);
-              // If server reports a positive uptime use it, otherwise retain existing value
-              next[c.id] = serverUptime > 0 ? serverUptime : existing;
+              next[c.id] = serverUptime;
             });
+            return next;
+          });
+          setClientUptimeAt(prev => {
+            const next = { ...prev };
+            const ts = Date.now();
+            data.forEach(c => { next[c.id] = ts; });
             return next;
           });
           setStoredUsers(prev => {
@@ -207,38 +210,34 @@ export default function Track() {
     const interval = setInterval(fetchClients, 1000);
     return () => clearInterval(interval);
   }, []);
+    // If URL contains ?u=xxx, auto-select that client when clients list is available
+    useEffect(() => {
+      if (selectedClient || !clients.length) return;
+      if (typeof window === "undefined") return;
+      const params = new URLSearchParams(window.location.search);
+      const u = params.get("u");
+      if (!u) return;
+      const match = clients.find(c => String(c.robloxId) === u);
+      if (match) {
+        setSelectedClient(match);
+        setInClientMode(true);
+      }
+    }, [clients, selectedClient]);
 
-  useEffect(() => {
-    if (selectedClient || !clients.length) return;
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const u = params.get("u");
-    if (!u) return;
-    const match = clients.find(c => String(c.robloxId) === u);
-    if (match) {
-      setSelectedClient(match);
-      setInClientMode(true);
-    }
-  }, [clients, selectedClient]);
+    // Keep selected client object synced with updated client entries
+    useEffect(() => {
+      if (!selectedClient) return;
+      const updated = clients.find(c => String(c.robloxId) === String(selectedClient.robloxId));
+      if (updated && (updated.place !== selectedClient.place || updated.name !== selectedClient.name || updated.executor !== selectedClient.executor || updated.placeId !== selectedClient.placeId)) {
+        setSelectedClient(updated);
+      }
+    }, [clients, selectedClient]);
 
-  useEffect(() => {
-    if (!selectedClient) return;
-    const updated = clients.find(c => String(c.robloxId) === String(selectedClient.robloxId));
-    if (updated && (updated.place !== selectedClient.place || updated.name !== selectedClient.name || updated.executor !== selectedClient.executor || updated.placeId !== selectedClient.placeId)) {
-      setSelectedClient(updated);
-    }
-  }, [clients, selectedClient]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setClientUptimes(prev => {
-        const next = { ...prev };
-        Object.keys(next).forEach(id => { if (Number(next[id] || 0) > 0) next[id] = Number(next[id]) + 1; });
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+    // Tick to force re-render every second so displayed uptime updates smoothly
+    useEffect(() => {
+      const t = setInterval(() => setNow(Date.now()), 1000);
+      return () => clearInterval(t);
+    }, []);
 
   const filteredClients = useMemo(() => clients.filter(c =>
     c.name.toLowerCase().includes(clientQuery.toLowerCase()) ||
@@ -285,6 +284,17 @@ export default function Track() {
     const ok = await sendCommand(selectedClient.robloxId, type, script);
     if (!ok && typeof alert !== "undefined") {
       alert(`Failed to send ${type} command.`);
+      return;
+    }
+    // Optimistically update UI for kick/ban actions
+    if (ok && (type.toLowerCase() === "kick" || type.toLowerCase() === "ban")) {
+      setClients(prev => prev.filter(c => String(c.robloxId) !== String(selectedClient.robloxId)));
+      setSelectedClient(null);
+      setInClientMode(false);
+      pushTrackUrl();
+      if (typeof alert !== "undefined") {
+        alert(`${type} command sent.`);
+      }
     }
   }
 
@@ -322,7 +332,7 @@ export default function Track() {
             <button
               key={item.id}
               className={`sidebar-item ${homeView === item.id && !inClientMode ? "active" : ""}`}
-              onClick={() => { setHomeView(item.id); setInClientMode(false); setSelectedUser(null); }}
+              onClick={() => { setHomeView(item.id); setInClientMode(false); setSelectedUser(null); setSelectedClient(null); pushTrackUrl(); }}
             >
               <i className={`ti ${item.icon}`}></i>
               {item.label}
@@ -372,7 +382,14 @@ export default function Track() {
                       </div>
                       <div style={{ textAlign: "right" }}>
                         <div style={labelStyle}>Uptime</div>
-                        <div style={{ fontSize: "13px", fontWeight: "700", color: "#00ABFF" }}>{formatUptime(clientUptimes[c.id] || 0)}</div>
+                        <div style={{ fontSize: "13px", fontWeight: "700", color: "#00ABFF" }}>{
+                          (() => {
+                            const base = Number(clientUptimes[c.id] || 0);
+                            const at = Number(clientUptimeAt[c.id] || now);
+                            const elapsed = Math.max(0, Math.floor((now - at) / 1000));
+                            return formatUptime(base + elapsed);
+                          })()
+                        }</div>
                       </div>
                     </div>
                   </div>

