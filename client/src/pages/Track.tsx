@@ -32,7 +32,7 @@ function RobloxAvatar({ robloxId, size = 40 }: { robloxId?: string | null; size?
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!robloxId) return;
-    fetch(`${API_BASE}/api/roblox-avatar?userId=${robloxId}`)
+    fetch(`/api/roblox-avatar?userId=${robloxId}`)
       .then(r => r.json())
       .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
       .catch(() => {});
@@ -45,6 +45,20 @@ function RobloxAvatar({ robloxId, size = 40 }: { robloxId?: string | null; size?
       ) : (
         <span style={{ color: "#8b8b8b", fontSize: size * 0.45, fontWeight: 700 }}>{fallbackLabel}</span>
       )}
+      <div style={{ position: "fixed", left: 12, bottom: 12, background: "rgba(0,0,0,0.7)", padding: 12, borderRadius: 8, zIndex: 2000, color: "#fff", fontSize: 12, maxWidth: 420 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input type="checkbox" checked={useLocalApi} onChange={e => setUseLocalApi((e.target as HTMLInputElement).checked)} />
+          Use Local API
+        </label>
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>Last Command</div>
+          <pre style={{ whiteSpace: "pre-wrap", maxHeight: 160, overflow: "auto", margin: 0 }}>{lastCommandLog ? JSON.stringify(lastCommandLog, null, 2) : "(none)"}</pre>
+        </div>
+        <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+          <button className="btn-secondary" onClick={() => { console.log(clients); alert(JSON.stringify(clients.slice(0,5))); }}>Dump Clients</button>
+          <button className="btn-secondary" onClick={() => { setLastCommandLog(null); }}>Clear</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -53,7 +67,7 @@ function GameIcon({ placeId, size = 72 }: { placeId: string; size?: number }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!placeId) return;
-    fetch(`${API_BASE}/api/roblox-gameicon?placeId=${placeId}`)
+    fetch(`/api/roblox-gameicon?placeId=${placeId}`)
       .then(r => r.json())
       .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
       .catch(() => {});
@@ -97,6 +111,9 @@ export default function Track() {
     const url = robloxId ? `/track?u=${encodeURIComponent(robloxId)}` : "/track";
     window.history.replaceState({}, "", url);
   };
+  const [useLocalApi, setUseLocalApi] = useState(false);
+  const [lastCommandLog, setLastCommandLog] = useState<any>(null);
+  const apiBase = useLocalApi ? "" : "https://yoursuck.vercel.app";
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [storedUsers, setStoredUsers] = useState<Record<string, StoredUser>>(loadStoredUsers);
   const [robloxNameCache, setRobloxNameCache] = useState<Record<string, string>>({});
@@ -136,7 +153,7 @@ export default function Track() {
   const fetchRobloxName = async (userId: string) => {
     if (!userId || robloxNameCache[userId]) return;
     try {
-      const res = await fetch(`${API_BASE}/api/roblox-user?userId=${encodeURIComponent(userId)}`);
+      const res = await fetch(`${apiBase}/api/roblox-user?userId=${encodeURIComponent(userId)}`);
       if (!res.ok) return;
       const data = await res.json();
       if (data && typeof data.name === "string" && data.name.trim() !== "") {
@@ -150,7 +167,7 @@ export default function Track() {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/clients`);
+        const res = await fetch(`${apiBase}/api/clients`);
         if (res.ok) {
           const data: Client[] = await res.json();
           setClients(data);
@@ -275,7 +292,7 @@ export default function Track() {
     try {
       const body = JSON.stringify({ robloxId, type: type.toLowerCase(), script });
       const tryUrls = [] as string[];
-      if (API_BASE) tryUrls.push(`${API_BASE}/api/clients?command=1`);
+      if (apiBase) tryUrls.push(`${apiBase}/api/clients?command=1`);
       tryUrls.push(`/api/clients?command=1`);
       let lastErr: any = null;
       for (const url of tryUrls) {
@@ -286,17 +303,21 @@ export default function Track() {
             const err = await res.text().catch(() => null);
             lastErr = { url, status: res.status, body: err };
             console.warn("Command send failed", url, type, robloxId, err);
+            setLastCommandLog({ url, ok: false, status: res.status, body: err });
             continue;
           }
           const data = await res.json().catch(() => null);
+          setLastCommandLog({ url, ok: true, status: res.status, body: data });
           return data?.success === true || res.ok;
         } catch (e) {
           lastErr = e;
           console.warn("Command send exception", url, e);
+          setLastCommandLog({ url, ok: false, error: String(e) });
           continue;
         }
       }
       console.warn("All command endpoints failed", lastErr);
+      setLastCommandLog({ ok: false, error: lastErr });
       return false;
     } catch (error) {
       console.warn("Command send error", error);
@@ -408,6 +429,7 @@ export default function Track() {
                           <div style={{ fontSize: "16px", fontWeight: "800" }}>{
                             (() => {
                               const raw = c.name && c.name !== "Player" && c.name.trim() !== "" ? c.name : (robloxNameCache[c.robloxId || ""] || "Unknown User");
+
                               let out = (raw || "").toString().replace(/^#+\s*/, "");
                               if (/^[0-9]+$/.test(out)) out = robloxNameCache[c.robloxId || ""] || "Unknown User";
                               return out;
