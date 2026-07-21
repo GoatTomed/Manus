@@ -304,6 +304,14 @@ local function startClientHeartbeat()
     end
     debugPrint("startClientHeartbeat: initiating heartbeat loop")
     local uptime = 0
+    -- increment uptime every second for finer granularity
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            uptime = uptime + 1
+        end
+    end)
+    -- send heartbeat every 5 seconds (less chatty than 1s, more responsive than 10s)
     task.spawn(function()
         while true do
             local currentGame = getGameName()
@@ -322,15 +330,13 @@ local function startClientHeartbeat()
             if not pcallOk then
                 debugPrint("Heartbeat pcall failed:", postOk)
             else
-                -- safePost returns (ok, body) where ok is boolean
                 if not postOk then
                     debugPrint("Heartbeat post failed:", postBody)
                 else
                     debugPrint("Heartbeat sent; server response:", tostring(postBody))
                 end
             end
-            uptime = uptime + 10
-            task.wait(10)
+            task.wait(5)
         end
     end)
     -- start command polling (kick / execute)

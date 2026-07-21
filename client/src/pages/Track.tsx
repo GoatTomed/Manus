@@ -271,18 +271,31 @@ export default function Track() {
       return false;
     }
     try {
-      const res = await fetch(`${API_BASE}/api/clients?command=1`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ robloxId, type: type.toLowerCase(), script }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        console.warn("Command send failed", type, robloxId, err);
-        return false;
+      const body = JSON.stringify({ robloxId, type: type.toLowerCase(), script });
+      const tryUrls = [] as string[];
+      if (API_BASE) tryUrls.push(`${API_BASE}/api/clients?command=1`);
+      tryUrls.push(`/api/clients?command=1`);
+      let lastErr: any = null;
+      for (const url of tryUrls) {
+        try {
+          console.log("sendCommand->", url, body);
+          const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
+          if (!res.ok) {
+            const err = await res.text().catch(() => null);
+            lastErr = { url, status: res.status, body: err };
+            console.warn("Command send failed", url, type, robloxId, err);
+            continue;
+          }
+          const data = await res.json().catch(() => null);
+          return data?.success === true || res.ok;
+        } catch (e) {
+          lastErr = e;
+          console.warn("Command send exception", url, e);
+          continue;
+        }
       }
-      const data = await res.json().catch(() => null);
-      return data?.success === true || res.ok;
+      console.warn("All command endpoints failed", lastErr);
+      return false;
     } catch (error) {
       console.warn("Command send error", error);
       return false;
