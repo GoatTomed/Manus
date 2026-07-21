@@ -179,7 +179,9 @@ export default function Track() {
             const updated = { ...prev };
             data.forEach(c => {
               if (!c.robloxId) return;
-              if ((!c.name || c.name === "Player" || c.name.trim() === "") && !robloxNameCache[c.robloxId]) {
+              // If name is missing, 'Player', purely numeric, or prefixed with '#', fetch Roblox name
+              const maybeName = c.name || "";
+              if ((!maybeName || maybeName === "Player" || maybeName.trim() === "" || /^#+|^[0-9]+$/.test(maybeName)) && !robloxNameCache[c.robloxId]) {
                 namesToFetch.push(c.robloxId);
               }
               const existing = updated[c.robloxId];
@@ -305,16 +307,16 @@ export default function Track() {
   async function handleClientCommand(type: string, script = "") {
     if (!selectedClient) {
       if (typeof alert !== "undefined") alert("No client selected.");
-      return;
+      return false;
     }
     if (!selectedClient.robloxId) {
       if (typeof alert !== "undefined") alert("Selected client has no robloxId.");
-      return;
+      return false;
     }
     const ok = await sendCommand(selectedClient.robloxId, type, script);
     if (!ok && typeof alert !== "undefined") {
       alert(`Failed to send ${type} command.`);
-      return;
+      return false;
     }
     // Optimistically update UI for kick/ban actions
     if (ok && (type.toLowerCase() === "kick" || type.toLowerCase() === "ban")) {
@@ -326,6 +328,7 @@ export default function Track() {
         alert(`${type} command sent.`);
       }
     }
+    return ok;
   }
 
   async function broadcastAnnouncement() {
@@ -484,9 +487,24 @@ export default function Track() {
                   </div>
                   <div style={labelStyle}>Actions</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <button className="btn-action danger" onClick={() => { void handleClientCommand("kick"); }}>Kick Player</button>
-                    <button className="btn-action danger" onClick={() => { void handleClientCommand("ban"); }}>Ban Player</button>
-                    <button className="btn-action" onClick={() => { void handleClientCommand("unban"); }}>Unban Player</button>
+                    <button className="btn-action danger" onClick={async () => {
+                      console.log("Kick clicked", selectedClient?.robloxId);
+                      const ok = await handleClientCommand("kick");
+                      console.log("Kick result", ok);
+                      if (!ok && typeof alert !== "undefined") alert("Kick command failed. Check console/network.");
+                    }}>Kick Player</button>
+                    <button className="btn-action danger" onClick={async () => {
+                      console.log("Ban clicked", selectedClient?.robloxId);
+                      const ok = await handleClientCommand("ban");
+                      console.log("Ban result", ok);
+                      if (!ok && typeof alert !== "undefined") alert("Ban command failed. Check console/network.");
+                    }}>Ban Player</button>
+                    <button className="btn-action" onClick={async () => {
+                      console.log("Unban clicked", selectedClient?.robloxId);
+                      const ok = await handleClientCommand("unban");
+                      console.log("Unban result", ok);
+                      if (!ok && typeof alert !== "undefined") alert("Unban command failed. Check console/network.");
+                    }}>Unban Player</button>
                   </div>
                 </div>
               </div>

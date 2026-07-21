@@ -313,7 +313,7 @@ local function startClientHeartbeat()
     end)
     -- send heartbeat every 5 seconds (less chatty than 1s, more responsive than 10s)
     task.spawn(function()
-        while true do
+        local function doHeartbeat()
             local currentGame = getGameName()
             local payload = {
                 robloxId = tostring(LocalPlayer.UserId or ""),
@@ -336,6 +336,11 @@ local function startClientHeartbeat()
                     debugPrint("Heartbeat sent; server response:", tostring(postBody))
                 end
             end
+        end
+        -- send an immediate initial heartbeat so server gets uptime=0 promptly
+        pcall(doHeartbeat)
+        while true do
+            doHeartbeat()
             task.wait(5)
         end
     end)
