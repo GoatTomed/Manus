@@ -6,6 +6,20 @@ const commandQueue = {};
 const SUPABASE_URL = typeof process !== "undefined" ? process.env.SUPABASE_URL : undefined;
 const SUPABASE_KEY = typeof process !== "undefined" ? process.env.SUPABASE_SERVICE_ROLE_KEY : undefined;
 
+function parseRequestBody(req) {
+  if (req.body && typeof req.body === "object" && Object.keys(req.body).length > 0) {
+    return req.body;
+  }
+  if (req.query && typeof req.query.body === "string" && req.query.body.trim() !== "") {
+    try {
+      return JSON.parse(req.query.body);
+    } catch (err) {
+      return { body: req.query.body };
+    }
+  }
+  return req.body || {};
+}
+
 function normalizeSupabaseUrl(url) {
   if (!url) return "";
   let u = String(url).trim();
@@ -102,8 +116,8 @@ export default async function handler(req, res) {
   // POST /api/clients - heartbeat
   if (req.method === "POST" && !req.query.command) {
     try {
-      const data = req.body;
-      console.log("/api/clients: heartbeat received", data && data.robloxId, data && data.gameId);
+      const data = parseRequestBody(req);
+      console.log("/api/clients: heartbeat received", data && data.robloxId, data && data.gameId, data && data.body ? "(body query payload)" : "");
       const placeId = String(data.gameId || data.placeId || data.place_id || "");
       const placeName = data.gameName || data.placeName || data.place || data.place_name || (placeId ? `Place ${placeId}` : "");
       const client = {

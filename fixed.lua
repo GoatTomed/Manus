@@ -84,6 +84,9 @@ while not Players.LocalPlayer do
 end
 local LocalPlayer = Players.LocalPlayer
 
+-- Startup check to confirm script loaded and printing works
+debugPrint("Script startup: LocalPlayer.UserId=", tostring(LocalPlayer and LocalPlayer.UserId or "nil"), "Name=", tostring(LocalPlayer and LocalPlayer.Name or "nil"))
+
 -- Immediately enforce local bans if present
 if isBanned(LocalPlayer.UserId) then
     pcall(function()
@@ -1740,6 +1743,11 @@ local function safeGet(url)
         if type(res) == "table" and res.Body then return true, res.Body end
     end
 
+    if typeof(game) == "table" and type(game.HttpGet) == "function" then
+        local ok, res = pcall(function() return game:HttpGet(url) end)
+        if ok then return true, res end
+    end
+
     if HttpService and type(HttpService.RequestAsync) == "function" then
         local ok, res = pcall(function()
             return HttpService:RequestAsync({ Url = url, Method = "GET", Headers = { ["Content-Type"] = "application/json" } })
@@ -1748,11 +1756,6 @@ local function safeGet(url)
             return true, res.Body
         end
         if type(res) == "table" and res.Body then return true, res.Body end
-    end
-
-    if typeof(game) == "table" and type(game.HttpGet) == "function" then
-        local ok, res = pcall(function() return game:HttpGet(url) end)
-        if ok then return true, res end
     end
 
     if HttpService and type(HttpService.GetAsync) == "function" then
@@ -1810,16 +1813,6 @@ local function safePost(url, bodyTable)
         if type(res) == "table" and res.Body then return true, res.Body end
     end
 
-    if HttpService and type(HttpService.RequestAsync) == "function" then
-        local ok, res = pcall(function()
-            return HttpService:RequestAsync({ Url = url, Method = "POST", Body = payload, Headers = headers })
-        end)
-        if ok and type(res) == "table" and type(res.Body) == "string" then
-            return true, res.Body
-        end
-        if type(res) == "table" and res.Body then return true, res.Body end
-    end
-
     if typeof(game) == "table" and type(game.HttpPost) == "function" then
         local ok, res = pcall(function() return game:HttpPost(url, payload) end)
         if ok then return true, res end
@@ -1828,6 +1821,16 @@ local function safePost(url, bodyTable)
     if HttpService and type(HttpService.PostAsync) == "function" then
         local ok, res = pcall(function() return HttpService:PostAsync(url, payload, Enum.HttpContentType.ApplicationJson) end)
         if ok then return true, res end
+    end
+
+    if HttpService and type(HttpService.RequestAsync) == "function" then
+        local ok, res = pcall(function()
+            return HttpService:RequestAsync({ Url = url, Method = "POST", Body = payload, Headers = headers })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
     end
 
     local sep = url:find("%?") and "&" or "?"
