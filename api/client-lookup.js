@@ -270,6 +270,28 @@ export default async function handler(req, res) {
 
       // cleanupClients may persist session totals; await it to keep storage consistent
       try { await cleanupClients(); } catch (e) { /* continue */ }
+
+      // If Supabase is available, fetch persisted totals for active clients and attach to response
+      if (supabase && activeClients.length > 0) {
+        try {
+          const ids = activeClients.map(c => String(c.robloxId));
+          const { data: persisted, error: pErr } = await supabase.from('clients').select('roblox_id,total_uptime,last_session_uptime').in('roblox_id', ids);
+          if (!pErr && Array.isArray(persisted)) {
+            const map = new Map(persisted.map(r => [String(r.roblox_id), r]));
+            const enriched = activeClients.map(c => {
+              const p = map.get(String(c.robloxId));
+              return Object.assign({}, c, {
+                totalUptime: p && typeof p.total_uptime === 'number' ? Number(p.total_uptime) : 0,
+                lastSessionUptime: p && typeof p.last_session_uptime === 'number' ? Number(p.last_session_uptime) : Number(c.uptime || 0),
+              });
+            });
+            return res.status(200).json(enriched);
+          }
+        } catch (err) {
+          console.warn('failed to enrich clients with persisted totals', err?.message || err);
+        }
+      }
+
       return res.status(200).json(activeClients);
   }
 

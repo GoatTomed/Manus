@@ -327,7 +327,8 @@ export default function Track() {
               }
               const existing = updated[c.robloxId];
               const displayName = normalizeClientName(c.name, c.robloxId, cache, updated);
-              let totalUptime = existing?.totalUptime || 0;
+              // prefer server-provided totalUptime when available (persisted via Supabase)
+              let totalUptime = Number(c.totalUptime || existing?.totalUptime || 0) || 0;
               if (existing?.currentSessionId && existing.currentSessionId !== c.id) {
                 totalUptime += existing.lastObservedUptime || 0;
               }
@@ -463,7 +464,7 @@ export default function Track() {
       const body = JSON.stringify({ robloxId, type: type.toLowerCase(), script });
       const urls = getApiUrls(`/api/client-lookup?command=1`);
       let lastErr: any = null;
-      for (const url of urls) {
+          for (const url of urls) {
         try {
           console.log("sendCommand->", url, body);
           const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
@@ -474,14 +475,20 @@ export default function Track() {
             setLastCommandLog({ url, ok: false, status: res.status, body: err });
             continue;
           }
-          const data = await res.json().catch(() => null);
-          const okResponse = data?.success === true;
-          if (!okResponse) {
-            lastErr = { url, status: res.status, body: data };
-            console.warn("Command endpoint returned non-success response", url, data);
-            setLastCommandLog({ url, ok: false, status: res.status, body: data });
-            continue;
-          }
+              const data = await res.json().catch(() => null);
+              if (data && data.error === 'SUPABASE_NOT_CONFIGURED') {
+                // visible actionable error for admins
+                if (typeof alert !== 'undefined') alert('Server not configured for command delivery: SUPABASE_NOT_CONFIGURED. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY and redeploy.');
+                setLastCommandLog({ url, ok: false, status: res.status, body: data });
+                return false;
+              }
+              const okResponse = data?.success === true;
+              if (!okResponse) {
+                lastErr = { url, status: res.status, body: data };
+                console.warn("Command endpoint returned non-success response", url, data);
+                setLastCommandLog({ url, ok: false, status: res.status, body: data });
+                continue;
+              }
           setLastCommandLog({ url, ok: true, status: res.status, body: data });
           return true;
         } catch (e) {
