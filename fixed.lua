@@ -292,20 +292,20 @@ local function getExecutorName()
 end
 
 local function getGameName()
-    local name = "Roblox"
+    local placeId = tostring(game.PlaceId or "")
     local ok, info = pcall(function()
         return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId, Enum.InfoType.Asset)
     end)
-    if ok and type(info) == "table" and type(info.Name) == "string" and info.Name ~= "" then
+    if ok and type(info) == "table" and type(info.Name) == "string" and info.Name ~= "" and info.Name ~= "Roblox" then
         return info.Name
     end
-    if typeof(game) == "table" and type(game.Name) == "string" and game.Name ~= "" then
+    if typeof(game) == "table" and type(game.Name) == "string" and game.Name ~= "" and game.Name ~= "Roblox" then
         return tostring(game.Name)
     end
-    if type(game.PlaceId) == "number" and game.PlaceId > 0 then
-        return "Place " .. tostring(game.PlaceId)
+    if placeId ~= "" and placeId ~= "0" then
+        return "Place " .. tostring(placeId)
     end
-    return name
+    return "Roblox"
 end
 
 local function startClientHeartbeat()
@@ -1404,46 +1404,13 @@ UI = (function()
         buildSaveButton(self.Window, saveWrapper, function()
             local accentColor = self.Window:GetAccent()
             saveSettings({ Accent = { math.floor(accentColor.R * 255 + 0.5), math.floor(accentColor.G * 255 + 0.5), math.floor(accentColor.B * 255 + 0.5) } })
-            self.Window:Notify("Accent saved.", "success", 2)
         end)
 
         return container
     end
 
     function WindowMethods:Notify(msg, kind, duration)
-        local accentColor = Theme.Accent
-        if kind == "success" then accentColor = Theme.Success
-        elseif kind == "error" then accentColor = Theme.Error end
-
-        local Note = new("Frame", {
-            Size = UDim2.new(0, 300, 0, 48),
-            Position = UDim2.new(0.5, -150, 1, 60),
-            BackgroundColor3 = Theme.Surface,
-            BorderSizePixel = 0,
-            Parent = self.Gui,
-        })
-        corner(Note, 8)
-        local nStroke = stroke(Note, Theme.Accent, 1.5, 0)
-        nStroke.Color = accentColor
-        new("TextLabel", {
-            Size = UDim2.new(1, -24, 1, 0),
-            Position = UDim2.new(0, 14, 0, 0),
-            BackgroundTransparency = 1,
-            Text = msg,
-            TextColor3 = Theme.Text,
-            FontFace = FONT_REG,
-            TextSize = 13,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextWrapped = true,
-            Parent = Note,
-        })
-
-        tween(Note, { Position = UDim2.new(0.5, -150, 1, -70) }, 0.3)
-        task.delay(duration or 3, function()
-            tween(Note, { Position = UDim2.new(0.5, -150, 1, 60) }, 0.3)
-            task.wait(0.3)
-            Note:Destroy()
-        end)
+        return
     end
 
     function UI:GetFlag(name)
@@ -1865,50 +1832,7 @@ local function formatDuration(seconds)
 end
 
 local function showBottomRightNotification(text)
-    if not Window or not Window.Gui then return end
-    local existing = Window.Gui:FindFirstChild("SavedKeyNotice")
-    if existing then existing:Destroy() end
-
-    local note = make("Frame", {
-        Name = "SavedKeyNotice",
-        Size = UDim2.new(0, 340, 0, 56),
-        Position = UDim2.new(1, -360, 1, -80),
-        BackgroundColor3 = Color3.fromRGB(12, 12, 12),
-        BorderSizePixel = 0,
-        ZIndex = 1000,
-        Parent = Window.Gui,
-    })
-    make("UICorner", { CornerRadius = UDim.new(0, 14), Parent = note })
-
-    make("Frame", {
-        Name = "AccentBar",
-        Size = UDim2.new(0, 4, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundColor3 = Color3.fromRGB(56, 189, 248),
-        BorderSizePixel = 0,
-        Parent = note,
-    })
-
-    make("TextLabel", {
-        Name = "NoticeText",
-        Size = UDim2.new(1, -28, 1, -24),
-        Position = UDim2.new(0, 12, 0, 12),
-        BackgroundTransparency = 1,
-        Text = text,
-        TextColor3 = Color3.fromRGB(235, 235, 235),
-        Font = Enum.Font.Gotham,
-        TextSize = 14,
-        TextWrapped = true,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Top,
-        Parent = note,
-    })
-
-    task.delay(5, function()
-        if note and note.Parent then
-            note:Destroy()
-        end
-    end)
+    return
 end
 
 local function parseIsoExpiration(iso)
@@ -2016,9 +1940,7 @@ HideUISection:AddKeybind({ Default = savedSettings.ToggleKey or "RightShift", Ca
         local settings = getSavedSettings()
         settings.ToggleKey = v
         saveSettings(settings)
-        if Window and typeof(Window.Notify) == "function" then
-            Window:Notify("Hide UI key saved.", "success", 2)
-        end
+        -- Hide UI key saved.
     end
 end })
 
