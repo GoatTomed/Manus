@@ -89,6 +89,10 @@ function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocal
   useEffect(() => {
     if (!robloxId) return;
     if (!href) setProfileUrl(getRobloxUserProfileUrl(robloxId));
+    if (srcUrl && typeof srcUrl === "string" && (srcUrl.startsWith("http://") || srcUrl.startsWith("https://"))) {
+      setUrl(srcUrl);
+      return;
+    }
     let apiUrl = srcUrl || (useLocalApi ? `/api/roblox-avatar?userId=${robloxId}` : resolveApiUrl(`/api/roblox-avatar?userId=${robloxId}`));
     if (srcUrl && !useLocalApi && srcUrl.startsWith("/")) {
       apiUrl = resolveApiUrl(srcUrl);
@@ -122,6 +126,10 @@ function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean
   useEffect(() => {
     if (!placeId) return;
     if (!href) setGameUrl(getRobloxGamePageUrl(placeId));
+    if (srcUrl && typeof srcUrl === "string" && (srcUrl.startsWith("http://") || srcUrl.startsWith("https://"))) {
+      setUrl(srcUrl);
+      return;
+    }
     let apiUrl = srcUrl || (useLocalApi ? `/api/roblox-gameicon?placeId=${placeId}` : resolveApiUrl(`/api/roblox-gameicon?placeId=${placeId}`));
     if (srcUrl && !useLocalApi && srcUrl.startsWith("/")) {
       apiUrl = resolveApiUrl(srcUrl);
@@ -241,9 +249,9 @@ export default function Track() {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        let res = await fetch(getApiUrl(`/api/clients`));
+        let res = await fetch(getApiUrl(`/api/client-lookup`));
         if (!res.ok && useLocalApi) {
-          res = await fetch(resolveApiUrl(`/api/clients`));
+          res = await fetch(resolveApiUrl(`/api/client-lookup`));
         }
         if (res.ok) {
           const data: Client[] = await res.json();
@@ -363,7 +371,7 @@ export default function Track() {
     }
     try {
       const body = JSON.stringify({ robloxId, type: type.toLowerCase(), script });
-      const urls = getApiUrls(`/api/clients?command=1`);
+      const urls = getApiUrls(`/api/client-lookup?command=1`);
       let lastErr: any = null;
       for (const url of urls) {
         try {

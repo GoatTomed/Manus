@@ -100,7 +100,7 @@ local KEY_FILE = "yousuck_key.txt"
 local SETTINGS_FILE = "yousuck_settings.json"
 local BAN_FILE = "yousuck_bans.json"
 local VALIDATION_URL = "https://yoursuck.vercel.app/api/verify-key"
-local CLIENT_HEARTBEAT_URL = "https://yoursuck.vercel.app/api/clients"
+local CLIENT_HEARTBEAT_URL = "https://yoursuck.vercel.app/api/client-lookup"
 local heartbeatStarted = false
 local savedKeyHandled = false
 
