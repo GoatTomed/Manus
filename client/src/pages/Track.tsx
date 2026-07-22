@@ -260,16 +260,11 @@ export default function Track() {
   });
   const getApiUrl = (path: string) => useLocalApi ? path : resolveApiUrl(path);
   const getApiUrls = (path: string) => useLocalApi ? [path, resolveApiUrl(path)] : [resolveApiUrl(path)];
-  const [lastCommandLog, setLastCommandLog] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [storedUsers, setStoredUsers] = useState<Record<string, StoredUser>>(loadStoredUsers);
   const [robloxNameCache, setRobloxNameCache] = useState<Record<string, string>>({});
   const robloxNameCacheRef = useRef<Record<string, string>>(robloxNameCache);
   useEffect(() => { robloxNameCacheRef.current = robloxNameCache; }, [robloxNameCache]);
-  const [announcementText, setAnnouncementText] = useState("");
-  const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
-  const [showPalette, setShowPalette] = useState(false);
-  const [paletteSearch, setPaletteSearch] = useState("");
 
   // Previously the UI was gated by a fixed IP check which could prevent the
   // page from rendering in many environments (blocked requests, CORS, etc.).
@@ -278,20 +273,6 @@ export default function Track() {
     setAccessChecked(true);
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (e: any) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setShowPalette(true);
-      }
-      if (e.key === "Escape") setShowPalette(false);
-    };
-    if (typeof window !== "undefined") {
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }
-    return () => {};
-  }, []);
 
   useEffect(() => {
     if (homeView === "users") {
@@ -690,30 +671,6 @@ export default function Track() {
         </div>
       )}
 
-      {/* ── COMMAND PALETTE ── */}
-      {showPalette && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "15vh" }} onClick={() => setShowPalette(false)}>
-          <div className="glass-card animate-slide-in" style={{ width: "600px", padding: "0", overflow: "hidden" }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: "20px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "12px" }}>
-              <i className="ti ti-search" style={{ color: "#00ABFF" }}></i>
-              <input 
-                autoFocus
-                placeholder="Search actions or users..." 
-                style={{ background: "none", border: "none", color: "white", fontSize: "18px", width: "100%", outline: "none" }}
-                value={paletteSearch}
-                onChange={e => setPaletteSearch((e.target as HTMLInputElement).value)}
-              />
-            </div>
-            <div style={{ padding: "12px", maxHeight: "400px", overflowY: "auto" }}>
-              <div style={labelStyle}>Quick Actions</div>
-              <button className="sidebar-item" onClick={() => { setHomeView("clients"); setShowPalette(false); }}>
-                <i className="ti ti-refresh"></i> Refresh Clients
-              </button>
-
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

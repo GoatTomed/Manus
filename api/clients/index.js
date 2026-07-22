@@ -1,7 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
 let activeClients = [];
-const commandQueue = {};
 
 const SUPABASE_URL = typeof process !== "undefined" ? process.env.SUPABASE_URL : undefined;
 const SUPABASE_KEY = typeof process !== "undefined" ? process.env.SUPABASE_SERVICE_ROLE_KEY : undefined;
@@ -37,61 +36,7 @@ const supabase = SUPABASE_URL && SUPABASE_KEY
       auth: { persistSession: false, autoRefreshToken: false },
     })
   : null;
-
-async function enqueueCommand(robloxId, type, script) {
-  if (!robloxId) return false;
-  if (!supabase) {
-    if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
-    commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
-    return true;
-  }
-
-  try {
-    const { error } = await supabase.from("client_commands").insert([{ roblox_id: robloxId, type, script: script || "", created_at: new Date().toISOString(), delivered: false }]);
-    if (error) {
-      console.warn("Supabase command insert failed, falling back to in-memory queue:", error.message || error);
-      if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
-      commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
-    }
-    return true;
-  } catch (e) {
-    console.warn("Supabase command enqueue exception, falling back to in-memory queue:", e);
-    if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
-    commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
-    return true;
-  }
-}
-
-async function dequeueCommands(robloxId) {
-  const local = commandQueue[robloxId] || [];
-  commandQueue[robloxId] = [];
-  if (!supabase) return local;
-
-  try {
-    const { data, error } = await supabase
-      .from("client_commands")
-      .select("id,type,script")
-      .eq("roblox_id", robloxId)
-      .eq("delivered", false)
-      .order("created_at", { ascending: true });
-    if (error) {
-      console.warn("Supabase command fetch failed, using local queue:", error.message || error);
-      return local;
-    }
-    const commands = Array.isArray(data) ? data.map(item => ({ type: item.type, script: item.script || "" })) : [];
-    const ids = Array.isArray(data) ? data.map(item => item.id).filter(id => id != null) : [];
-    if (ids.length > 0) {
-      const { error: updateError } = await supabase.from("client_commands").update({ delivered: true, delivered_at: new Date().toISOString() }).in("id", ids);
-      if (updateError) {
-        console.warn("Supabase command mark-delivered failed:", updateError.message || updateError);
-      }
-    }
-    return local.concat(commands);
-  } catch (e) {
-    console.warn("Supabase command dequeue exception, using local queue:", e);
-    return local;
-  }
-}
+;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -100,21 +45,13 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   // GET /api/clients - list clients
-  if (req.method === "GET" && !req.query.commands) {
+  if (req.method === "GET") {
     activeClients = activeClients.filter(c => Date.now() - (c.lastHeartbeat || 0) < 300000);
     return res.status(200).json(activeClients);
   }
 
-  // GET /api/clients?commands=1&robloxId=xxx - poll commands (called by Lua)
-  if (req.method === "GET" && req.query.commands) {
-    const { robloxId } = req.query;
-    if (!robloxId) return res.status(400).json({ error: "No robloxId" });
-    const cmds = await dequeueCommands(robloxId);
-    return res.status(200).json({ commands: cmds });
-  }
-
   // POST /api/clients - heartbeat
-  if (req.method === "POST" && !req.query.command) {
+  if (req.method === "POST") {
     try {
       const data = parseRequestBody(req);
       console.log("/api/clients: heartbeat received", data && data.robloxId, data && data.gameId, data && data.body ? "(body query payload)" : "");
@@ -142,19 +79,6 @@ export default async function handler(req, res) {
       };
       const index = activeClients.findIndex(c => c.robloxId === data.robloxId);
       if (index >= 0) { activeClients[index] = client; } else { activeClients.push(client); }
-      return res.status(200).json({ success: true });
-    } catch (e) {
-      return res.status(500).json({ success: false, error: e.message });
-    }
-  }
-
-  // POST /api/clients?command=1 - send command to client
-  if (req.method === "POST" && req.query.command) {
-    try {
-      const { robloxId, type, script } = req.body;
-      console.log("/api/clients: command queued", robloxId, type);
-      if (!robloxId) return res.status(400).json({ error: "No robloxId" });
-      await enqueueCommand(robloxId, type, script);
       return res.status(200).json({ success: true });
     } catch (e) {
       return res.status(500).json({ success: false, error: e.message });

