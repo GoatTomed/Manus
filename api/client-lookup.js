@@ -176,29 +176,28 @@ async function fetchRobloxPlaceName(placeId) {
 async function enqueueCommand(robloxId, type, script) {
   if (!robloxId) return false;
   if (!supabase) {
-    if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
-    commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
-    return true;
+    console.warn("enqueueCommand: Supabase not configured");
+    return false;
   }
 
   try {
     const { error } = await supabase.from("client_commands").insert([{ roblox_id: robloxId, type, script: script || "", created_at: new Date().toISOString(), delivered: false }]);
     if (error) {
-      if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
-      commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
+      console.warn("enqueueCommand: Supabase insert failed", error.message || error);
+      return false;
     }
     return true;
   } catch (e) {
-    if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
-    commandQueue[robloxId].push({ type, script: script || "", ts: Date.now() });
-    return true;
+    console.warn("enqueueCommand: exception", e?.message || e);
+    return false;
   }
 }
 
 async function dequeueCommands(robloxId) {
-  const local = commandQueue[robloxId] || [];
-  commandQueue[robloxId] = [];
-  if (!supabase) return local;
+  if (!supabase) {
+    console.warn("dequeueCommands: Supabase not configured");
+    return [];
+  }
 
   try {
     const { data, error } = await supabase
@@ -208,16 +207,18 @@ async function dequeueCommands(robloxId) {
       .eq("delivered", false)
       .order("created_at", { ascending: true });
     if (error) {
-      return local;
+      console.warn("dequeueCommands: Supabase select failed", error.message || error);
+      return [];
     }
     const commands = Array.isArray(data) ? data.map(item => ({ type: item.type, script: item.script || "" })) : [];
     const ids = Array.isArray(data) ? data.map(item => item.id).filter(id => id != null) : [];
     if (ids.length > 0) {
       await supabase.from("client_commands").update({ delivered: true, delivered_at: new Date().toISOString() }).in("id", ids);
     }
-    return local.concat(commands);
+    return commands;
   } catch (e) {
-    return local;
+    console.warn("dequeueCommands: exception", e?.message || e);
+    return [];
   }
 }
 
@@ -301,12 +302,14 @@ export default async function handler(req, res) {
       if (!robloxId) return res.status(400).json({ error: "No robloxId" });
       const type = String(data.type || "").toLowerCase().trim();
       const script = String(data.script || "");
-      // If Supabase isn't configured, we can't reliably persist commands across serverless invocations.
       if (!supabase) {
         console.warn("Command enqueue attempted but SUPABASE not configured");
         return res.status(500).json({ success: false, error: "SUPABASE_NOT_CONFIGURED" });
       }
-      await enqueueCommand(robloxId, type, script);
+      const added = await enqueueCommand(robloxId, type, script);
+      if (!added) {
+        return res.status(500).json({ success: false, error: "COMMAND_ENQUEUE_FAILED" });
+      }
       return res.status(200).json({ success: true });
     }
 

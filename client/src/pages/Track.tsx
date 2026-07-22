@@ -88,8 +88,9 @@ function getActiveUptime(clientId: string, clientUptimes: Record<string, number>
   return base + elapsed;
 }
 
-function getLifetimeTotal(storedUser: StoredUser | undefined, activeUptime: number) {
-  return (storedUser?.totalUptime || 0) + activeUptime;
+function getLifetimeTotal(client: Client, storedUser: StoredUser | undefined, activeUptime: number) {
+  const dbTotal = Number(client.totalUptime ?? storedUser?.totalUptime || 0);
+  return dbTotal + activeUptime;
 }
 
 function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocalApi?: boolean; href?: string; srcUrl?: string }) {
@@ -628,7 +629,7 @@ export default function Track() {
                           })()
                         }</div>
                         <div style={{ fontSize: "11px", color: "#8b8b8b", marginTop: "4px" }}>
-                          Total: {formatUptime(getLifetimeTotal(storedUsers[c.robloxId || ""], getActiveUptime(c.id, clientUptimes, clientUptimeAt, now)))}
+                          Total: {formatUptime(getLifetimeTotal(c, storedUsers[c.robloxId || ""], getActiveUptime(c.id, clientUptimes, clientUptimeAt, now)))}
                         </div>
                       </div>
                     </div>
@@ -656,7 +657,7 @@ export default function Track() {
                         </div>
                         <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
                           <div style={{ fontSize: "14px", color: "#a5b4fc" }}>
-                            <strong>Total Uptime:</strong> {formatUptime(getLifetimeTotal(storedUsers[selectedClient.robloxId || ""], getActiveUptime(selectedClient.id, clientUptimes, clientUptimeAt, now)))}
+                            <strong>Total Uptime:</strong> {formatUptime(getLifetimeTotal(selectedClient, storedUsers[selectedClient.robloxId || ""], getActiveUptime(selectedClient.id, clientUptimes, clientUptimeAt, now)))}
                           </div>
                         </div>
                       </div>

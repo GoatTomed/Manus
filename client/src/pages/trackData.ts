@@ -13,6 +13,8 @@ export type Client = {
   robloxId?: string;
   lastHeartbeat?: number;
   uptime?: number;
+  totalUptime?: number;
+  lastSessionUptime?: number;
   executor?: string;
 };
 
