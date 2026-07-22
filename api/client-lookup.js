@@ -335,7 +335,7 @@ export default async function handler(req, res) {
       if (user?.name) robloxName = user.name;
     }
 
-    if ((!placeName || /^Place\s+[0-9]+$/.test(placeName)) && placeId) {
+    if ((!placeName || /^Place\s+[0-9]+$/.test(placeName) || /^roblox$/i.test(placeName)) && placeId) {
       const resolved = await fetchRobloxPlaceName(placeId);
       if (resolved) {
         placeName = resolved;

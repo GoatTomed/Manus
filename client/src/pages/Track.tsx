@@ -504,100 +504,7 @@ export default function Track() {
   const onlineNow = (robloxId: string) => clients.find(c => String(c.robloxId) === String(robloxId));
   const selectedUserData = selectedUser ? storedUsers[selectedUser] : null;
 
-  async function sendCommand(robloxId: string | undefined, type: string, script = "") {
-    if (!robloxId) {
-      console.warn("sendCommand: missing robloxId", type);
-      return false;
-    }
-    try {
-      const body = JSON.stringify({ robloxId, type: type.toLowerCase(), script });
-      const urls = [...getApiUrls(`/api/client-lookup?command=1`), ...getApiUrls(`/api/clients?command=1`)];
-      let lastErr: any = null;
-      for (const url of urls) {
-        try {
-          console.log("sendCommand->", url, body);
-          const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
-          if (!res.ok) {
-            const err = await res.text().catch(() => null);
-            lastErr = { url, status: res.status, body: err };
-            console.warn("Command send failed", url, type, robloxId, err);
-            setLastCommandLog({ url, ok: false, status: res.status, body: err });
-            continue;
-          }
-              const data = await res.json().catch(() => null);
-              if (data && data.error === 'SUPABASE_NOT_CONFIGURED') {
-                // visible actionable error for admins
-                if (typeof alert !== 'undefined') alert('Server not configured for command delivery: SUPABASE_NOT_CONFIGURED. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY and redeploy.');
-                setLastCommandLog({ url, ok: false, status: res.status, body: data });
-                return false;
-              }
-              const okResponse = data?.success === true;
-              if (!okResponse) {
-                lastErr = { url, status: res.status, body: data };
-                console.warn("Command endpoint returned non-success response", url, data);
-                setLastCommandLog({ url, ok: false, status: res.status, body: data });
-                continue;
-              }
-          setLastCommandLog({ url, ok: true, status: res.status, body: data });
-          return true;
-        } catch (e) {
-          lastErr = e;
-          console.warn("Command send exception", url, e);
-          setLastCommandLog({ url, ok: false, error: String(e) });
-          continue;
-        }
-      }
-      console.warn("All command endpoints failed", lastErr);
-      setLastCommandLog({ ok: false, error: lastErr });
-      return false;
-    } catch (error) {
-      console.warn("Command send error", error);
-      setLastCommandLog({ ok: false, error: String(error) });
-      return false;
-    }
-  }
-
-  async function handleClientCommand(type: string, script = "") {
-    if (!selectedClient) {
-      if (typeof alert !== "undefined") alert("No client selected.");
-      return false;
-    }
-    if (!selectedClient.robloxId) {
-      if (typeof alert !== "undefined") alert("Selected client has no robloxId.");
-      return false;
-    }
-    const ok = await sendCommand(selectedClient.robloxId, type, script);
-    if (!ok && typeof alert !== "undefined") {
-      alert(`Failed to send ${type} command.`);
-      return false;
-    }
-    // Optimistically update UI for kick/ban actions
-    if (ok && (type.toLowerCase() === "kick" || type.toLowerCase() === "ban")) {
-      setClients(prev => prev.filter(c => String(c.robloxId) !== String(selectedClient.robloxId)));
-      setSelectedClient(null);
-      setInClientMode(false);
-      pushTrackUrl();
-      if (typeof alert !== "undefined") {
-        alert(`${type} command sent.`);
-      }
-    }
-    return ok;
-  }
-
-  async function broadcastAnnouncement() {
-    if (!announcementText.trim()) return;
-    setSendingAnnouncement(true);
-    try {
-      const promises = clients.map(c => c.robloxId ? sendCommand(c.robloxId, "announcement", announcementText) : Promise.resolve(false));
-      await Promise.all(promises);
-      setAnnouncementText("");
-      if (typeof alert !== "undefined") alert("Announcement sent to all active clients!");
-    } catch (e) {
-      if (typeof alert !== "undefined") alert("Failed to send announcement.");
-    } finally {
-      setSendingAnnouncement(false);
-    }
-  }
+  // Command delivery and announcement features removed per request.
 
   if (!accessChecked) return null;
   if (accessDenied) return (
@@ -676,9 +583,7 @@ export default function Track() {
                             return formatUptime(base + elapsed);
                           })()
                         }</div>
-                        <div style={{ fontSize: "11px", color: "#8b8b8b", marginTop: "4px" }}>
-                          Total: {formatUptime(getLifetimeTotal(c, storedUsers[c.robloxId || ""], getActiveUptime(c.id, clientUptimes, clientUptimeAt, now)))}
-                        </div>
+                        {/* total lifetime removed; only show current session uptime */}
                       </div>
                     </div>
                   </div>
@@ -705,7 +610,7 @@ export default function Track() {
                         </div>
                         <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
                           <div style={{ fontSize: "14px", color: "#a5b4fc" }}>
-                            <strong>Total Uptime:</strong> {formatUptime(getLifetimeTotal(selectedClient, storedUsers[selectedClient.robloxId || ""], getActiveUptime(selectedClient.id, clientUptimes, clientUptimeAt, now)))}
+                            <strong>Current Uptime:</strong> {formatUptime(getActiveUptime(selectedClient.id, clientUptimes, clientUptimeAt, now))}
                           </div>
                         </div>
                       </div>
@@ -720,27 +625,7 @@ export default function Track() {
                       {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
                     </div>
                   </div>
-                  <div style={labelStyle}>Actions</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <button className="btn-action danger" onClick={async () => {
-                      console.log("Kick clicked", selectedClient?.robloxId);
-                      const ok = await handleClientCommand("kick");
-                      console.log("Kick result", ok);
-                      if (!ok && typeof alert !== "undefined") alert("Kick command failed. Check console/network.");
-                    }}>Kick Player</button>
-                    <button className="btn-action danger" onClick={async () => {
-                      console.log("Ban clicked", selectedClient?.robloxId);
-                      const ok = await handleClientCommand("ban");
-                      console.log("Ban result", ok);
-                      if (!ok && typeof alert !== "undefined") alert("Ban command failed. Check console/network.");
-                    }}>Ban Player</button>
-                    <button className="btn-action" onClick={async () => {
-                      console.log("Unban clicked", selectedClient?.robloxId);
-                      const ok = await handleClientCommand("unban");
-                      console.log("Unban result", ok);
-                      if (!ok && typeof alert !== "undefined") alert("Unban command failed. Check console/network.");
-                    }}>Unban Player</button>
-                  </div>
+                  {/* Actions removed per user request */}
                 </div>
               </div>
             </div>
