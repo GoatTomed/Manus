@@ -89,7 +89,7 @@ function getActiveUptime(clientId: string, clientUptimes: Record<string, number>
 }
 
 function getLifetimeTotal(client: Client, storedUser: StoredUser | undefined, activeUptime: number) {
-  const dbTotal = Number(client.totalUptime ?? storedUser?.totalUptime || 0);
+  const dbTotal = Number((client.totalUptime ?? storedUser?.totalUptime) || 0);
   return dbTotal + activeUptime;
 }
 
