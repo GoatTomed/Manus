@@ -52,23 +52,23 @@ export default async function handler(req, res) {
     try {
       if (activeClients.length === 0 && supabase) {
         const cutoff = new Date(Date.now() - 300000).toISOString();
-        const { data: persisted, error } = await supabase.from('clients').select('roblox_id,last_session_id,last_session_uptime,last_seen,online').gte('last_seen', cutoff).or('online.eq.true');
+        const { data: persisted, error } = await supabase.from('clients').select('roblox_id,last_session_id,last_session_uptime,last_seen,online,place_id,place_name,game_icon_url,game_url,executor,executor_version').gte('last_seen', cutoff).or('online.eq.true');
         if (!error && Array.isArray(persisted) && persisted.length > 0) {
           activeClients = persisted.map(p => ({
             id: p.last_session_id || `c-${String(p.roblox_id)}`,
             name: 'Player',
-            place: 'Unknown Game',
-            placeId: '',
+            place: p.place_name || 'Unknown Game',
+            placeId: p.place_id || '',
             av: (String(p.roblox_id || '').slice(0,2) || '??').toUpperCase(),
             avc: 'av-green',
             avatarUrl: `/api/roblox-avatar?userId=${encodeURIComponent(p.roblox_id)}`,
-            gameIconUrl: '',
+            gameIconUrl: p.game_icon_url || '',
             profileUrl: p.roblox_id ? `https://www.roblox.com/users/${encodeURIComponent(p.roblox_id)}/profile` : '',
-            gameUrl: '',
-            lastHeartbeat: Date.now(),
+            gameUrl: p.game_url || '',
+            lastHeartbeat: new Date(p.last_seen || Date.now()).getTime(),
             uptime: Number(p.last_session_uptime || 0),
-            executor: 'Unknown',
-            executorVersion: '',
+            executor: p.executor || 'Unknown',
+            executorVersion: p.executor_version || '',
             robloxId: String(p.roblox_id),
           }));
         }
@@ -118,6 +118,12 @@ export default async function handler(req, res) {
             last_session_uptime: Number(client.uptime || 0),
             last_seen: new Date(client.lastHeartbeat).toISOString(),
             online: true,
+            place_id: client.placeId,
+            place_name: client.place,
+            game_icon_url: client.gameIconUrl,
+            game_url: client.gameUrl,
+            executor: client.executor,
+            executor_version: client.executorVersion,
           }, { onConflict: 'roblox_id' });
         } catch (err) {
           console.warn('supabase upsert client failed', err?.message || err);

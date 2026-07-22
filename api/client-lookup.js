@@ -192,6 +192,12 @@ async function cleanupClients() {
             last_session_uptime: 0,
             last_seen: new Date(removed.lastHeartbeat).toISOString(),
             online: false,
+            place_id: removed.placeId,
+            place_name: removed.place,
+            game_icon_url: removed.gameIconUrl,
+            game_url: removed.gameUrl,
+            executor: removed.executor,
+            executor_version: removed.executorVersion,
           }, { onConflict: 'roblox_id' });
         }
       } catch (err) {
@@ -219,22 +225,22 @@ export default async function handler(req, res) {
         try {
           if (activeClients.length === 0 && supabase) {
             const cutoff = new Date(Date.now() - CLIENT_TIMEOUT_MS).toISOString();
-            const { data: restored, error: rErr } = await supabase.from('clients').select('roblox_id,last_session_id,last_session_uptime,last_seen,online').gte('last_seen', cutoff).or('online.eq.true');
+            const { data: restored, error: rErr } = await supabase.from('clients').select('roblox_id,last_session_id,last_session_uptime,last_seen,online,place_id,place_name,game_icon_url,game_url,executor,executor_version').gte('last_seen', cutoff).or('online.eq.true');
             if (!rErr && Array.isArray(restored) && restored.length > 0) {
               activeClients = restored.map(p => ({
                 id: p.last_session_id || `c-${String(p.roblox_id)}`,
                 robloxId: String(p.roblox_id),
                 name: 'Player',
-                place: 'Unknown Game',
-                placeId: '',
+                place: p.place_name || 'Unknown Game',
+                placeId: p.place_id || '',
                 avatarUrl: `/api/roblox-avatar?userId=${encodeURIComponent(p.roblox_id)}`,
-                gameIconUrl: '',
+                gameIconUrl: p.game_icon_url || '',
                 profileUrl: p.roblox_id ? `https://www.roblox.com/users/${encodeURIComponent(p.roblox_id)}/profile` : '',
-                gameUrl: '',
-                lastHeartbeat: Date.now(),
+                gameUrl: p.game_url || '',
+                lastHeartbeat: new Date(p.last_seen || Date.now()).getTime(),
                 uptime: Number(p.last_session_uptime || 0),
-                executor: 'Unknown',
-                executorVersion: '',
+                executor: p.executor || 'Unknown',
+                executorVersion: p.executor_version || '',
                 rawPayload: {},
               }));
             }
@@ -332,6 +338,12 @@ export default async function handler(req, res) {
           last_session_uptime: Number(client.uptime || 0),
           last_seen: new Date(client.lastHeartbeat).toISOString(),
           online: true,
+          place_id: client.placeId,
+          place_name: client.place,
+          game_icon_url: client.gameIconUrl,
+          game_url: client.gameUrl,
+          executor: client.executor,
+          executor_version: client.executorVersion,
         }, { onConflict: 'roblox_id' });
       } catch (err) {
         console.warn('supabase upsert client failed', err?.message || err);
