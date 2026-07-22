@@ -102,7 +102,9 @@ const axiosFetcher = async (url, options) => {
   }
 };
 
-const supabase = createClient(
+const hasSupabase = !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabase = hasSupabase ? createClient(
     (() => {
       let u = process.env.SUPABASE_URL || '';
       if (!u) return '';
@@ -127,7 +129,7 @@ const supabase = createClient(
       fetch: axiosFetcher,
     },
   }
-);
+) : null;
 
 function getClientIp(req) {
   const clientIp = req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "";
@@ -227,6 +229,10 @@ export default async function handler(req, res) {
 
       if (!newFormat.test(searchKey)) {
         return res.status(200).json({ valid: false, message: 'Invalid key format. Use XXX-XXX-XXX.' });
+      }
+
+      if (!hasSupabase || !supabase) {
+        return res.status(200).json({ valid: false, message: 'Supabase not configured for key verification.' });
       }
 
       const { data, error } = await supabase
