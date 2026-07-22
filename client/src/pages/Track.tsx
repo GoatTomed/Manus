@@ -109,10 +109,26 @@ function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocal
     if (srcUrl && !useLocalApi && srcUrl.startsWith("/")) {
       apiUrl = resolveApiUrl(srcUrl);
     }
-    fetch(apiUrl)
-      .then(r => r.json())
-      .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
-      .catch(() => {});
+    let cancelled = false;
+    const tryFetchAvatar = async () => {
+      try {
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error(`status:${res.status}`);
+        const data = await res.json();
+        const u = data?.data?.[0]?.imageUrl;
+        if (u && !cancelled) {
+          setUrl(u);
+          return;
+        }
+      } catch {
+        // fallback to Roblox direct thumbnail if local endpoint fails
+      }
+      if (!cancelled) {
+        setUrl(getRobloxAvatarThumbnailUrl(robloxId));
+      }
+    };
+    tryFetchAvatar();
+    return () => { cancelled = true; };
   }, [robloxId, useLocalApi, srcUrl, href]);
 
   const fallbackLabel = robloxId ? robloxId.toString().slice(0, 2).toUpperCase() : "?";
@@ -146,10 +162,26 @@ function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean
     if (srcUrl && !useLocalApi && srcUrl.startsWith("/")) {
       apiUrl = resolveApiUrl(srcUrl);
     }
-    fetch(apiUrl)
-      .then(r => r.json())
-      .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
-      .catch(() => {});
+    let cancelled = false;
+    const tryFetchGameIcon = async () => {
+      try {
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error(`status:${res.status}`);
+        const data = await res.json();
+        const u = data?.data?.[0]?.imageUrl;
+        if (u && !cancelled) {
+          setUrl(u);
+          return;
+        }
+      } catch {
+        // fallback to Roblox direct thumbnail if local endpoint fails
+      }
+      if (!cancelled) {
+        setUrl(getRobloxGameIconThumbnailUrl(placeId));
+      }
+    };
+    tryFetchGameIcon();
+    return () => { cancelled = true; };
   }, [placeId, useLocalApi, srcUrl, href]);
 
   return (
@@ -289,11 +321,27 @@ export default function Track() {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        let res = await fetch(getApiUrl(`/api/client-lookup`));
-        if (!res.ok && useLocalApi) {
-          res = await fetch(resolveApiUrl(`/api/client-lookup`));
+        const urls = useLocalApi
+          ? [
+              `/api/client-lookup`,
+              `/api/clients`,
+              resolveApiUrl(`/api/client-lookup`),
+              resolveApiUrl(`/api/clients`),
+            ]
+          : [resolveApiUrl(`/api/client-lookup`), resolveApiUrl(`/api/clients`)];
+        let res: Response | null = null;
+        for (const url of urls) {
+          try {
+            const candidate = await fetch(url);
+            if (candidate.ok) {
+              res = candidate;
+              break;
+            }
+          } catch (err) {
+            // try next endpoint
+          }
         }
-        if (res.ok) {
+        if (res && res.ok) {
           const data: Client[] = await res.json();
           setClients(data);
           const namesToFetch: string[] = [];
@@ -463,9 +511,9 @@ export default function Track() {
     }
     try {
       const body = JSON.stringify({ robloxId, type: type.toLowerCase(), script });
-      const urls = getApiUrls(`/api/client-lookup?command=1`);
+      const urls = [...getApiUrls(`/api/client-lookup?command=1`), ...getApiUrls(`/api/clients?command=1`)];
       let lastErr: any = null;
-          for (const url of urls) {
+      for (const url of urls) {
         try {
           console.log("sendCommand->", url, body);
           const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });

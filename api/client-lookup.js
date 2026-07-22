@@ -176,27 +176,33 @@ async function fetchRobloxPlaceName(placeId) {
 async function enqueueCommand(robloxId, type, script) {
   if (!robloxId) return false;
   if (!supabase) {
-    console.warn("enqueueCommand: Supabase not configured");
-    return false;
+    if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
+    commandQueue[robloxId].push({ type, script: script || "", created_at: new Date().toISOString() });
+    return true;
   }
 
   try {
     const { error } = await supabase.from("client_commands").insert([{ roblox_id: robloxId, type, script: script || "", created_at: new Date().toISOString(), delivered: false }]);
     if (error) {
-      console.warn("enqueueCommand: Supabase insert failed", error.message || error);
-      return false;
+      console.warn("enqueueCommand: Supabase insert failed, falling back to in-memory queue:", error.message || error);
+      if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
+      commandQueue[robloxId].push({ type, script: script || "", created_at: new Date().toISOString() });
     }
     return true;
   } catch (e) {
-    console.warn("enqueueCommand: exception", e?.message || e);
-    return false;
+    console.warn("enqueueCommand: exception, falling back to in-memory queue:", e?.message || e);
+    if (!commandQueue[robloxId]) commandQueue[robloxId] = [];
+    commandQueue[robloxId].push({ type, script: script || "", created_at: new Date().toISOString() });
+    return true;
   }
 }
 
 async function dequeueCommands(robloxId) {
+  const local = commandQueue[robloxId] || [];
+  commandQueue[robloxId] = [];
+  const localCommands = local.map(item => ({ type: item.type, script: item.script || "" }));
   if (!supabase) {
-    console.warn("dequeueCommands: Supabase not configured");
-    return [];
+    return localCommands;
   }
 
   try {
@@ -207,18 +213,21 @@ async function dequeueCommands(robloxId) {
       .eq("delivered", false)
       .order("created_at", { ascending: true });
     if (error) {
-      console.warn("dequeueCommands: Supabase select failed", error.message || error);
-      return [];
+      console.warn("dequeueCommands: Supabase select failed, using local queue:", error.message || error);
+      return localCommands;
     }
     const commands = Array.isArray(data) ? data.map(item => ({ type: item.type, script: item.script || "" })) : [];
     const ids = Array.isArray(data) ? data.map(item => item.id).filter(id => id != null) : [];
     if (ids.length > 0) {
-      await supabase.from("client_commands").update({ delivered: true, delivered_at: new Date().toISOString() }).in("id", ids);
+      const { error: updateError } = await supabase.from("client_commands").update({ delivered: true, delivered_at: new Date().toISOString() }).in("id", ids);
+      if (updateError) {
+        console.warn("dequeueCommands: Supabase mark-delivered failed:", updateError.message || updateError);
+      }
     }
-    return commands;
+    return localCommands.concat(commands);
   } catch (e) {
-    console.warn("dequeueCommands: exception", e?.message || e);
-    return [];
+    console.warn("dequeueCommands: exception, using local queue:", e?.message || e);
+    return localCommands;
   }
 }
 
