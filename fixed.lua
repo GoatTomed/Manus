@@ -326,6 +326,7 @@ local function startClientHeartbeat()
                 executor = getExecutorName(),
                 executorVersion = tostring((syn and syn.version) or "")
             }
+            debugPrint("Heartbeat payload:", HttpService:JSONEncode(payload))
             local pcallOk, postOk, postBody = pcall(function() return safePost(CLIENT_HEARTBEAT_URL, payload) end)
             if not pcallOk then
                 debugPrint("Heartbeat pcall failed:", postOk)
