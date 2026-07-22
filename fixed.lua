@@ -10,7 +10,11 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 
-local function debugPrint(...) end
+local function debugPrint(...)
+    pcall(function(...)
+        print(...)
+    end, ...)
+end
 
 local function hasFileReadApi()
     return type(readfile) == "function" or type(read_file) == "function"
@@ -97,7 +101,11 @@ local CLIENT_HEARTBEAT_URL = "https://yoursuck.vercel.app/api/clients"
 local heartbeatStarted = false
 local savedKeyHandled = false
 
-local function debugPrint(...) end
+local function debugPrint(...)
+    pcall(function(...)
+        print(...)
+    end, ...)
+end
 
 local function hasFileReadApi()
     return type(readfile) == "function" or type(read_file) == "function"
