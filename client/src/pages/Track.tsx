@@ -81,14 +81,14 @@ function getSessionTotal(sessions: ConnLog[] = [], excludeId?: string) {
     .reduce((sum, session) => sum + (session.uptime || 0), 0);
 }
 
-function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocalApi?: boolean }) {
-  const { robloxId, size = 40, useLocalApi = false } = props;
+function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocalApi?: boolean; href?: string }) {
+  const { robloxId, size = 40, useLocalApi = false, href } = props;
   const [url, setUrl] = useState<string | null>(null);
-  const [profileUrl, setProfileUrl] = useState<string | null>(null);
+  const [profileUrl, setProfileUrl] = useState<string | null>(href || null);
 
   useEffect(() => {
     if (!robloxId) return;
-    setProfileUrl(getRobloxUserProfileUrl(robloxId));
+    if (!href) setProfileUrl(getRobloxUserProfileUrl(robloxId));
     if (useLocalApi) {
       const apiUrl = `/api/roblox-avatar?userId=${robloxId}`;
       fetch(apiUrl)
@@ -107,7 +107,7 @@ function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocal
   const fallbackLabel = robloxId ? robloxId.toString().slice(0, 2).toUpperCase() : "?";
 
   return (
-    <a href={profileUrl || "#"} target="_blank" rel="noreferrer" style={{ display: "inline-block", textDecoration: "none" }}>
+    <a href={href || profileUrl || "#"} target="_blank" rel="noreferrer" style={{ display: "inline-block", textDecoration: "none" }}>
       <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {url ? (
           <img src={url} alt="Roblox avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -119,14 +119,14 @@ function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocal
   );
 }
 
-function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean }) {
-  const { placeId, size = 72, useLocalApi = false } = props;
+function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean; href?: string }) {
+  const { placeId, size = 72, useLocalApi = false, href } = props;
   const [url, setUrl] = useState<string | null>(null);
-  const [gameUrl, setGameUrl] = useState<string | null>(null);
+  const [gameUrl, setGameUrl] = useState<string | null>(href || null);
 
   useEffect(() => {
     if (!placeId) return;
-    setGameUrl(getRobloxGamePageUrl(placeId));
+    if (!href) setGameUrl(getRobloxGamePageUrl(placeId));
     if (useLocalApi) {
       const apiUrl = `/api/roblox-gameicon?placeId=${placeId}`;
       fetch(apiUrl)
@@ -143,7 +143,7 @@ function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean
   }, [placeId, useLocalApi]);
 
   return (
-    <a href={gameUrl || "#"} target="_blank" rel="noreferrer" style={{ display: "inline-block", textDecoration: "none" }}>
+    <a href={href || gameUrl || "#"} target="_blank" rel="noreferrer" style={{ display: "inline-block", textDecoration: "none" }}>
       <div style={{ width: size, height: size, borderRadius: "4px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", flexShrink: 0, background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {url ? <img src={url} alt="Roblox game icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-device-gamepad" style={{ fontSize: size * 0.35, color: "#52525b" }}></i>}
       </div>
@@ -151,7 +151,7 @@ function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean
   );
 }
 
-type ConnLog = { id: string; roblox_id: string; roblox_name: string; place_id: string; place_name: string; executor: string; connected_at: string; uptime: number; };
+type ConnLog = { id: string; roblox_id: string; roblox_name: string; place_id: string; place_name: string; place_url?: string; executor: string; connected_at: string; uptime: number; };
 type StoredUser = { roblox_id: string; roblox_name: string; last_seen: string; sessions: ConnLog[]; };
 
 function loadStoredUsers(): Record<string, StoredUser> {
@@ -293,6 +293,7 @@ export default function Track() {
                 roblox_name: displayName,
                 place_id: c.placeId,
                 place_name: normalizeClientPlace(c.place, c.placeId),
+                place_url: c.placeId ? getRobloxGamePageUrl(c.placeId) : undefined,
                 executor: c.executor || "Unknown",
                 connected_at: new Date(c.lastHeartbeat || ts).toISOString(),
                 uptime: c.uptime || 0,
@@ -511,7 +512,7 @@ export default function Track() {
                 {filteredClients.map(c => (
                   <div key={c.id} className="glass-card" onClick={() => { setSelectedClient(c); setInClientMode(true); pushTrackUrl(c.robloxId); }}>
                     <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                      <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} useLocalApi={useLocalApi} />
+                      <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} useLocalApi={useLocalApi} href={c.profileUrl} />
                       <div>
                           <div style={{ fontSize: "16px", fontWeight: "800" }}>{normalizeClientName(c.name, c.robloxId, robloxNameCache, storedUsers)}</div>
                       </div>
@@ -551,7 +552,7 @@ export default function Track() {
                 <div>
                   <div className="glass-card" style={{ padding: "40px", marginBottom: "40px" }}>
                     <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
-                      <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} />
+                      <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} href={selectedClient.profileUrl} />
                       <div>
                         <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{normalizeClientName(selectedClient.name, selectedClient.robloxId, robloxNameCache, storedUsers)}</h1>
                         <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
@@ -575,7 +576,7 @@ export default function Track() {
                 </div>
                 <div className="profile-card">
                   <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "32px" }}>
-                    <GameIcon placeId={selectedClient.placeId} size={64} useLocalApi={useLocalApi} />
+                    <GameIcon placeId={selectedClient.placeId} size={64} useLocalApi={useLocalApi} href={selectedClient.gameUrl} />
                     <div>
                         <div style={{ fontSize: "16px", fontWeight: "800" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</div>
                       {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
@@ -653,7 +654,7 @@ export default function Track() {
               const isCurrent = currentClient?.id === s.id;
               return (
                 <div key={i} className="user-row" style={{ background: isCurrent ? "rgba(0,171,255,0.05)" : "rgba(255,255,255,0.01)" }}>
-                  <GameIcon placeId={s.place_id} size={40} useLocalApi={useLocalApi} />
+                  <GameIcon placeId={s.place_id} size={40} useLocalApi={useLocalApi} href={s.place_url} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "14px", fontWeight: "800" }}>{normalizeClientPlace(s.place_name, s.place_id)}</div>
                     <div style={{ fontSize: "11px", color: "#71717a" }}>{timeAgo(s.connected_at, isCurrent)}</div>

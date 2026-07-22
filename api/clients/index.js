@@ -115,6 +115,8 @@ export default async function handler(req, res) {
         avc: "av-green",
         avatarUrl: `/api/roblox-avatar?userId=${encodeURIComponent(data.robloxId || "")}`,
         gameIconUrl: placeId ? `/api/roblox-gameicon?placeId=${encodeURIComponent(placeId)}` : "",
+        profileUrl: data.robloxId ? `https://www.roblox.com/users/${encodeURIComponent(data.robloxId)}/profile` : "",
+        gameUrl: placeId ? `https://www.roblox.com/games/${encodeURIComponent(placeId)}` : "",
         lastHeartbeat: Date.now(),
         uptime: data.uptime || 0,
         executor: data.executor || "Unknown",

@@ -8,6 +8,8 @@ export type Client = {
   avc: "av-blue" | "av-green" | "av-amber";
   avatarUrl?: string;
   gameIconUrl?: string;
+  profileUrl?: string;
+  gameUrl?: string;
   robloxId?: string;
   lastHeartbeat?: number;
   uptime?: number;
