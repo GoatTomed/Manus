@@ -1,6 +1,13 @@
 // Track.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Client } from "./trackData";
+import {
+  getRobloxAvatarThumbnailUrl,
+  getRobloxGameIconThumbnailUrl,
+  getRobloxUserApiUrl,
+  getRobloxUserProfileUrl,
+  getRobloxGamePageUrl,
+} from "../lib/robloxFetcher";
 import "./Track.css";
 
 type HomeView = "clients" | "users";
@@ -77,41 +84,70 @@ function getSessionTotal(sessions: ConnLog[] = [], excludeId?: string) {
 function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocalApi?: boolean }) {
   const { robloxId, size = 40, useLocalApi = false } = props;
   const [url, setUrl] = useState<string | null>(null);
+  const [profileUrl, setProfileUrl] = useState<string | null>(null);
+
   useEffect(() => {
     if (!robloxId) return;
-    const apiUrl = useLocalApi ? `/api/roblox-avatar?userId=${robloxId}` : resolveApiUrl(`/api/roblox-avatar?userId=${robloxId}`);
-    fetch(apiUrl)
-      .then(r => r.json())
-      .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
-      .catch(() => {});
+    setProfileUrl(getRobloxUserProfileUrl(robloxId));
+    if (useLocalApi) {
+      const apiUrl = `/api/roblox-avatar?userId=${robloxId}`;
+      fetch(apiUrl)
+        .then(r => r.json())
+        .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
+        .catch(() => {});
+    } else {
+      const thumbnailUrl = getRobloxAvatarThumbnailUrl(robloxId);
+      fetch(thumbnailUrl)
+        .then(r => r.json())
+        .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
+        .catch(() => {});
+    }
   }, [robloxId, useLocalApi]);
+
   const fallbackLabel = robloxId ? robloxId.toString().slice(0, 2).toUpperCase() : "?";
+
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {url ? (
-        <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      ) : (
-        <span style={{ color: "#8b8b8b", fontSize: size * 0.45, fontWeight: 700 }}>{fallbackLabel}</span>
-      )}
-    </div>
+    <a href={profileUrl || "#"} target="_blank" rel="noreferrer" style={{ display: "inline-block", textDecoration: "none" }}>
+      <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {url ? (
+          <img src={url} alt="Roblox avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <span style={{ color: "#8b8b8b", fontSize: size * 0.45, fontWeight: 700 }}>{fallbackLabel}</span>
+        )}
+      </div>
+    </a>
   );
 }
 
 function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean }) {
   const { placeId, size = 72, useLocalApi = false } = props;
   const [url, setUrl] = useState<string | null>(null);
+  const [gameUrl, setGameUrl] = useState<string | null>(null);
+
   useEffect(() => {
     if (!placeId) return;
-    const apiUrl = useLocalApi ? `/api/roblox-gameicon?placeId=${placeId}` : resolveApiUrl(`/api/roblox-gameicon?placeId=${placeId}`);
-    fetch(apiUrl)
-      .then(r => r.json())
-      .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
-      .catch(() => {});
+    setGameUrl(getRobloxGamePageUrl(placeId));
+    if (useLocalApi) {
+      const apiUrl = `/api/roblox-gameicon?placeId=${placeId}`;
+      fetch(apiUrl)
+        .then(r => r.json())
+        .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
+        .catch(() => {});
+    } else {
+      const thumbnailUrl = getRobloxGameIconThumbnailUrl(placeId);
+      fetch(thumbnailUrl)
+        .then(r => r.json())
+        .then(data => { const u = data?.data?.[0]?.imageUrl; if (u) setUrl(u); })
+        .catch(() => {});
+    }
   }, [placeId, useLocalApi]);
+
   return (
-    <div style={{ width: size, height: size, borderRadius: "4px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", flexShrink: 0, background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {url ? <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-device-gamepad" style={{ fontSize: size * 0.35, color: "#52525b" }}></i>}
-    </div>
+    <a href={gameUrl || "#"} target="_blank" rel="noreferrer" style={{ display: "inline-block", textDecoration: "none" }}>
+      <div style={{ width: size, height: size, borderRadius: "4px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", flexShrink: 0, background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {url ? <img src={url} alt="Roblox game icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-device-gamepad" style={{ fontSize: size * 0.35, color: "#52525b" }}></i>}
+      </div>
+    </a>
   );
 }
 
