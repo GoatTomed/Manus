@@ -81,6 +81,12 @@ function getSessionTotal(sessions: ConnLog[] = [], excludeId?: string) {
     .reduce((sum, session) => sum + (session.uptime || 0), 0);
 }
 
+function getLifetimeTotal(storedUser: StoredUser | undefined, client?: Client | null) {
+  const base = storedUser?.totalUptime || 0;
+  if (!client) return base;
+  return base + Number(client.uptime || 0);
+}
+
 function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocalApi?: boolean; href?: string; srcUrl?: string }) {
   const { robloxId, size = 40, useLocalApi = false, href, srcUrl } = props;
   const [url, setUrl] = useState<string | null>(null);
@@ -150,13 +156,52 @@ function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean
 }
 
 type ConnLog = { id: string; roblox_id: string; roblox_name: string; place_id: string; place_name: string; place_url?: string; executor: string; connected_at: string; uptime: number; };
-type StoredUser = { roblox_id: string; roblox_name: string; last_seen: string; sessions: ConnLog[]; };
+type StoredUser = {
+  roblox_id: string;
+  roblox_name: string;
+  last_seen: string;
+  totalUptime: number;
+  currentSessionId?: string;
+  lastObservedUptime?: number;
+  sessions: ConnLog[];
+};
 
 function loadStoredUsers(): Record<string, StoredUser> {
-  try { return JSON.parse(localStorage.getItem("ys_users") || "{}"); } catch { return {}; }
+  try {
+    const parsed = JSON.parse(localStorage.getItem("ys_users") || "{}");
+    if (!parsed || typeof parsed !== "object") return {};
+    return Object.keys(parsed).reduce((acc, key) => {
+      const entry = parsed[key];
+      if (!entry || typeof entry !== "object") return acc;
+      acc[key] = {
+        roblox_id: String(entry.roblox_id || key),
+        roblox_name: String(entry.roblox_name || "Player"),
+        last_seen: String(entry.last_seen || new Date().toISOString()),
+        totalUptime: Number(entry.totalUptime || 0),
+        currentSessionId: typeof entry.currentSessionId === "string" ? entry.currentSessionId : undefined,
+        lastObservedUptime: Number(entry.lastObservedUptime || 0) || undefined,
+        sessions: Array.isArray(entry.sessions) ? entry.sessions : [],
+      };
+      return acc;
+    }, {} as Record<string, StoredUser>);
+  } catch {
+    return {};
+  }
 }
 function saveStoredUsers(map: Record<string, StoredUser>) {
   try { localStorage.setItem("ys_users", JSON.stringify(map)); } catch {}
+}
+
+function getSessionTotal(sessions: ConnLog[] = [], excludeId?: string) {
+  return sessions
+    .filter(session => session.id !== excludeId)
+    .reduce((sum, session) => sum + (session.uptime || 0), 0);
+}
+
+function getLifetimeTotal(storedUser: StoredUser | undefined, client?: Client | null) {
+  const baseTotal = storedUser?.totalUptime || 0;
+  if (!client) return baseTotal;
+  return baseTotal + Number(client.uptime || 0);
 }
 
 const labelStyle = { color: "#71717a", fontSize: "11px", textTransform: "uppercase" as const, letterSpacing: "0.08em", fontWeight: "700", marginBottom: "8px" };
@@ -277,14 +322,22 @@ export default function Track() {
             return nextUT;
           });
           setStoredUsers(prev => {
+            const activeIds = new Set<string>();
             const updated = { ...prev };
+
             data.forEach(c => {
               if (!c.robloxId) return;
+              activeIds.add(c.robloxId);
               if ((!c.name || c.name === "Player" || c.name.trim() === "" || /^#+|^[0-9]+$/.test(c.name)) && !cache[c.robloxId]) {
                 namesToFetch.push(c.robloxId);
               }
               const existing = updated[c.robloxId];
               const displayName = normalizeClientName(c.name, c.robloxId, cache, updated);
+              let totalUptime = existing?.totalUptime || 0;
+              if (existing?.currentSessionId && existing.currentSessionId !== c.id) {
+                totalUptime += existing.lastObservedUptime || 0;
+              }
+              const currentUptime = Number(c.uptime || 0);
               const sessionEntry: ConnLog = {
                 id: c.id,
                 roblox_id: c.robloxId,
@@ -294,17 +347,31 @@ export default function Track() {
                 place_url: c.placeId ? getRobloxGamePageUrl(c.placeId) : undefined,
                 executor: c.executor || "Unknown",
                 connected_at: new Date(c.lastHeartbeat || ts).toISOString(),
-                uptime: c.uptime || 0,
+                uptime: currentUptime,
               };
               updated[c.robloxId] = {
                 roblox_id: c.robloxId,
                 roblox_name: displayName,
                 last_seen: new Date().toISOString(),
+                totalUptime,
+                currentSessionId: c.id,
+                lastObservedUptime: currentUptime,
                 sessions: existing
                   ? [sessionEntry, ...existing.sessions.filter(s => s.place_id !== c.placeId)].slice(0, 20)
                   : [sessionEntry],
               };
             });
+
+            Object.keys(updated).forEach(userId => {
+              if (activeIds.has(userId)) return;
+              const entry = updated[userId];
+              if (entry.currentSessionId) {
+                entry.totalUptime = (entry.totalUptime || 0) + (entry.lastObservedUptime || 0);
+                entry.currentSessionId = undefined;
+                entry.lastObservedUptime = undefined;
+              }
+            });
+
             saveStoredUsers(updated);
             return updated;
           });
@@ -531,7 +598,7 @@ export default function Track() {
                           })()
                         }</div>
                         <div style={{ fontSize: "11px", color: "#8b8b8b", marginTop: "4px" }}>
-                          Total: {formatUptime(getSessionTotal(storedUsers[c.robloxId || ""]?.sessions || [], c.id) + Number(clientUptimes[c.id] || 0) + Math.max(0, Math.floor((now - Number(clientUptimeAt[c.id] || now)) / 1000)))}
+                          Total: {formatUptime(getLifetimeTotal(storedUsers[c.robloxId || ""], c || null))}
                         </div>
                       </div>
                     </div>
@@ -559,13 +626,7 @@ export default function Track() {
                         </div>
                         <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
                           <div style={{ fontSize: "14px", color: "#a5b4fc" }}>
-                            <strong>Total Uptime:</strong> {(() => {
-                              const storedTotal = getSessionTotal(storedUsers[selectedClient.robloxId || ""]?.sessions || [], selectedClient.id);
-                              const base = Number(clientUptimes[selectedClient.id] || 0);
-                              const at = Number(clientUptimeAt[selectedClient.id] || now);
-                              const elapsed = Math.max(0, Math.floor((now - at) / 1000));
-                              return formatUptime(storedTotal + base + elapsed);
-                            })()}
+                            <strong>Total Uptime:</strong> {formatUptime(getLifetimeTotal(storedUsers[selectedClient.robloxId || ""], selectedClient))}
                           </div>
                         </div>
                       </div>
