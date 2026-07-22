@@ -325,14 +325,15 @@ local function startClientHeartbeat()
     -- send heartbeat every 5 seconds (less chatty than 1s, more responsive than 10s)
     task.spawn(function()
         local function doHeartbeat()
+            local placeId = tostring(game.PlaceId or "")
             local currentGame = getGameName()
             local payload = {
                 robloxId = tostring(LocalPlayer.UserId or ""),
                 robloxName = tostring(LocalPlayer.Name or "Player"),
                 gameName = currentGame,
                 placeName = currentGame,
-                gameId = tostring(game.PlaceId or ""),
-                placeId = tostring(game.PlaceId or ""),
+                gameId = placeId,
+                placeId = placeId,
                 uptime = uptime,
                 executor = getExecutorName(),
                 executorVersion = tostring((syn and syn.version) or "")

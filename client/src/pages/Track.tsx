@@ -81,10 +81,15 @@ function getSessionTotal(sessions: ConnLog[] = [], excludeId?: string) {
     .reduce((sum, session) => sum + (session.uptime || 0), 0);
 }
 
-function getLifetimeTotal(storedUser: StoredUser | undefined, client?: Client | null) {
-  const base = storedUser?.totalUptime || 0;
-  if (!client) return base;
-  return base + Number(client.uptime || 0);
+function getActiveUptime(clientId: string, clientUptimes: Record<string, number>, clientUptimeAt: Record<string, number>, now: number) {
+  const base = Number(clientUptimes[clientId] || 0);
+  const at = Number(clientUptimeAt[clientId] || now);
+  const elapsed = Math.max(0, Math.floor((now - at) / 1000));
+  return base + elapsed;
+}
+
+function getLifetimeTotal(storedUser: StoredUser | undefined, activeUptime: number) {
+  return (storedUser?.totalUptime || 0) + activeUptime;
 }
 
 function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocalApi?: boolean; href?: string; srcUrl?: string }) {
@@ -586,7 +591,7 @@ export default function Track() {
                           })()
                         }</div>
                         <div style={{ fontSize: "11px", color: "#8b8b8b", marginTop: "4px" }}>
-                          Total: {formatUptime(getLifetimeTotal(storedUsers[c.robloxId || ""], c || null))}
+                          Total: {formatUptime(getLifetimeTotal(storedUsers[c.robloxId || ""], getActiveUptime(c.id, clientUptimes, clientUptimeAt, now)))}
                         </div>
                       </div>
                     </div>
@@ -614,7 +619,7 @@ export default function Track() {
                         </div>
                         <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
                           <div style={{ fontSize: "14px", color: "#a5b4fc" }}>
-                            <strong>Total Uptime:</strong> {formatUptime(getLifetimeTotal(storedUsers[selectedClient.robloxId || ""], selectedClient))}
+                            <strong>Total Uptime:</strong> {formatUptime(getLifetimeTotal(storedUsers[selectedClient.robloxId || ""], getActiveUptime(selectedClient.id, clientUptimes, clientUptimeAt, now)))}
                           </div>
                         </div>
                       </div>
@@ -738,20 +743,6 @@ export default function Track() {
           </div>
         </div>
       )}
-      <div style={{ position: "fixed", left: 12, bottom: 12, background: "rgba(0,0,0,0.7)", padding: 12, borderRadius: 8, zIndex: 2000, color: "#fff", fontSize: 12, maxWidth: 420 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <input type="checkbox" checked={useLocalApi} onChange={e => setUseLocalApi((e.target as HTMLInputElement).checked)} />
-          Use Local API
-        </label>
-        <div style={{ marginTop: 8 }}>
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>Last Command</div>
-          <pre style={{ whiteSpace: "pre-wrap", maxHeight: 160, overflow: "auto", margin: 0 }}>{lastCommandLog ? JSON.stringify(lastCommandLog, null, 2) : "(none)"}</pre>
-        </div>
-        <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-          <button className="btn-secondary" onClick={() => { console.log(clients); alert(JSON.stringify(clients.slice(0,5))); }}>Dump Clients</button>
-          <button className="btn-secondary" onClick={() => { setLastCommandLog(null); }}>Clear</button>
-        </div>
-      </div>
     </div>
   );
 }
