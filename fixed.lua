@@ -2097,6 +2097,10 @@ if savedKey and savedKey ~= "" then
             debugPrint("SavedKey: offline detected, using cached login")
             savedKeyHandled = true
             Window:KeyValidationResult(true, "Saved key could not be verified, using cached login.")
+            if not heartbeatStarted then
+                heartbeatStarted = true
+                startClientHeartbeat()
+            end
             return
         end
 

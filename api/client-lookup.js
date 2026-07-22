@@ -221,11 +221,31 @@ async function dequeueCommands(robloxId) {
   }
 }
 
-function cleanupClients() {
+async function cleanupClients() {
   const cutoff = Date.now() - CLIENT_TIMEOUT_MS;
   for (let i = activeClients.length - 1; i >= 0; i--) {
     if (activeClients[i].lastHeartbeat < cutoff) {
-      activeClients.splice(i, 1);
+      const removed = activeClients.splice(i, 1)[0];
+      // Persist session uptime into persistent store if available
+      try {
+        if (supabase && removed && removed.robloxId) {
+          // fetch existing total
+          const { data: existing } = await supabase.from('clients').select('total_uptime').eq('roblox_id', removed.robloxId).single();
+          const prevTotal = existing && typeof existing.total_uptime === 'number' ? Number(existing.total_uptime) : 0;
+          const add = Number(removed.uptime || 0);
+          const newTotal = prevTotal + add;
+          await supabase.from('clients').upsert({
+            roblox_id: removed.robloxId,
+            total_uptime: newTotal,
+            last_session_id: null,
+            last_session_uptime: 0,
+            last_seen: new Date(removed.lastHeartbeat).toISOString(),
+            online: false,
+          }, { onConflict: 'roblox_id' });
+        }
+      } catch (err) {
+        console.warn('cleanupClients supabase persist failed', err?.message || err);
+      }
     }
   }
 }
@@ -240,7 +260,7 @@ export default async function handler(req, res) {
 
   const data = parseRequestBody(req);
 
-  if (req.method === "GET") {
+    if (req.method === "GET") {
     if (req.query && (req.query.commands || req.query.command)) {
       const robloxId = String(req.query.robloxId || req.query.userId || req.query.userid || "").trim();
       if (!robloxId) return res.status(400).json({ error: "No robloxId" });
@@ -248,8 +268,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ commands: cmds });
     }
 
-    cleanupClients();
-    return res.status(200).json(activeClients);
+      // cleanupClients may persist session totals; await it to keep storage consistent
+      try { await cleanupClients(); } catch (e) { /* continue */ }
+      return res.status(200).json(activeClients);
   }
 
   if (req.method === "POST") {
@@ -258,6 +279,11 @@ export default async function handler(req, res) {
       if (!robloxId) return res.status(400).json({ error: "No robloxId" });
       const type = String(data.type || "").toLowerCase().trim();
       const script = String(data.script || "");
+      // If Supabase isn't configured, we can't reliably persist commands across serverless invocations.
+      if (!supabase) {
+        console.warn("Command enqueue attempted but SUPABASE not configured");
+        return res.status(500).json({ success: false, error: "SUPABASE_NOT_CONFIGURED" });
+      }
       await enqueueCommand(robloxId, type, script);
       return res.status(200).json({ success: true });
     }
@@ -315,6 +341,21 @@ export default async function handler(req, res) {
       activeClients[existingIndex] = client;
     } else {
       activeClients.push(client);
+    }
+
+    // Persist live session info to Supabase so we can accumulate uptime and reliably deliver commands
+    if (supabase) {
+      try {
+        await supabase.from('clients').upsert({
+          roblox_id: client.robloxId,
+          last_session_id: client.id,
+          last_session_uptime: Number(client.uptime || 0),
+          last_seen: new Date(client.lastHeartbeat).toISOString(),
+          online: true,
+        }, { onConflict: 'roblox_id' });
+      } catch (err) {
+        console.warn('supabase upsert client failed', err?.message || err);
+      }
     }
 
     return res.status(200).json({ success: true, client });
