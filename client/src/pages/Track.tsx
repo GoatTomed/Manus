@@ -583,7 +583,7 @@ export default function Track() {
                   <div className="glass-card" style={{ padding: "40px", marginBottom: "40px" }}>
                     <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} href={selectedClient.profileUrl} srcUrl={selectedClient.avatarUrl} />
-                      <div>
+                      <div style={{ flex: 1 }}>
                         <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{normalizeClientName(selectedClient.name, selectedClient.robloxId, robloxNameCache, storedUsers)}</h1>
                         <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
                           <span className="status-badge active">Online</span>
@@ -595,16 +595,18 @@ export default function Track() {
                           </div>
                         </div>
                       </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
+                        <GameIcon placeId={selectedClient.placeId} size={72} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} />
+                        <div style={{ fontSize: "16px", fontWeight: "800" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</div>
+                        {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
+                      </div>
                     </div>
                   </div>
                 </div>
                 <div className="profile-card">
-                  <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "32px" }}>
-                    <GameIcon placeId={selectedClient.placeId} size={64} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} />
-                    <div>
-                        <div style={{ fontSize: "16px", fontWeight: "800" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</div>
-                      {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
-                    </div>
+                  <div style={{ marginBottom: "32px" }}>
+                      <div style={{ fontSize: "16px", fontWeight: "800" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</div>
+                    {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
                   </div>
                   {/* Actions removed per user request */}
                 </div>
