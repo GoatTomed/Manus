@@ -192,18 +192,6 @@ function saveStoredUsers(map: Record<string, StoredUser>) {
   try { localStorage.setItem("ys_users", JSON.stringify(map)); } catch {}
 }
 
-function getSessionTotal(sessions: ConnLog[] = [], excludeId?: string) {
-  return sessions
-    .filter(session => session.id !== excludeId)
-    .reduce((sum, session) => sum + (session.uptime || 0), 0);
-}
-
-function getLifetimeTotal(storedUser: StoredUser | undefined, client?: Client | null) {
-  const baseTotal = storedUser?.totalUptime || 0;
-  if (!client) return baseTotal;
-  return baseTotal + Number(client.uptime || 0);
-}
-
 const labelStyle = { color: "#71717a", fontSize: "11px", textTransform: "uppercase" as const, letterSpacing: "0.08em", fontWeight: "700", marginBottom: "8px" };
 
 export default function Track() {
