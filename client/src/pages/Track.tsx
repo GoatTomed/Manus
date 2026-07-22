@@ -37,15 +37,24 @@ function timeAgo(ts: number | string, isOnline: boolean = false) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-function normalizeClientName(name: string | undefined, robloxId?: string, cache: Record<string, string> = {}) {
-  const raw = name && name !== "Player" && name.trim() !== "" ? name : cache[robloxId || ""];
-  let result = raw ? raw.toString().replace(/^#+\s*/, "") : "";
-  if (!result || /^[0-9]+$/.test(result)) {
-    if (cache[robloxId || ""]) return cache[robloxId || ""];
-    if (robloxId) return `#${robloxId}`;
-    return "Unknown User";
+function normalizeClientName(name: string | undefined, robloxId?: string, cache: Record<string, string> = {}, storedUsers: Record<string, StoredUser> = {}) {
+  const raw = (name || "").trim();
+  const cleaned = raw.replace(/^#+\s*/, "");
+  const previousName = robloxId ? storedUsers[robloxId]?.roblox_name : undefined;
+  const cached = robloxId ? cache[robloxId] : undefined;
+
+  if (cleaned && cleaned !== "Player" && !/^Unknown/i.test(cleaned) && !/^[0-9]+$/.test(cleaned)) {
+    return cleaned;
   }
-  return result;
+  if (previousName && previousName !== "Player" && !/^Unknown/i.test(previousName)) {
+    return previousName;
+  }
+  if (cached && cached.trim() !== "" && cached !== "Player" && !/^Unknown/i.test(cached)) {
+    return cached;
+  }
+  if (raw && raw !== "") return raw;
+  if (robloxId) return "Player";
+  return "Unknown User";
 }
 
 function normalizeClientPlace(place: string | undefined, placeId: string | undefined) {
@@ -222,10 +231,11 @@ export default function Track() {
               const nextAt: Record<string, number> = { ...prevAt };
               data.forEach(c => {
                 const serverUptime = Number(c.uptime || 0);
+                const heartbeat = Number(c.lastHeartbeat || ts);
                 const prevUptime = Number(prevUT[c.id] ?? -1);
                 nextUT[c.id] = serverUptime;
                 if (prevUptime !== serverUptime || typeof nextAt[c.id] === "undefined") {
-                  nextAt[c.id] = ts;
+                  nextAt[c.id] = heartbeat;
                 }
               });
               return nextAt;
@@ -240,7 +250,7 @@ export default function Track() {
                 namesToFetch.push(c.robloxId);
               }
               const existing = updated[c.robloxId];
-              const displayName = normalizeClientName(c.name, c.robloxId, cache);
+              const displayName = normalizeClientName(c.name, c.robloxId, cache, updated);
               const sessionEntry: ConnLog = {
                 id: c.id,
                 roblox_id: c.robloxId,
@@ -248,7 +258,7 @@ export default function Track() {
                 place_id: c.placeId,
                 place_name: normalizeClientPlace(c.place, c.placeId),
                 executor: c.executor || "Unknown",
-                connected_at: new Date().toISOString(),
+                connected_at: new Date(c.lastHeartbeat || ts).toISOString(),
                 uptime: c.uptime || 0,
               };
               updated[c.robloxId] = {
@@ -467,7 +477,7 @@ export default function Track() {
                     <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} useLocalApi={useLocalApi} />
                       <div>
-                          <div style={{ fontSize: "16px", fontWeight: "800" }}>{normalizeClientName(c.name, c.robloxId, robloxNameCache)}</div>
+                          <div style={{ fontSize: "16px", fontWeight: "800" }}>{normalizeClientName(c.name, c.robloxId, robloxNameCache, storedUsers)}</div>
                       </div>
                     </div>
                     <div className="card-info-row">
@@ -507,7 +517,7 @@ export default function Track() {
                     <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} />
                       <div>
-                        <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{normalizeClientName(selectedClient.name, selectedClient.robloxId, robloxNameCache)}</h1>
+                        <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{normalizeClientName(selectedClient.name, selectedClient.robloxId, robloxNameCache, storedUsers)}</h1>
                         <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
                           <span className="status-badge active">Online</span>
                           <span className="executor-badge">{selectedClient.executor}</span>
@@ -602,18 +612,20 @@ export default function Track() {
           </div>
           <div style={labelStyle}>Game History</div>
           <div className="user-list">
-            {selectedUserData.sessions
-              .filter(s => s.place_name && !s.place_name.toLowerCase().includes("unknown"))
-              .map((s, i) => (
-                <div key={i} className="user-row" style={{ background: i === 0 && onlineNow(selectedUserData.roblox_id) ? "rgba(0,171,255,0.05)" : "rgba(255,255,255,0.01)" }}>
+            {selectedUserData.sessions.map((s, i) => {
+              const currentClient = onlineNow(selectedUserData.roblox_id);
+              const isCurrent = currentClient?.id === s.id;
+              return (
+                <div key={i} className="user-row" style={{ background: isCurrent ? "rgba(0,171,255,0.05)" : "rgba(255,255,255,0.01)" }}>
                   <GameIcon placeId={s.place_id} size={40} useLocalApi={useLocalApi} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "14px", fontWeight: "800" }}>{s.place_name}</div>
-                    <div style={{ fontSize: "11px", color: "#71717a" }}>{timeAgo(s.connected_at, !!onlineNow(selectedUserData.roblox_id))}</div>
+                    <div style={{ fontSize: "14px", fontWeight: "800" }}>{normalizeClientPlace(s.place_name, s.place_id)}</div>
+                    <div style={{ fontSize: "11px", color: "#71717a" }}>{timeAgo(s.connected_at, isCurrent)}</div>
                   </div>
-                  {i === 0 && onlineNow(selectedUserData.roblox_id) && <span className="status-badge active">Current</span>}
+                  {isCurrent && <span className="status-badge active">Current</span>}
                 </div>
-              ))}
+              );
+            })}
           </div>
         </div>
       )}
