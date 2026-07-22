@@ -120,6 +120,59 @@ async function fetchRobloxGameIconUrl(placeId) {
   }
 }
 
+function decodeHtmlEntities(value) {
+  return String(value || "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+async function fetchRobloxPlaceName(placeId) {
+  if (!placeId) return null;
+  const cacheKey = `place-${placeId}`;
+  const cached = cacheGet(userCache, cacheKey);
+  if (cached) return cached;
+
+  let name = null;
+  try {
+    const response = await fetch(`https://games.roblox.com/v1/games/multiget-place-details?placeIds=${encodeURIComponent(placeId)}`);
+    if (response.ok) {
+      const data = await response.json();
+      name = data?.data?.[0]?.name || null;
+    }
+  } catch (err) {
+    console.warn("fetchRobloxPlaceName failed", err?.message || err);
+  }
+
+  if (!name) {
+    try {
+      const response = await fetch(`https://www.roblox.com/games/${encodeURIComponent(placeId)}`, {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "text/html",
+        },
+      });
+      if (response.ok) {
+        const html = await response.text();
+        const match = html.match(/<meta property=["']og:title["'] content=["']([^"']+)["']\s*\/?>/i)
+          || html.match(/<title>([^<]+)<\/title>/i);
+        if (match) {
+          name = decodeHtmlEntities(match[1]).replace(/\s*-\s*Roblox$/i, "").trim();
+        }
+      }
+    } catch (err) {
+      console.warn("fetchRobloxPlaceName HTML fallback failed", err?.message || err);
+    }
+  }
+
+  if (name) {
+    cacheSet(userCache, cacheKey, name);
+  }
+  return name;
+}
+
 async function enqueueCommand(robloxId, type, script) {
   if (!robloxId) return false;
   if (!supabase) {
@@ -218,6 +271,13 @@ export default async function handler(req, res) {
     if ((!robloxName || robloxName === "Player" || /^[0-9]+$/.test(robloxName))) {
       const user = await fetchRobloxUser(data.robloxId);
       if (user?.name) robloxName = user.name;
+    }
+
+    if ((!placeName || /^Place\s+[0-9]+$/.test(placeName)) && placeId) {
+      const resolved = await fetchRobloxPlaceName(placeId);
+      if (resolved) {
+        placeName = resolved;
+      }
     }
 
     if (!placeName && placeId) {
