@@ -46,7 +46,37 @@ export default async function handler(req, res) {
 
   // GET /api/clients - list clients
   if (req.method === "GET") {
+    // prune stale in-memory clients
     activeClients = activeClients.filter(c => Date.now() - (c.lastHeartbeat || 0) < 300000);
+    // if we have no in-memory clients but Supabase is configured, try to restore
+    try {
+      if (activeClients.length === 0 && supabase) {
+        const cutoff = new Date(Date.now() - 300000).toISOString();
+        const { data: persisted, error } = await supabase.from('clients').select('roblox_id,last_session_id,last_session_uptime,last_seen,online').gte('last_seen', cutoff).or('online.eq.true');
+        if (!error && Array.isArray(persisted) && persisted.length > 0) {
+          activeClients = persisted.map(p => ({
+            id: p.last_session_id || `c-${String(p.roblox_id)}`,
+            name: 'Player',
+            place: 'Unknown Game',
+            placeId: '',
+            av: (String(p.roblox_id || '').slice(0,2) || '??').toUpperCase(),
+            avc: 'av-green',
+            avatarUrl: `/api/roblox-avatar?userId=${encodeURIComponent(p.roblox_id)}`,
+            gameIconUrl: '',
+            profileUrl: p.roblox_id ? `https://www.roblox.com/users/${encodeURIComponent(p.roblox_id)}/profile` : '',
+            gameUrl: '',
+            lastHeartbeat: Date.now(),
+            uptime: Number(p.last_session_uptime || 0),
+            executor: 'Unknown',
+            executorVersion: '',
+            robloxId: String(p.roblox_id),
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('failed to restore clients from supabase', err?.message || err);
+    }
+
     return res.status(200).json(activeClients);
   }
 
@@ -79,6 +109,20 @@ export default async function handler(req, res) {
       };
       const index = activeClients.findIndex(c => c.robloxId === data.robloxId);
       if (index >= 0) { activeClients[index] = client; } else { activeClients.push(client); }
+      // persist live session to Supabase so it can be restored after deploys
+      if (supabase) {
+        try {
+          await supabase.from('clients').upsert({
+            roblox_id: client.robloxId,
+            last_session_id: client.id,
+            last_session_uptime: Number(client.uptime || 0),
+            last_seen: new Date(client.lastHeartbeat).toISOString(),
+            online: true,
+          }, { onConflict: 'roblox_id' });
+        } catch (err) {
+          console.warn('supabase upsert client failed', err?.message || err);
+        }
+      }
       return res.status(200).json({ success: true });
     } catch (e) {
       return res.status(500).json({ success: false, error: e.message });

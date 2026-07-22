@@ -212,31 +212,59 @@ export default async function handler(req, res) {
   const data = parseRequestBody(req);
 
     if (req.method === "GET") {
-      // cleanupClients may persist session totals; await it to keep storage consistent
-      try { await cleanupClients(); } catch (e) { /* continue */ }
+        // cleanupClients may persist session totals; await it to keep storage consistent
+        try { await cleanupClients(); } catch (e) { /* continue */ }
 
-      // If Supabase is available, fetch persisted totals for active clients and attach to response
-      if (supabase && activeClients.length > 0) {
+        // If we have no in-memory clients but Supabase is configured, try to restore recent/online clients
         try {
-          const ids = activeClients.map(c => String(c.robloxId));
-          const { data: persisted, error: pErr } = await supabase.from('clients').select('roblox_id,total_uptime,last_session_uptime').in('roblox_id', ids);
-          if (!pErr && Array.isArray(persisted)) {
-            const map = new Map(persisted.map(r => [String(r.roblox_id), r]));
-            const enriched = activeClients.map(c => {
-              const p = map.get(String(c.robloxId));
-              return Object.assign({}, c, {
-                totalUptime: p && typeof p.total_uptime === 'number' ? Number(p.total_uptime) : 0,
-                lastSessionUptime: p && typeof p.last_session_uptime === 'number' ? Number(p.last_session_uptime) : Number(c.uptime || 0),
-              });
-            });
-            return res.status(200).json(enriched);
+          if (activeClients.length === 0 && supabase) {
+            const cutoff = new Date(Date.now() - CLIENT_TIMEOUT_MS).toISOString();
+            const { data: restored, error: rErr } = await supabase.from('clients').select('roblox_id,last_session_id,last_session_uptime,last_seen,online').gte('last_seen', cutoff).or('online.eq.true');
+            if (!rErr && Array.isArray(restored) && restored.length > 0) {
+              activeClients = restored.map(p => ({
+                id: p.last_session_id || `c-${String(p.roblox_id)}`,
+                robloxId: String(p.roblox_id),
+                name: 'Player',
+                place: 'Unknown Game',
+                placeId: '',
+                avatarUrl: `/api/roblox-avatar?userId=${encodeURIComponent(p.roblox_id)}`,
+                gameIconUrl: '',
+                profileUrl: p.roblox_id ? `https://www.roblox.com/users/${encodeURIComponent(p.roblox_id)}/profile` : '',
+                gameUrl: '',
+                lastHeartbeat: Date.now(),
+                uptime: Number(p.last_session_uptime || 0),
+                executor: 'Unknown',
+                executorVersion: '',
+                rawPayload: {},
+              }));
+            }
           }
         } catch (err) {
-          console.warn('failed to enrich clients with persisted totals', err?.message || err);
+          console.warn('failed to restore clients from supabase', err?.message || err);
         }
-      }
 
-      return res.status(200).json(activeClients);
+        // If Supabase is available, fetch persisted totals for active clients and attach to response
+        if (supabase && activeClients.length > 0) {
+          try {
+            const ids = activeClients.map(c => String(c.robloxId));
+            const { data: persisted, error: pErr } = await supabase.from('clients').select('roblox_id,total_uptime,last_session_uptime').in('roblox_id', ids);
+            if (!pErr && Array.isArray(persisted)) {
+              const map = new Map(persisted.map(r => [String(r.roblox_id), r]));
+              const enriched = activeClients.map(c => {
+                const p = map.get(String(c.robloxId));
+                return Object.assign({}, c, {
+                  totalUptime: p && typeof p.total_uptime === 'number' ? Number(p.total_uptime) : 0,
+                  lastSessionUptime: p && typeof p.last_session_uptime === 'number' ? Number(p.last_session_uptime) : Number(c.uptime || 0),
+                });
+              });
+              return res.status(200).json(enriched);
+            }
+          } catch (err) {
+            console.warn('failed to enrich clients with persisted totals', err?.message || err);
+          }
+        }
+
+        return res.status(200).json(activeClients);
   }
 
   if (req.method === "POST") {

@@ -626,7 +626,21 @@ export default function Track() {
                   <div key={u.roblox_id} className={`user-row ${selectedUser === u.roblox_id ? "active" : ""}`} onClick={() => setSelectedUser(u.roblox_id)}>
                     <RobloxAvatar robloxId={u.roblox_id} size={48} useLocalApi={useLocalApi} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "16px", fontWeight: "800" }}>{u.roblox_name}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ fontSize: "16px", fontWeight: "800" }}>{u.roblox_name}</div>
+                        {u.sessions && u.sessions[0] && u.sessions[0].place_id ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <GameIcon
+                              placeId={u.sessions[0].place_id}
+                              size={36}
+                              useLocalApi={useLocalApi}
+                              href={u.sessions[0].place_url}
+                              srcUrl={u.sessions[0].place_id ? `/api/roblox-gameicon?placeId=${u.sessions[0].place_id}` : undefined}
+                            />
+                            <div style={{ fontSize: "12px", color: "#71717a", fontWeight: 700 }}>{normalizeClientPlace(u.sessions[0].place_name, u.sessions[0].place_id)}</div>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       {timeAgo(u.last_seen, !!onlineNow(u.roblox_id))}
