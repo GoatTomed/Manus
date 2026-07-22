@@ -200,6 +200,7 @@ function saveStoredUsers(map: Record<string, StoredUser>) {
 const labelStyle = { color: "#71717a", fontSize: "11px", textTransform: "uppercase" as const, letterSpacing: "0.08em", fontWeight: "700", marginBottom: "8px" };
 
 export default function Track() {
+  const CLIENT_STALE_MS = 15 * 1000; // consider clients stale after 15s of no heartbeat (UI-only)
   const [inClientMode, setInClientMode] = useState(false);
   const [homeView, setHomeView] = useState<HomeView>("clients");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -368,6 +369,26 @@ export default function Track() {
             saveStoredUsers(updated);
             return updated;
           });
+          // prune client uptime trackers for clients that are no longer active
+          setClientUptimes(prev => {
+            const next: Record<string, number> = {};
+            data.forEach(c => { if (c && c.id) next[c.id] = prev[c.id] ?? 0; });
+            return next;
+          });
+          setClientUptimeAt(prev => {
+            const next: Record<string, number> = {};
+            data.forEach(c => { if (c && c.id) next[c.id] = prev[c.id] ?? Date.now(); });
+            return next;
+          });
+          // if the selected client disappears, clear selection and exit client mode
+          setSelectedClient(prevSel => {
+            if (!prevSel) return prevSel;
+            const still = data.find(d => String(d.robloxId) === String(prevSel.robloxId) && d.id === prevSel.id);
+            if (still) return prevSel;
+            setInClientMode(false);
+            pushTrackUrl();
+            return null;
+          });
           namesToFetch.forEach(id => void fetchRobloxName(id));
         }
       } catch (e: any) { console.error("Error fetching clients:", e.message); } finally { setLoading(false); }
@@ -405,13 +426,22 @@ export default function Track() {
       return () => clearInterval(t);
     }, []);
 
-  const filteredClients = useMemo(() => clients.filter(c =>
-    c.name.toLowerCase().includes(clientQuery.toLowerCase()) ||
-    c.place?.toLowerCase().includes(clientQuery.toLowerCase())
-  ), [clients, clientQuery]);
+  const filteredClients = useMemo(() => clients.filter(c => {
+    const last = Number(c.lastHeartbeat || 0);
+    const alive = (Date.now() - last) < CLIENT_STALE_MS;
+    if (!alive) return false;
+    return c.name.toLowerCase().includes(clientQuery.toLowerCase()) ||
+      c.place?.toLowerCase().includes(clientQuery.toLowerCase());
+  }), [clients, clientQuery, now]);
 
-  const activeGameCount = useMemo(() => new Set(clients.map(c => c.place || "")).size, [clients]);
-  const uniqueExecutorCount = useMemo(() => new Set(clients.map(c => c.executor || "Unknown")).size, [clients]);
+  const activeGameCount = useMemo(() => {
+    const alive = clients.filter(c => (Date.now() - Number(c.lastHeartbeat || 0)) < CLIENT_STALE_MS);
+    return new Set(alive.map(c => c.place || "")).size;
+  }, [clients, now]);
+  const uniqueExecutorCount = useMemo(() => {
+    const alive = clients.filter(c => (Date.now() - Number(c.lastHeartbeat || 0)) < CLIENT_STALE_MS);
+    return new Set(alive.map(c => c.executor || "Unknown")).size;
+  }, [clients, now]);
 
   const filteredUsers = useMemo(() => {
     const list = Object.values(storedUsers);
