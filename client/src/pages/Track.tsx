@@ -215,6 +215,7 @@ export default function Track() {
           setClients(data);
           const namesToFetch: string[] = [];
           const ts = Date.now();
+          const cache = robloxNameCacheRef.current;
           setClientUptimes(prevUT => {
             const nextUT: Record<string, number> = {};
             setClientUptimeAt(prevAt => {
@@ -235,16 +236,15 @@ export default function Track() {
             const updated = { ...prev };
             data.forEach(c => {
               if (!c.robloxId) return;
-              const normalizedName = normalizeClientName(c.name, c.robloxId, robloxNameCache);
               if ((!c.name || c.name === "Player" || c.name.trim() === "" || /^#+|^[0-9]+$/.test(c.name)) && !cache[c.robloxId]) {
                 namesToFetch.push(c.robloxId);
               }
               const existing = updated[c.robloxId];
-              const normalizedName = normalizeClientName(c.name, c.robloxId, cache);
+              const displayName = normalizeClientName(c.name, c.robloxId, cache);
               const sessionEntry: ConnLog = {
                 id: c.id,
                 roblox_id: c.robloxId,
-                roblox_name: normalizedName,
+                roblox_name: displayName,
                 place_id: c.placeId,
                 place_name: normalizeClientPlace(c.place, c.placeId),
                 executor: c.executor || "Unknown",
@@ -253,7 +253,7 @@ export default function Track() {
               };
               updated[c.robloxId] = {
                 roblox_id: c.robloxId,
-                roblox_name: normalizedName,
+                roblox_name: displayName,
                 last_seen: new Date().toISOString(),
                 sessions: existing
                   ? [sessionEntry, ...existing.sessions.filter(s => s.place_id !== c.placeId)].slice(0, 20)
