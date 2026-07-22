@@ -112,19 +112,24 @@ export default async function handler(req, res) {
       // persist live session to Supabase so it can be restored after deploys
       if (supabase) {
         try {
-          await supabase.from('clients').upsert({
+          const updatePayload = {
             roblox_id: client.robloxId,
             last_session_id: client.id,
             last_session_uptime: Number(client.uptime || 0),
             last_seen: new Date(client.lastHeartbeat).toISOString(),
             online: true,
-            place_id: client.placeId,
-            place_name: client.place,
-            game_icon_url: client.gameIconUrl,
-            game_url: client.gameUrl,
-            executor: client.executor,
-            executor_version: client.executorVersion,
-          }, { onConflict: 'roblox_id' });
+          };
+          if (client.placeId) {
+            updatePayload.place_id = client.placeId;
+            updatePayload.place_name = client.place;
+            updatePayload.game_icon_url = client.gameIconUrl;
+            updatePayload.game_url = client.gameUrl;
+          }
+          if (client.executor && client.executor !== "Unknown") {
+            updatePayload.executor = client.executor;
+            updatePayload.executor_version = client.executorVersion;
+          }
+          await supabase.from('clients').upsert(updatePayload, { onConflict: 'roblox_id' });
         } catch (err) {
           console.warn('supabase upsert client failed', err?.message || err);
         }

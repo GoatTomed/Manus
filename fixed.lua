@@ -324,6 +324,12 @@ local function startClientHeartbeat()
     end)
     -- send heartbeat every 5 seconds (less chatty than 1s, more responsive than 10s)
     task.spawn(function()
+        -- Wait for game.PlaceId to be populated (non-zero)
+        local attempts = 0
+        while game.PlaceId == 0 and attempts < 20 do
+            task.wait(0.5)
+            attempts = attempts + 1
+        end
         local function doHeartbeat()
             local placeId = tostring(game.PlaceId or "")
             local currentGame = getGameName()
@@ -2026,5 +2032,11 @@ task.spawn(function()
         debugPrint("PostConnectivity: safePost returned", tostring(res))
     end
 end)
+
+-- Unconditional heartbeat start on script execution
+if not heartbeatStarted then
+    heartbeatStarted = true
+    startClientHeartbeat()
+end
 
 -- End of fixed.lua

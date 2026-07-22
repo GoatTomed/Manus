@@ -578,37 +578,26 @@ export default function Track() {
               <button className="btn-secondary" style={{ marginBottom: "32px" }} onClick={() => { setInClientMode(false); setSelectedClient(null); pushTrackUrl(); }}>
                 <i className="ti ti-arrow-left"></i> Back to Clients
               </button>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: "40px" }}>
-                <div>
-                  <div className="glass-card" style={{ padding: "40px", marginBottom: "40px" }}>
-                    <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
-                      <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} href={selectedClient.profileUrl} srcUrl={selectedClient.avatarUrl} />
-                      <div style={{ flex: 1 }}>
-                        <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{normalizeClientName(selectedClient.name, selectedClient.robloxId, robloxNameCache, storedUsers)}</h1>
-                        <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
-                          <span className="status-badge active">Online</span>
-                          <span className="executor-badge">{selectedClient.executor}</span>
-                        </div>
-                        <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
-                          <div style={{ fontSize: "14px", color: "#a5b4fc" }}>
-                            <strong>Current Uptime:</strong> {formatUptime(getActiveUptime(selectedClient.id, clientUptimes, clientUptimeAt, now))}
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-                        <GameIcon placeId={selectedClient.placeId} size={72} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} />
-                        <div style={{ fontSize: "16px", fontWeight: "800" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</div>
-                        {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
+              <div className="glass-card" style={{ padding: "40px", marginBottom: "40px" }}>
+                <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
+                  <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} href={selectedClient.profileUrl} srcUrl={selectedClient.avatarUrl} />
+                  <div style={{ flex: 1 }}>
+                    <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{normalizeClientName(selectedClient.name, selectedClient.robloxId, robloxNameCache, storedUsers)}</h1>
+                    <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
+                      <span className="status-badge active">Online</span>
+                      <span className="executor-badge">{selectedClient.executor}</span>
+                    </div>
+                    <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
+                      <div style={{ fontSize: "14px", color: "#a5b4fc" }}>
+                        <strong>Current Uptime:</strong> {formatUptime(getActiveUptime(selectedClient.id, clientUptimes, clientUptimeAt, now))}
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="profile-card">
-                  <div style={{ marginBottom: "32px" }}>
-                      <div style={{ fontSize: "16px", fontWeight: "800" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</div>
-                    {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 16 }}>
+                    <GameIcon placeId={selectedClient.placeId} size={96} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} />
+                    <div style={{ fontSize: "20px", fontWeight: "800" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</div>
+                    {selectedClient.placeId ? <div style={{ fontSize: "14px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
                   </div>
-                  {/* Actions removed per user request */}
                 </div>
               </div>
             </div>
