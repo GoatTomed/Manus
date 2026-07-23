@@ -11,6 +11,9 @@ const ROBLOX_USER_API = "https://users.roblox.com/v1/users";
 const ROBLOX_AVATAR_API = "https://thumbnails.roblox.com/v1/users/avatar-headshot";
 const ROBLOX_GAMEICON_API = "https://thumbnails.roblox.com/v1/places/gameicons";
 
+const MANUS_IM_ENDPOINT = typeof process !== "undefined" ? process.env.MANUS_IM_ENDPOINT : undefined;
+const MANUS_IM_API_KEY = typeof process !== "undefined" ? process.env.MANUS_IM_API_KEY : undefined;
+
 const SUPABASE_URL = typeof process !== "undefined" ? process.env.SUPABASE_URL : undefined;
 const SUPABASE_KEY = typeof process !== "undefined" ? process.env.SUPABASE_SERVICE_ROLE_KEY : undefined;
 
@@ -146,6 +149,26 @@ async function fetchRobloxPlaceName(placeId) {
   }
 
   if (!name) {
+    // Try external AI resolver (optional) if configured
+    if (MANUS_IM_ENDPOINT && MANUS_IM_API_KEY) {
+      try {
+        const resp = await fetch(MANUS_IM_ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${MANUS_IM_API_KEY}`,
+          },
+          body: JSON.stringify({ placeId }),
+        });
+        if (resp.ok) {
+          const j = await resp.json();
+          if (j && j.name) name = String(j.name).trim();
+        }
+      } catch (err) {
+        console.warn("fetchRobloxPlaceName external resolver failed", err?.message || err);
+      }
+    }
+
     try {
       const response = await fetch(`https://www.roblox.com/games/${encodeURIComponent(placeId)}`, {
         headers: {
@@ -227,11 +250,12 @@ export default async function handler(req, res) {
             const cutoff = new Date(Date.now() - CLIENT_TIMEOUT_MS).toISOString();
             const { data: restored, error: rErr } = await supabase.from('clients').select('roblox_id,last_session_id,last_session_uptime,last_seen,online,place_id,place_name,game_icon_url,game_url,executor,executor_version').gte('last_seen', cutoff).or('online.eq.true');
             if (!rErr && Array.isArray(restored) && restored.length > 0) {
-              activeClients = restored.map(p => ({
+              // Build client objects, resolving place name/icon when place_id exists but name is missing
+              const clients = restored.map(p => ({
                 id: p.last_session_id || `c-${String(p.roblox_id)}`,
                 robloxId: String(p.roblox_id),
                 name: 'Player',
-                place: p.place_name || 'Unknown Game',
+                place: p.place_name || '',
                 placeId: p.place_id || '',
                 avatarUrl: `/api/roblox-avatar?userId=${encodeURIComponent(p.roblox_id)}`,
                 gameIconUrl: p.game_icon_url || '',
@@ -243,6 +267,29 @@ export default async function handler(req, res) {
                 executorVersion: p.executor_version || '',
                 rawPayload: {},
               }));
+
+              // Resolve missing place names/icons for entries that have a placeId
+              await Promise.all(clients.map(async (c) => {
+                if (c.placeId) {
+                  if (!c.place || /^unknown/i.test(c.place)) {
+                    try {
+                      const resolved = await fetchRobloxPlaceName(c.placeId);
+                      if (resolved) c.place = resolved;
+                      else c.place = `Place ${c.placeId}`;
+                    } catch (e) { c.place = `Place ${c.placeId}`; }
+                  }
+                  if (!c.gameIconUrl) {
+                    try {
+                      const icon = await fetchRobloxGameIconUrl(c.placeId);
+                      if (icon) c.gameIconUrl = icon; else c.gameIconUrl = `/api/roblox-gameicon?placeId=${encodeURIComponent(c.placeId)}`;
+                    } catch (e) { c.gameIconUrl = `/api/roblox-gameicon?placeId=${encodeURIComponent(c.placeId)}`; }
+                  }
+                } else {
+                  if (!c.place) c.place = 'Unknown Game';
+                }
+              }));
+
+              activeClients = clients;
             }
           }
         } catch (err) {
