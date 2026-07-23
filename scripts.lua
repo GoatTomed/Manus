@@ -224,8 +224,19 @@ end
 local sessionStart = os.time()
 
 local function startHeartbeat(key)
-    local gameName = "Unknown Game"
-    pcall(function() gameName = MarketplaceService:GetProductInfo(game.PlaceId).Name end)
+    -- Wait for game.PlaceId to be populated (non-zero) so we can resolve a proper game name
+    local attempts = 0
+    while (not game.PlaceId or tostring(game.PlaceId) == "0") and attempts < 20 do
+        task.wait(0.5)
+        attempts = attempts + 1
+    end
+    local resolvedName = "Unknown Game"
+    pcall(function()
+        if game and game.PlaceId and tostring(game.PlaceId) ~= "0" then
+            local ok, info = pcall(function() return MarketplaceService:GetProductInfo(game.PlaceId) end)
+            if ok and info and info.Name then resolvedName = info.Name end
+        end
+    end)
 
     task.spawn(function()
         while task.wait(HEARTBEAT_INTERVAL) do
@@ -236,7 +247,7 @@ local function startHeartbeat(key)
                     robloxId = tostring(Player.UserId),
                     robloxName = Player.Name,
                     gameId = game.PlaceId,
-                    gameName = gameName,
+                    gameName = resolvedName,
                     jobId = game.JobId,
                     timestamp = os.time(),
                     uptime = os.time() - sessionStart,
