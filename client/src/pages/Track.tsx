@@ -174,7 +174,7 @@ function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean
           return;
         }
       } catch {
-        -- fallback to Roblox direct thumbnail if local endpoint fails
+        // fallback to Roblox direct thumbnail if local endpoint fails
       }
       if (!cancelled) {
         setUrl(getRobloxGameIconThumbnailUrl(placeId));
