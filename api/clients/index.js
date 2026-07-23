@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 let activeClients = [];
+const recentHeartbeats = [];
 
 const SUPABASE_URL = typeof process !== "undefined" ? process.env.SUPABASE_URL : undefined;
 const SUPABASE_KEY = typeof process !== "undefined" ? process.env.SUPABASE_SERVICE_ROLE_KEY : undefined;
@@ -79,6 +80,9 @@ export default async function handler(req, res) {
 
   // GET /api/clients - list clients
   if (req.method === "GET") {
+    if (req.query && (req.query.debug === '1' || req.query.debug === 'true')) {
+      return res.status(200).json({ recentHeartbeats });
+    }
     // prune stale in-memory clients
     activeClients = activeClients.filter(c => Date.now() - (c.lastHeartbeat || 0) < 300000);
     // if we have no in-memory clients but Supabase is configured, try to restore
@@ -136,6 +140,8 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
       const data = parseRequestBody(req);
+      // record raw heartbeat for debugging (keep last 50)
+      try { recentHeartbeats.push({ ts: Date.now(), payload: data }); if (recentHeartbeats.length > 50) recentHeartbeats.shift(); } catch (e) {}
       console.log("/api/clients: heartbeat received", data && data.robloxId, data && data.gameId, data && data.body ? "(body query payload)" : "");
       const placeId = String(data.gameId || data.placeId || data.place_id || "");
       let placeName = String(data.gameName || data.placeName || data.place || data.place_name || "").trim();

@@ -4,6 +4,7 @@ let activeClients = [];
 const userCache = new Map();
 const avatarCache = new Map();
 const gameIconCache = new Map();
+const recentHeartbeats = [];
 
 const CLIENT_TIMEOUT_MS = 300000;
 const CACHE_TTL_MS = 15 * 60 * 1000;
@@ -241,6 +242,10 @@ export default async function handler(req, res) {
   const data = parseRequestBody(req);
 
     if (req.method === "GET") {
+          // debug view: return recent raw heartbeat payloads
+          if (req.query && (req.query.debug === '1' || req.query.debug === 'true')) {
+            return res.status(200).json({ recentHeartbeats });
+          }
         // cleanupClients may persist session totals; await it to keep storage consistent
         try { await cleanupClients(); } catch (e) { /* continue */ }
 
@@ -324,6 +329,12 @@ export default async function handler(req, res) {
     if (!data.robloxId) {
       return res.status(400).json({ success: false, error: "Missing robloxId" });
     }
+
+    // record raw heartbeat for debugging (keep last 50)
+    try {
+      recentHeartbeats.push({ ts: Date.now(), payload: data });
+      if (recentHeartbeats.length > 50) recentHeartbeats.shift();
+    } catch (e) {}
 
     const placeId = String(data.gameId || data.placeId || data.place_id || "");
     let robloxName = String(data.robloxName || data.name || "").trim();
