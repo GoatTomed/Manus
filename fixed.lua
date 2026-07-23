@@ -304,7 +304,7 @@ end
 local function getPlaceId()
     local placeId = 0
     pcall(function()
-        if typeof(game) == "table" and game.PlaceId then
+        if game and game.PlaceId then
             placeId = tonumber(game.PlaceId) or 0
         end
     end)
