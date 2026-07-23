@@ -379,18 +379,32 @@ local function startClientHeartbeat()
         local currentGame = getGameName()
         
         local function doHeartbeat()
-            local payload = {
-                robloxId = tostring(LocalPlayer.UserId or ""),
-                robloxName = tostring(LocalPlayer.Name or "Player"),
-                gameName = currentGame,
-                placeName = currentGame,
-                gameId = placeId,
-                placeId = placeId,
-                uptime = uptime,
-                executor = getExecutorName(),
-                executorVersion = getExecutorVersion()
-            }
-            debugPrint("Heartbeat payload:", HttpService:JSONEncode(payload))
+            local payloadOk, payload = pcall(function()
+                return {
+                    robloxId = tostring(LocalPlayer.UserId or ""),
+                    robloxName = tostring(LocalPlayer.Name or "Player"),
+                    gameName = currentGame,
+                    placeName = currentGame,
+                    gameId = placeId,
+                    placeId = placeId,
+                    uptime = uptime,
+                    executor = getExecutorName(),
+                    executorVersion = getExecutorVersion()
+                }
+            end)
+            
+            if not payloadOk then
+                debugPrint("Heartbeat payload construction failed:", tostring(payload))
+                return
+            end
+
+            local encodeOk, encoded = pcall(function() return HttpService:JSONEncode(payload) end)
+            if not encodeOk then
+                debugPrint("Heartbeat payload JSONEncode failed:", tostring(encoded))
+                return
+            end
+            
+            debugPrint("Heartbeat payload:", encoded)
             local pcallOk, postOk, postBody = pcall(function() return safePost(CLIENT_HEARTBEAT_URL, payload) end)
             if not pcallOk then
                 debugPrint("Heartbeat pcall failed:", postOk)
@@ -1322,7 +1336,7 @@ UI = (function()
         data = data or {}
         local callback = data.Callback
 
-        local chooseBlue = Color3.fromRGB(79, 171, 248)
+        local chooseBlue = Color3.fromRGB(0, 155, 252)
         local chooseGold = Color3.fromRGB(247, 197, 46)
         local chipSize = 56
 
