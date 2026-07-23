@@ -378,10 +378,17 @@ local function startClientHeartbeat()
         local placeId = tostring(placeIdNum)
         local currentGame = "Place " .. placeId
         
+        -- Improved name resolution with retry logic
         task.spawn(function()
-            local name = getGameName()
-            if name and name ~= "" then
-                currentGame = name
+            local attempts = 0
+            while attempts < 5 do
+                local name = getGameName()
+                if name and name ~= "" and not name:find("^Place %d+$") then
+                    currentGame = name
+                    break
+                end
+                attempts = attempts + 1
+                task.wait(2)
             end
         end)
         
