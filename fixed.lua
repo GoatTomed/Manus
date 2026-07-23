@@ -1322,7 +1322,7 @@ UI = (function()
         data = data or {}
         local callback = data.Callback
 
-        local chooseBlue = Color3.fromRGB(0, 155, 252)
+        local chooseBlue = Color3.fromRGB(79, 171, 248)
         local chooseGold = Color3.fromRGB(247, 197, 46)
         local chipSize = 56
 
