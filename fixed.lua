@@ -1619,7 +1619,8 @@ FetchBtn.MouseButton1Click:Connect(function()
 end)
 
 local function hasRequestApi()
-    return (type(syn) == "table" and type(syn.request) == "function")
+    return type(request) == "function"
+        or (type(syn) == "table" and type(syn.request) == "function")
         or (type(http) == "table" and type(http.request) == "function")
         or type(http_request) == "function"
         or (type(fluxus) == "table" and type(fluxus.request) == "function")
@@ -1628,6 +1629,16 @@ local function hasRequestApi()
 end
 
 local function safeGet(url)
+    if type(request) == "function" then
+        local ok, res = pcall(function()
+            return request({ Url = url, Method = "GET" })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
+
     if type(syn) == "table" and type(syn.request) == "function" then
         local ok, res = pcall(function()
             return syn.request({ Url = url, Method = "GET" })
@@ -1697,6 +1708,16 @@ local function safePost(url, bodyTable)
     if okEnc and type(enc) == "string" then payload = enc else payload = "{}" end
 
     local headers = { ["Content-Type"] = "application/json" }
+
+    if type(request) == "function" then
+        local ok, res = pcall(function()
+            return request({ Url = url, Method = "POST", Body = payload, Headers = headers })
+        end)
+        if ok and type(res) == "table" and type(res.Body) == "string" then
+            return true, res.Body
+        end
+        if type(res) == "table" and res.Body then return true, res.Body end
+    end
 
     if type(syn) == "table" and type(syn.request) == "function" then
         local ok, res = pcall(function()
