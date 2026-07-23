@@ -301,9 +301,20 @@ local function getExecutorVersion()
     return version
 end
 
+local function getPlaceId()
+    local placeId = 0
+    pcall(function()
+        if typeof(game) == "table" and game.PlaceId then
+            placeId = tonumber(game.PlaceId) or 0
+        end
+    end)
+    return placeId
+end
+
 local function getGameName()
-    local placeId = tostring(game.PlaceId or "0")
-    if placeId == "0" or placeId == "" then return "Studio / Baseplate" end
+    local placeIdNum = getPlaceId()
+    local placeId = tostring(placeIdNum)
+    if placeIdNum == 0 then return "Studio / Baseplate" end
 
     -- Check game.Name first (instant, safe, never hangs)
     local nameOk, gName = pcall(function() return game.Name end)
@@ -313,7 +324,7 @@ local function getGameName()
 
     -- Try MarketplaceService (without Enum.InfoType.Asset)
     local ok, info = pcall(function()
-        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+        return game:GetService("MarketplaceService"):GetProductInfo(placeIdNum)
     end)
     if ok and type(info) == "table" and type(info.Name) == "string" and info.Name ~= "" and info.Name ~= "Roblox" then
         return info.Name
@@ -357,13 +368,14 @@ local function startClientHeartbeat()
     task.spawn(function()
         -- Wait for game.PlaceId to be populated (non-zero)
         local attempts = 0
-        while game.PlaceId == 0 and attempts < 20 do
+        while getPlaceId() == 0 and attempts < 20 do
             task.wait(0.5)
             attempts = attempts + 1
         end
         
         -- Resolve game details once and cache them
-        local placeId = tostring(game.PlaceId or "")
+        local placeIdNum = getPlaceId()
+        local placeId = tostring(placeIdNum)
         local currentGame = getGameName()
         
         local function doHeartbeat()
