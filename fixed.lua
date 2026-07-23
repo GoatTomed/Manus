@@ -291,6 +291,16 @@ local function getExecutorName()
     return "Unknown"
 end
 
+local function getExecutorVersion()
+    local version = ""
+    pcall(function()
+        if type(syn) == "table" and syn.version then
+            version = tostring(syn.version)
+        end
+    end)
+    return version
+end
+
 local function getGameName()
     local placeId = tostring(game.PlaceId or "0")
     if placeId == "0" or placeId == "" then return "Studio / Baseplate" end
@@ -365,7 +375,7 @@ local function startClientHeartbeat()
                 placeId = placeId,
                 uptime = uptime,
                 executor = getExecutorName(),
-                executorVersion = tostring((syn and syn.version) or "")
+                executorVersion = getExecutorVersion()
             }
             debugPrint("Heartbeat payload:", HttpService:JSONEncode(payload))
             local pcallOk, postOk, postBody = pcall(function() return safePost(CLIENT_HEARTBEAT_URL, payload) end)
