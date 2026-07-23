@@ -581,13 +581,15 @@ export default function Track() {
               <button className="btn-secondary" style={{ marginBottom: "32px" }} onClick={() => { setInClientMode(false); setSelectedClient(null); pushTrackUrl(); }}>
                 <i className="ti ti-arrow-left"></i> Back to Clients
               </button>
-              {/* Game Card (Smaller, Rectangular, on top) */}
-              <div className="glass-card" style={{ padding: "24px 32px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "24px" }}>
-                <GameIcon placeId={selectedClient.placeId} size={80} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} isRectangular={true} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#38bdf8", fontWeight: 800, marginBottom: "4px" }}>Active Game</div>
-                  <h2 style={{ fontSize: "24px", fontWeight: "900", margin: 0 }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</h2>
-                  {selectedClient.placeId ? <div style={{ fontSize: "14px", color: "#52525b", marginTop: "4px" }}>ID: {selectedClient.placeId}</div> : null}
+              {/* Game Card (Smaller, Rectangular, Centered on top) */}
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <div className="glass-card" style={{ padding: "16px 24px", marginBottom: "24px", display: "flex", alignItems: "center", gap: "20px", width: "100%", maxWidth: "480px" }}>
+                  <GameIcon placeId={selectedClient.placeId} size={70} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} isRectangular={true} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#38bdf8", fontWeight: 800, marginBottom: "2px" }}>Active Game</div>
+                    <h2 style={{ fontSize: "20px", fontWeight: "900", margin: 0, lineHeight: 1.2 }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</h2>
+                    {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b", marginTop: "2px" }}>ID: {selectedClient.placeId}</div> : null}
+                  </div>
                 </div>
               </div>
 

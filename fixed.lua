@@ -295,6 +295,11 @@ local function getGameName()
     local placeId = tostring(game.PlaceId or "0")
     if placeId == "0" or placeId == "" then return "Studio / Baseplate" end
 
+    -- Check game.Name first (instant, safe, never hangs)
+    if typeof(game) == "table" and type(game.Name) == "string" and game.Name ~= "" and game.Name ~= "Roblox" and game.Name ~= "Game" then
+        return tostring(game.Name)
+    end
+
     -- Try MarketplaceService (without Enum.InfoType.Asset)
     local ok, info = pcall(function()
         return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
@@ -318,11 +323,6 @@ local function getGameName()
                 return parsed.data[1].name
             end
         end
-    end
-
-    -- Try game name property
-    if typeof(game) == "table" and type(game.Name) == "string" and game.Name ~= "" and game.Name ~= "Roblox" then
-        return tostring(game.Name)
     end
 
     return "Place " .. placeId
@@ -350,9 +350,12 @@ local function startClientHeartbeat()
             task.wait(0.5)
             attempts = attempts + 1
         end
+        
+        -- Resolve game details once and cache them
+        local placeId = tostring(game.PlaceId or "")
+        local currentGame = getGameName()
+        
         local function doHeartbeat()
-            local placeId = tostring(game.PlaceId or "")
-            local currentGame = getGameName()
             local payload = {
                 robloxId = tostring(LocalPlayer.UserId or ""),
                 robloxName = tostring(LocalPlayer.Name or "Player"),
