@@ -108,46 +108,6 @@ local CLIENT_HEARTBEAT_URL = "https://yoursuck.vercel.app/api/client-lookup"
 local heartbeatStarted = false
 local savedKeyHandled = false
 
-local function debugPrint(...)
-    pcall(function(...)
-        print(...)
-    end, ...)
-end
-
-local function hasFileReadApi()
-    return type(readfile) == "function" or type(read_file) == "function"
-end
-
-local function hasFileWriteApi()
-    return type(writefile) == "function" or type(write_file) == "function"
-end
-
-local function isFile(path)
-    if type(isfile) == "function" then return isfile(path) end
-    if type(is_file) == "function" then return is_file(path) end
-    return false
-end
-
-local function readFile(path)
-    if type(readfile) == "function" then
-        return pcall(readfile, path)
-    end
-    if type(read_file) == "function" then
-        return pcall(read_file, path)
-    end
-    return false, nil
-end
-
-local function writeFile(path, contents)
-    if type(writefile) == "function" then
-        return pcall(writefile, path, contents)
-    end
-    if type(write_file) == "function" then
-        return pcall(write_file, path, contents)
-    end
-    return false
-end
-
 local function getSavedKey()
     if not hasFileReadApi() then
         debugPrint("SavedKey: no file read API available")
@@ -2110,25 +2070,6 @@ task.spawn(function()
         debugPrint("ConnectivityTest: safeGet failed")
     else
         debugPrint("ConnectivityTest: safeGet returned", type(body), tostring(body and (type(body) == "string" and "len=" .. tostring(#body) or tostring(body)) or "nil"))
-    end
-end)
-
--- One-time POST connectivity test (should not interfere with normal operation)
-task.spawn(function()
-    task.wait(1)
-    if not hasRequestApi() then
-        debugPrint("PostConnectivity: no request API available, skipping POST test")
-        return
-    end
-    local ok, res = pcall(function() return safePost(CLIENT_HEARTBEAT_URL, { test = true, robloxId = tostring(LocalPlayer.UserId) }) end)
-    if not ok then
-        debugPrint("PostConnectivity: safePost threw", tostring(res))
-        return
-    end
-    if type(res) == "string" then
-        debugPrint("PostConnectivity: safePost returned string len=", tostring(#res))
-    else
-        debugPrint("PostConnectivity: safePost returned", tostring(res))
     end
 end)
 

@@ -326,6 +326,9 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
+    if (data && data.test === true) {
+      return res.status(200).json({ success: true, ignored: true });
+    }
     if (!data.robloxId) {
       return res.status(400).json({ success: false, error: "Missing robloxId" });
     }

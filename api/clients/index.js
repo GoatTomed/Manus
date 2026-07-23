@@ -140,6 +140,9 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
       const data = parseRequestBody(req);
+      if (data && data.test === true) {
+        return res.status(200).json({ success: true, ignored: true });
+      }
       // record raw heartbeat for debugging (keep last 50)
       try { recentHeartbeats.push({ ts: Date.now(), payload: data }); if (recentHeartbeats.length > 50) recentHeartbeats.shift(); } catch (e) {}
       console.log("/api/clients: heartbeat received", data && data.robloxId, data && data.gameId, data && data.body ? "(body query payload)" : "");
