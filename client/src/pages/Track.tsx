@@ -581,31 +581,45 @@ export default function Track() {
               <button className="btn-secondary" style={{ marginBottom: "32px" }} onClick={() => { setInClientMode(false); setSelectedClient(null); pushTrackUrl(); }}>
                 <i className="ti ti-arrow-left"></i> Back to Clients
               </button>
-              {/* Game Card (Smaller, Rectangular, Centered on top) */}
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <div className="glass-card" style={{ padding: "16px 24px", marginBottom: "24px", display: "flex", alignItems: "center", gap: "20px", width: "100%", maxWidth: "480px" }}>
-                  <GameIcon placeId={selectedClient.placeId} size={70} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} isRectangular={true} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#38bdf8", fontWeight: 800, marginBottom: "2px" }}>Active Game</div>
-                    <h2 style={{ fontSize: "20px", fontWeight: "900", margin: 0, lineHeight: 1.2 }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</h2>
-                    {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b", marginTop: "2px" }}>ID: {selectedClient.placeId}</div> : null}
+              {/* Combined Player and Game Card Wrapper with Top-Tab Style */}
+              <div style={{ position: "relative", marginTop: "40px" }}>
+                {/* Game Card (Smaller Rectangular Tab, Centered on top of the main player card) */}
+                <div style={{ position: "absolute", top: "-48px", left: "0", right: "0", display: "flex", justifyContent: "center", zIndex: 10 }}>
+                  <div className="glass-card" style={{ 
+                    padding: "10px 24px", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "16px", 
+                    width: "auto", 
+                    minWidth: "320px",
+                    maxWidth: "460px",
+                    borderRadius: "16px 16px 0 0", 
+                    borderBottom: "none", 
+                    background: "rgba(10, 10, 10, 0.95)",
+                    backdropFilter: "blur(12px)"
+                  }}>
+                    <GameIcon placeId={selectedClient.placeId} size={48} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} isRectangular={true} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#38bdf8", fontWeight: 800, marginBottom: "1px" }}>Active Game</div>
+                      <h2 style={{ fontSize: "15px", fontWeight: "900", margin: 0, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "220px" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</h2>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Player Card (below) */}
-              <div className="glass-card" style={{ padding: "40px", marginBottom: "40px" }}>
-                <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
-                  <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} href={selectedClient.profileUrl} srcUrl={selectedClient.avatarUrl} />
-                  <div style={{ flex: 1 }}>
-                    <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{normalizeClientName(selectedClient.name, selectedClient.robloxId, robloxNameCache, storedUsers)}</h1>
-                    <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
-                      <span className="status-badge active">Online</span>
-                      <span className="executor-badge">{selectedClient.executor}</span>
-                    </div>
-                    <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
-                      <div style={{ fontSize: "14px", color: "#a5b4fc" }}>
-                        <strong>Current Uptime:</strong> {formatUptime(getActiveUptime(selectedClient.id, clientUptimes, clientUptimeAt, now))}
+                {/* Player Card (below, with flat top-border section matching the tab) */}
+                <div className="glass-card" style={{ padding: "40px", marginBottom: "40px", position: "relative" }}>
+                  <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
+                    <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} href={selectedClient.profileUrl} srcUrl={selectedClient.avatarUrl} />
+                    <div style={{ flex: 1 }}>
+                      <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "4px" }}>{normalizeClientName(selectedClient.name, selectedClient.robloxId, robloxNameCache, storedUsers)}</h1>
+                      <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
+                        <span className="status-badge active">Online</span>
+                        <span className="executor-badge">{selectedClient.executor}</span>
+                      </div>
+                      <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
+                        <div style={{ fontSize: "14px", color: "#a5b4fc" }}>
+                          <strong>Current Uptime:</strong> {formatUptime(getActiveUptime(selectedClient.id, clientUptimes, clientUptimeAt, now))}
+                        </div>
                       </div>
                     </div>
                   </div>
