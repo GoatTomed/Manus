@@ -306,8 +306,9 @@ local function getGameName()
     if placeId == "0" or placeId == "" then return "Studio / Baseplate" end
 
     -- Check game.Name first (instant, safe, never hangs)
-    if typeof(game) == "table" and type(game.Name) == "string" and game.Name ~= "" and game.Name ~= "Roblox" and game.Name ~= "Game" then
-        return tostring(game.Name)
+    local nameOk, gName = pcall(function() return game.Name end)
+    if nameOk and type(gName) == "string" and gName ~= "" and gName ~= "Roblox" and gName ~= "Game" then
+        return gName
     end
 
     -- Try MarketplaceService (without Enum.InfoType.Asset)
