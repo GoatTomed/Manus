@@ -10,7 +10,11 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 
+local HEARTBEAT_DEBUG = false
 local function debugPrint(...)
+    if not HEARTBEAT_DEBUG then
+        return
+    end
     pcall(function(...)
         print(...)
     end, ...)
