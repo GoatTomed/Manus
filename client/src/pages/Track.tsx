@@ -146,8 +146,8 @@ function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocal
   );
 }
 
-function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean; href?: string; srcUrl?: string }) {
-  const { placeId, size = 72, useLocalApi = false, href, srcUrl } = props;
+function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean; href?: string; srcUrl?: string; isRectangular?: boolean }) {
+  const { placeId, size = 72, useLocalApi = false, href, srcUrl, isRectangular = false } = props;
   const [url, setUrl] = useState<string | null>(null);
   const [gameUrl, setGameUrl] = useState<string | null>(href || null);
 
@@ -174,7 +174,7 @@ function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean
           return;
         }
       } catch {
-        // fallback to Roblox direct thumbnail if local endpoint fails
+        -- fallback to Roblox direct thumbnail if local endpoint fails
       }
       if (!cancelled) {
         setUrl(getRobloxGameIconThumbnailUrl(placeId));
@@ -184,10 +184,13 @@ function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean
     return () => { cancelled = true; };
   }, [placeId, useLocalApi, srcUrl, href]);
 
+  const width = isRectangular ? Math.round(size * 1.77) : size;
+  const height = size;
+
   return (
     <a href={href || gameUrl || "#"} target="_blank" rel="noreferrer" style={{ display: "inline-block", textDecoration: "none" }}>
-      <div style={{ width: size, height: size, borderRadius: "4px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", flexShrink: 0, background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {url ? <img src={url} alt="Roblox game icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-device-gamepad" style={{ fontSize: size * 0.35, color: "#52525b" }}></i>}
+      <div style={{ width: width, height: height, borderRadius: "8px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", flexShrink: 0, background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {url ? <img src={url} alt="Roblox game icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className="ti ti-device-gamepad" style={{ fontSize: height * 0.35, color: "#52525b" }}></i>}
       </div>
     </a>
   );
@@ -578,6 +581,17 @@ export default function Track() {
               <button className="btn-secondary" style={{ marginBottom: "32px" }} onClick={() => { setInClientMode(false); setSelectedClient(null); pushTrackUrl(); }}>
                 <i className="ti ti-arrow-left"></i> Back to Clients
               </button>
+              {/* Game Card (Smaller, Rectangular, on top) */}
+              <div className="glass-card" style={{ padding: "24px 32px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "24px" }}>
+                <GameIcon placeId={selectedClient.placeId} size={80} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} isRectangular={true} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#38bdf8", fontWeight: 800, marginBottom: "4px" }}>Active Game</div>
+                  <h2 style={{ fontSize: "24px", fontWeight: "900", margin: 0 }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</h2>
+                  {selectedClient.placeId ? <div style={{ fontSize: "14px", color: "#52525b", marginTop: "4px" }}>ID: {selectedClient.placeId}</div> : null}
+                </div>
+              </div>
+
+              {/* Player Card (below) */}
               <div className="glass-card" style={{ padding: "40px", marginBottom: "40px" }}>
                 <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
                   <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} href={selectedClient.profileUrl} srcUrl={selectedClient.avatarUrl} />
@@ -592,11 +606,6 @@ export default function Track() {
                         <strong>Current Uptime:</strong> {formatUptime(getActiveUptime(selectedClient.id, clientUptimes, clientUptimeAt, now))}
                       </div>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 16 }}>
-                    <GameIcon placeId={selectedClient.placeId} size={140} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} />
-                    <div style={{ fontSize: "24px", fontWeight: "900" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</div>
-                    {selectedClient.placeId ? <div style={{ fontSize: "16px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
                   </div>
                 </div>
               </div>
