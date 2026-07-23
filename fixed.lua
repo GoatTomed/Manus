@@ -292,20 +292,40 @@ local function getExecutorName()
 end
 
 local function getGameName()
-    local placeId = tostring(game.PlaceId or "")
+    local placeId = tostring(game.PlaceId or "0")
+    if placeId == "0" or placeId == "" then return "Studio / Baseplate" end
+
+    -- Try MarketplaceService (without Enum.InfoType.Asset)
     local ok, info = pcall(function()
-        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId, Enum.InfoType.Asset)
+        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
     end)
     if ok and type(info) == "table" and type(info.Name) == "string" and info.Name ~= "" and info.Name ~= "Roblox" then
         return info.Name
     end
+
+    -- Try HTTP Request fallback via executor's request API
+    local reqFunc = request or (syn and syn.request) or (http and http.request) or http_request
+    if type(reqFunc) == "function" then
+        local httpOk, response = pcall(function()
+            return reqFunc({
+                Url = "https://games.roblox.com/v1/games/multiget-place-details?placeIds=" .. placeId,
+                Method = "GET"
+            })
+        end)
+        if httpOk and type(response) == "table" and type(response.Body) == "string" then
+            local decodeOk, parsed = pcall(function() return HttpService:JSONDecode(response.Body) end)
+            if decodeOk and type(parsed) == "table" and parsed.data and parsed.data[1] and type(parsed.data[1].name) == "string" then
+                return parsed.data[1].name
+            end
+        end
+    end
+
+    -- Try game name property
     if typeof(game) == "table" and type(game.Name) == "string" and game.Name ~= "" and game.Name ~= "Roblox" then
         return tostring(game.Name)
     end
-    if placeId ~= "" and placeId ~= "0" then
-        return "Place " .. tostring(placeId)
-    end
-    return "Roblox"
+
+    return "Place " .. placeId
 end
 
 local function startClientHeartbeat()
