@@ -167,6 +167,7 @@ export default async function handler(req, res) {
         executor: data.executor || "Unknown",
         executorVersion: data.executorVersion || "",
         robloxId: data.robloxId,
+        rawPayload: data,
       };
       const index = activeClients.findIndex(c => c.robloxId === data.robloxId);
       if (index >= 0) { activeClients[index] = client; } else { activeClients.push(client); }

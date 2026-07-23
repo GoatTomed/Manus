@@ -81,6 +81,22 @@ function getSessionTotal(sessions: ConnLog[] = [], excludeId?: string) {
     .reduce((sum, session) => sum + (session.uptime || 0), 0);
 }
 
+function parseClientRedemption(payload: any) {
+  if (!payload || typeof payload !== "object") return { redeemedKey: false, redeemedAt: undefined, redeemedKeyValue: undefined };
+  const redeemedKeyValue = String(payload.redeemedKey || payload.redeemed_key || payload.key || payload.key_value || "").trim() || undefined;
+  const redeemedAt = String(payload.redeemedAt || payload.redeemed_at || payload.usedAt || payload.used_at || payload.last_used || "").trim() || undefined;
+  const redeemedKey = Boolean(
+    redeemedKeyValue ||
+    payload.is_used === true ||
+    payload.used_at ||
+    payload.usedAt ||
+    payload.redeemed === true ||
+    payload.redeemedKey === true ||
+    payload.redeemed_key === true
+  );
+  return { redeemedKey, redeemedAt, redeemedKeyValue };
+}
+
 function getActiveUptime(clientId: string, clientUptimes: Record<string, number>, clientUptimeAt: Record<string, number>, now: number) {
   const base = Number(clientUptimes[clientId] || 0);
   const at = Number(clientUptimeAt[clientId] || now);
@@ -196,7 +212,7 @@ function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean
   );
 }
 
-type ConnLog = { id: string; roblox_id: string; roblox_name: string; place_id: string; place_name: string; place_url?: string; executor: string; connected_at: string; uptime: number; };
+type ConnLog = { id: string; roblox_id: string; roblox_name: string; place_id: string; place_name: string; place_url?: string; executor: string; connected_at: string; uptime: number; redeemedKey?: boolean; redeemedAt?: string; redeemedKeyValue?: string; };
 type StoredUser = {
   roblox_id: string;
   roblox_name: string;
@@ -204,6 +220,9 @@ type StoredUser = {
   totalUptime: number;
   currentSessionId?: string;
   lastObservedUptime?: number;
+  redeemedKey?: boolean;
+  redeemedAt?: string;
+  redeemedKeyValue?: string;
   sessions: ConnLog[];
 };
 
@@ -221,6 +240,9 @@ function loadStoredUsers(): Record<string, StoredUser> {
         totalUptime: Number(entry.totalUptime || 0),
         currentSessionId: typeof entry.currentSessionId === "string" ? entry.currentSessionId : undefined,
         lastObservedUptime: Number(entry.lastObservedUptime || 0) || undefined,
+        redeemedKey: Boolean(entry.redeemedKey),
+        redeemedAt: typeof entry.redeemedAt === "string" ? entry.redeemedAt : undefined,
+        redeemedKeyValue: typeof entry.redeemedKeyValue === "string" ? entry.redeemedKeyValue : undefined,
         sessions: Array.isArray(entry.sessions) ? entry.sessions : [],
       };
       return acc;
@@ -230,13 +252,15 @@ function loadStoredUsers(): Record<string, StoredUser> {
   }
 }
 function saveStoredUsers(map: Record<string, StoredUser>) {
-  try { localStorage.setItem("ys_users", JSON.stringify(map)); } catch {}
+  try {
+    localStorage.setItem("ys_users", JSON.stringify(map));
+  } catch {}
 }
 
 const labelStyle = { color: "#71717a", fontSize: "11px", textTransform: "uppercase" as const, letterSpacing: "0.08em", fontWeight: "700", marginBottom: "8px" };
 
 export default function Track() {
-  const CLIENT_STALE_MS = 15 * 1000; // consider clients stale after 15s of no heartbeat (UI-only)
+  const CLIENT_STALE_MS = 25 * 1000; // consider clients stale after 25s of no heartbeat (UI-only)
   const [inClientMode, setInClientMode] = useState(false);
   const [homeView, setHomeView] = useState<HomeView>("clients");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -264,6 +288,7 @@ export default function Track() {
   const getApiUrl = (path: string) => useLocalApi ? path : resolveApiUrl(path);
   const getApiUrls = (path: string) => useLocalApi ? [path, resolveApiUrl(path)] : [resolveApiUrl(path)];
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [showRedeemDetails, setShowRedeemDetails] = useState(false);
   const [storedUsers, setStoredUsers] = useState<Record<string, StoredUser>>(loadStoredUsers);
   const [robloxNameCache, setRobloxNameCache] = useState<Record<string, string>>({});
   const robloxNameCacheRef = useRef<Record<string, string>>(robloxNameCache);
@@ -376,7 +401,14 @@ export default function Track() {
                 executor: c.executor || "Unknown",
                 connected_at: new Date(c.lastHeartbeat || ts).toISOString(),
                 uptime: currentUptime,
+                ...parseClientRedemption((c as any).rawPayload),
               };
+
+              const redemption = parseClientRedemption((c as any).rawPayload);
+              const redeemedKey = existing?.redeemedKey || redemption.redeemedKey;
+              const redeemedAt = existing?.redeemedAt || redemption.redeemedAt;
+              const redeemedKeyValue = existing?.redeemedKeyValue || redemption.redeemedKeyValue;
+
               updated[c.robloxId] = {
                 roblox_id: c.robloxId,
                 roblox_name: displayName,
@@ -384,6 +416,9 @@ export default function Track() {
                 totalUptime,
                 currentSessionId: c.id,
                 lastObservedUptime: currentUptime,
+                redeemedKey,
+                redeemedAt,
+                redeemedKeyValue,
                 sessions: existing
                   ? [sessionEntry, ...existing.sessions.filter(s => s.place_id !== c.placeId)].slice(0, 20)
                   : [sessionEntry],
@@ -417,8 +452,8 @@ export default function Track() {
           // if the selected client disappears, clear selection and exit client mode
           setSelectedClient(prevSel => {
             if (!prevSel) return prevSel;
-            const still = data.find(d => String(d.robloxId) === String(prevSel.robloxId) && d.id === prevSel.id);
-            if (still) return prevSel;
+            const still = data.find(d => String(d.robloxId) === String(prevSel.robloxId));
+            if (still) return still;
             setInClientMode(false);
             pushTrackUrl();
             return null;
@@ -438,7 +473,7 @@ export default function Track() {
       const params = new URLSearchParams(window.location.search);
       const u = params.get("u");
       if (!u) return;
-      const match = clients.find(c => String(c.robloxId) === u);
+      const match = clients.find(c => String(c.robloxId) === u || String(c.id) === u);
       if (match) {
         setSelectedClient(match);
         setInClientMode(true);
@@ -625,11 +660,21 @@ export default function Track() {
               </div>
               <div className="user-list">
                 {filteredUsers.map(u => (
-                  <div key={u.roblox_id} className={`user-row ${selectedUser === u.roblox_id ? "active" : ""}`} onClick={() => setSelectedUser(u.roblox_id)}>
+                  <div key={u.roblox_id} className={`user-row ${selectedUser === u.roblox_id ? "active" : ""}`} onClick={() => { setSelectedUser(u.roblox_id); setShowRedeemDetails(false); }}>
                     <RobloxAvatar robloxId={u.roblox_id} size={48} useLocalApi={useLocalApi} />
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <div style={{ fontSize: "16px", fontWeight: "800" }}>{u.roblox_name}</div>
+                        {u.redeemedKey && (
+                          <span className="status-badge used" style={{ fontSize: "10px", padding: "4px 8px" }}>
+                            Redeemed
+                          </span>
+                        )}
+                        {u.redeemedKeyValue && (
+                          <span className="status-badge" style={{ fontSize: "10px", padding: "4px 8px", background: "rgba(56,189,248,0.12)", color: "#38bdf8" }}>
+                            Key present
+                          </span>
+                        )}
                         {u.sessions && u.sessions[0] && u.sessions[0].place_id ? (
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <GameIcon
@@ -678,6 +723,11 @@ export default function Track() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "14px", fontWeight: "800" }}>{normalizeClientPlace(s.place_name, s.place_id)}</div>
                     <div style={{ fontSize: "11px", color: "#71717a" }}>{timeAgo(s.connected_at, isCurrent)}</div>
+                    {s.redeemedAt && (
+                      <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                        Redeemed {timeAgo(s.redeemedAt)}
+                      </div>
+                    )}
                   </div>
                   {isCurrent && <span className="status-badge active">Current</span>}
                 </div>
