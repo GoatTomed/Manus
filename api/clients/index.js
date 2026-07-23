@@ -38,6 +38,39 @@ const supabase = SUPABASE_URL && SUPABASE_KEY
   : null;
 ;
 
+async function fetchRobloxPlaceName(placeId) {
+  if (!placeId) return null;
+  try {
+    const response = await fetch(`https://games.roblox.com/v1/games/multiget-place-details?placeIds=${encodeURIComponent(placeId)}`);
+    if (response.ok) {
+      const data = await response.json();
+      return data?.data?.[0]?.name || null;
+    }
+  } catch (err) {
+    // ignore
+  }
+  try {
+    const response = await fetch(`https://www.roblox.com/games/${encodeURIComponent(placeId)}`, { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' } });
+    if (response.ok) {
+      const html = await response.text();
+      const m = html.match(/<meta property=["']og:title["'] content=["']([^"']+)["']\s*\/?>/i) || html.match(/<title>([^<]+)<\/title>/i);
+      if (m) return String(m[1]).replace(/\s*-\s*Roblox$/i, '').trim();
+    }
+  } catch (err) {}
+  return null;
+}
+
+async function fetchRobloxGameIconUrl(placeId) {
+  if (!placeId) return null;
+  try {
+    const url = `https://thumbnails.roblox.com/v1/places/gameicons?placeIds=${encodeURIComponent(placeId)}&size=150x150&format=Png&isCircular=false`;
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.data?.[0]?.imageUrl || null;
+  } catch (err) { return null; }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
@@ -54,23 +87,42 @@ export default async function handler(req, res) {
         const cutoff = new Date(Date.now() - 300000).toISOString();
         const { data: persisted, error } = await supabase.from('clients').select('roblox_id,last_session_id,last_session_uptime,last_seen,online,place_id,place_name,game_icon_url,game_url,executor,executor_version').gte('last_seen', cutoff).or('online.eq.true');
         if (!error && Array.isArray(persisted) && persisted.length > 0) {
-          activeClients = persisted.map(p => ({
-            id: p.last_session_id || `c-${String(p.roblox_id)}`,
-            name: 'Player',
-            place: p.place_name || 'Unknown Game',
-            placeId: p.place_id || '',
-            av: (String(p.roblox_id || '').slice(0,2) || '??').toUpperCase(),
-            avc: 'av-green',
-            avatarUrl: `/api/roblox-avatar?userId=${encodeURIComponent(p.roblox_id)}`,
-            gameIconUrl: p.game_icon_url || '',
-            profileUrl: p.roblox_id ? `https://www.roblox.com/users/${encodeURIComponent(p.roblox_id)}/profile` : '',
-            gameUrl: p.game_url || '',
-            lastHeartbeat: new Date(p.last_seen || Date.now()).getTime(),
-            uptime: Number(p.last_session_uptime || 0),
-            executor: p.executor || 'Unknown',
-            executorVersion: p.executor_version || '',
-            robloxId: String(p.roblox_id),
-          }));
+            // Build clients and resolve missing place names/icons
+            const tmp = persisted.map(p => ({
+              id: p.last_session_id || `c-${String(p.roblox_id)}`,
+              robloxId: String(p.roblox_id),
+              name: 'Player',
+              place: p.place_name || '',
+              placeId: p.place_id || '',
+              av: (String(p.roblox_id || '').slice(0,2) || '??').toUpperCase(),
+              avc: 'av-green',
+              avatarUrl: `/api/roblox-avatar?userId=${encodeURIComponent(p.roblox_id)}`,
+              gameIconUrl: p.game_icon_url || '',
+              profileUrl: p.roblox_id ? `https://www.roblox.com/users/${encodeURIComponent(p.roblox_id)}/profile` : '',
+              gameUrl: p.game_url || '',
+              lastHeartbeat: new Date(p.last_seen || Date.now()).getTime(),
+              uptime: Number(p.last_session_uptime || 0),
+              executor: p.executor || 'Unknown',
+              executorVersion: p.executor_version || '',
+              rawPayload: {},
+            }));
+
+            await Promise.all(tmp.map(async (c) => {
+              if (c.placeId) {
+                if (!c.place || /^unknown/i.test(c.place)) {
+                  const resolved = await fetchRobloxPlaceName(c.placeId);
+                  c.place = resolved || `Place ${c.placeId}`;
+                }
+                if (!c.gameIconUrl) {
+                  const icon = await fetchRobloxGameIconUrl(c.placeId);
+                  c.gameIconUrl = icon || `/api/roblox-gameicon?placeId=${encodeURIComponent(c.placeId)}`;
+                }
+              } else {
+                if (!c.place) c.place = 'Unknown Game';
+              }
+            }));
+
+            activeClients = tmp;
         }
       }
     } catch (err) {
