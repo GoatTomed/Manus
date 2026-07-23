@@ -223,7 +223,7 @@
 
 .view-container {
   position: relative;
-  max-width: 1400px;
+  width: 100%;
 }
 
 .view.active {

@@ -594,9 +594,9 @@ export default function Track() {
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 16 }}>
-                    <GameIcon placeId={selectedClient.placeId} size={96} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} />
-                    <div style={{ fontSize: "20px", fontWeight: "800" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</div>
-                    {selectedClient.placeId ? <div style={{ fontSize: "14px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
+                    <GameIcon placeId={selectedClient.placeId} size={140} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} />
+                    <div style={{ fontSize: "24px", fontWeight: "900" }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</div>
+                    {selectedClient.placeId ? <div style={{ fontSize: "16px", color: "#52525b" }}>{selectedClient.placeId}</div> : null}
                   </div>
                 </div>
               </div>
