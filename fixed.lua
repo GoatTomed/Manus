@@ -376,7 +376,14 @@ local function startClientHeartbeat()
         -- Resolve game details once and cache them
         local placeIdNum = getPlaceId()
         local placeId = tostring(placeIdNum)
-        local currentGame = getGameName()
+        local currentGame = "Place " .. placeId
+        
+        task.spawn(function()
+            local name = getGameName()
+            if name and name ~= "" then
+                currentGame = name
+            end
+        end)
         
         local function doHeartbeat()
             local payloadOk, payload = pcall(function()
