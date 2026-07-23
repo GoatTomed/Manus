@@ -18,7 +18,7 @@ function resolveApiUrl(path: string) {
   if (typeof window === "undefined") return DEFAULT_API_BASE + path;
   const host = window.location.hostname;
   if (host === "localhost" || host === "127.0.0.1" || host.startsWith("192.168.")) {
-    return path;
+    return `${window.location.protocol}//${host}:3003${path}`;
   }
   return DEFAULT_API_BASE + path;
 }
@@ -121,10 +121,7 @@ function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocal
       setUrl(srcUrl);
       return;
     }
-    let apiUrl = srcUrl || (useLocalApi ? `/api/roblox-avatar?userId=${robloxId}` : resolveApiUrl(`/api/roblox-avatar?userId=${robloxId}`));
-    if (srcUrl && !useLocalApi && srcUrl.startsWith("/")) {
-      apiUrl = resolveApiUrl(srcUrl);
-    }
+    let apiUrl = srcUrl && srcUrl.startsWith("/") ? resolveApiUrl(srcUrl) : resolveApiUrl(`/api/roblox-avatar?userId=${robloxId}`);
     let cancelled = false;
     const tryFetchAvatar = async () => {
       try {
@@ -174,10 +171,7 @@ function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean
       setUrl(srcUrl);
       return;
     }
-    let apiUrl = srcUrl || (useLocalApi ? `/api/roblox-gameicon?placeId=${placeId}` : resolveApiUrl(`/api/roblox-gameicon?placeId=${placeId}`));
-    if (srcUrl && !useLocalApi && srcUrl.startsWith("/")) {
-      apiUrl = resolveApiUrl(srcUrl);
-    }
+    let apiUrl = srcUrl && srcUrl.startsWith("/") ? resolveApiUrl(srcUrl) : resolveApiUrl(`/api/roblox-gameicon?placeId=${placeId}`);
     let cancelled = false;
     const tryFetchGameIcon = async () => {
       try {
@@ -285,8 +279,8 @@ export default function Track() {
     const host = window.location.hostname;
     return host === "localhost" || host === "127.0.0.1" || host.startsWith("192.168.");
   });
-  const getApiUrl = (path: string) => useLocalApi ? path : resolveApiUrl(path);
-  const getApiUrls = (path: string) => useLocalApi ? [path, resolveApiUrl(path)] : [resolveApiUrl(path)];
+  const getApiUrl = (path: string) => resolveApiUrl(path);
+  const getApiUrls = (path: string) => [resolveApiUrl(path)];
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [showRedeemDetails, setShowRedeemDetails] = useState(false);
   const [storedUsers, setStoredUsers] = useState<Record<string, StoredUser>>(loadStoredUsers);
@@ -330,14 +324,10 @@ export default function Track() {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const urls = useLocalApi
-          ? [
-              `/api/client-lookup`,
-              `/api/clients`,
-              resolveApiUrl(`/api/client-lookup`),
-              resolveApiUrl(`/api/clients`),
-            ]
-          : [resolveApiUrl(`/api/client-lookup`), resolveApiUrl(`/api/clients`)];
+        const urls = [
+          resolveApiUrl(`/api/client-lookup`),
+          resolveApiUrl(`/api/clients`),
+        ];
         let res: Response | null = null;
         for (const url of urls) {
           try {
@@ -591,6 +581,10 @@ export default function Track() {
                       <div>
                         <div style={labelStyle}>Current Game</div>
                         <div style={{ fontSize: "13px", fontWeight: "700" }}>{normalizeClientPlace(c.place, c.placeId)}</div>
+                      </div>
+                      <div>
+                        <div style={labelStyle}>Executor</div>
+                        <div style={{ fontSize: "13px", fontWeight: "700" }}>{c.executor || "Unknown"}</div>
                       </div>
                       <div style={{ textAlign: "right" }}>
                         <div style={labelStyle}>Uptime</div>
