@@ -129,10 +129,10 @@ export default async function handler(req, res) {
 
     try {
         const { data, error } = await supabase
-            .from('page_views')
-            .select('ip_hash, created_at')
-            .or('path.eq./scripts.lua,path.eq./yousuck.lua')
-            .order('created_at', { ascending: false });
+          .from('page_views')
+          .select('ip_hash, created_at')
+          .or('path.eq./yousuck.lua')
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
         const uniqueIps = Array.from(new Set(data.map(v => v.ip_hash)));

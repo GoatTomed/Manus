@@ -74,9 +74,9 @@ export default async function handler(req, res) {
         // Log unauthorized attempt
         try {
             await supabase.from('page_views').insert({
-                ip_hash: actualIp,
-                path: '/scripts.lua',
-                user_agent: userAgent
+              ip_hash: actualIp,
+              path: '/yousuck.lua',
+              user_agent: userAgent
             });
         } catch (e) {}
 
