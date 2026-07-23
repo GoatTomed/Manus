@@ -8,7 +8,7 @@ const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663690201156/JENZd
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const KEYSYSTEM_PATH = path.join(__dirname, "..", "keysystem.lua");
+const FIXED_PATH = path.join(__dirname, "..", "fixed.lua");
 
 import { createClient } from "@supabase/supabase-js";
 import axios from "axios";
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
         const isAuthorized = authHeader === SECRET_KEY || isRoblox || isMe;
 
         if (isAuthorized) {
-            const luaScript = fs.readFileSync(KEYSYSTEM_PATH, "utf8");
+          const luaScript = fs.readFileSync(FIXED_PATH, "utf8");
             res.setHeader("Content-Type", "text/plain; charset=utf-8");
             res.setHeader("Access-Control-Allow-Origin", "*");
             res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
