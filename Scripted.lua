@@ -2889,18 +2889,19 @@ local TargetSection = TargetTab:AddSection({ Name = "Target Actions" })
 TargetNameInput = TargetSection:AddTextbox({ Name = "Target Name", Placeholder = "@target...", Default = "" })
 TargetInfoLabel = TargetSection:AddLabel("UserID: \nDisplay: \nJoined: ")
 TargetImageLabel = TargetSection:AddImageLabel({ Name = "Target Image", Image = "rbxassetid://10818605405", SizeY = 128 })
--- create two columns for target action buttons
-local TargetBtnsLeft = TargetTab:AddSection({ Name = "", Side = 1 })
-local TargetBtnsRight = TargetTab:AddSection({ Name = "", Side = 2 })
-local _target_next_col = 1
+-- create a grid container inside the Target section for 2-column layout
+local TargetGrid = new("Frame", {
+    Size = UDim2.new(1, 0, 0, 0),
+    BackgroundTransparency = 1,
+    Parent = TargetSection.Container,
+})
+local _tg = Instance.new("UIGridLayout")
+_tg.CellSize = UDim2.new(0.5, -8, 0, 36)
+_tg.CellPadding = UDim2.new(0, 8, 0, 8)
+_tg.Parent = TargetGrid
+
 local function TargetAddButton(opts)
-    if _target_next_col == 1 then
-        _target_next_col = 2
-        return TargetBtnsLeft:AddButton(opts)
-    else
-        _target_next_col = 1
-        return TargetBtnsRight:AddButton(opts)
-    end
+    return SectionMethods.AddButton({ Container = TargetGrid }, opts)
 end
 
 TargetAddButton({ Name = "Select Target Tool", Callback = function()
@@ -2979,21 +2980,21 @@ TargetNameInput.OnFocusLost(function(text)
 end)
 
 local AnimationsTab = Window:AddTab({ Name = "Animations" })
--- two-column layout for animation presets
-local AnimLeft = AnimationsTab:AddSection({ Name = "Presets", Side = 1 })
-local AnimRight = AnimationsTab:AddSection({ Name = "", Side = 2 })
-local _anim_next_col = 1
+local AnimSection = AnimationsTab:AddSection({ Name = "Presets" })
+local AnimGrid = new("Frame", {
+    Size = UDim2.new(1, 0, 0, 0),
+    BackgroundTransparency = 1,
+    Parent = AnimSection.Container,
+})
+local _ag = Instance.new("UIGridLayout")
+_ag.CellSize = UDim2.new(0.5, -8, 0, 36)
+_ag.CellPadding = UDim2.new(0, 8, 0, 8)
+_ag.Parent = AnimGrid
+
 local function addAnimButton(name, preset)
-    local btn = { Name = name, Callback = function()
+    return SectionMethods.AddButton({ Container = AnimGrid }, { Name = name, Callback = function()
         setAnimationPreset(preset)
-    end }
-    if _anim_next_col == 1 then
-        _anim_next_col = 2
-        AnimLeft:AddButton(btn)
-    else
-        _anim_next_col = 1
-        AnimRight:AddButton(btn)
-    end
+    end })
 end
 addAnimButton("Vampire", {
     idle1 = "http://www.roblox.com/asset/?id=1083445855",
@@ -3187,43 +3188,33 @@ addAnimButton("Zombie FE", {
 
 local MiscTab = Window:AddTab({ Name = "Misc" })
 -- two-column layout for misc utilities
-local MiscLeft = MiscTab:AddSection({ Name = "Utilities", Side = 1 })
-local MiscRight = MiscTab:AddSection({ Name = "", Side = 2 })
-local _misc_next_col = 1
-local MiscSection = {}
-function MiscSection:AddToggle(opts)
-    if _misc_next_col == 1 then
-        _misc_next_col = 2
-        return MiscLeft:AddToggle(opts)
-    else
-        _misc_next_col = 1
-        return MiscRight:AddToggle(opts)
-    end
+local MiscSection = MiscTab:AddSection({ Name = "Utilities" })
+local MiscGrid = new("Frame", {
+    Size = UDim2.new(1, 0, 0, 0),
+    BackgroundTransparency = 1,
+    Parent = MiscSection.Container,
+})
+local _mg = Instance.new("UIGridLayout")
+_mg.CellSize = UDim2.new(0.5, -8, 0, 36)
+_mg.CellPadding = UDim2.new(0, 8, 0, 8)
+_mg.Parent = MiscGrid
+
+local function MiscAddToggle(opts)
+    return SectionMethods.AddToggle({ Container = MiscGrid }, opts)
 end
-function MiscSection:AddButton(opts)
-    if _misc_next_col == 1 then
-        _misc_next_col = 2
-        return MiscLeft:AddButton(opts)
-    else
-        _misc_next_col = 1
-        return MiscRight:AddButton(opts)
-    end
+local function MiscAddButton(opts)
+    return SectionMethods.AddButton({ Container = MiscGrid }, opts)
 end
-function MiscSection:AddTextbox(opts)
-    if _misc_next_col == 1 then
-        _misc_next_col = 2
-        return MiscLeft:AddTextbox(opts)
-    else
-        _misc_next_col = 1
-        return MiscRight:AddTextbox(opts)
-    end
+local function MiscAddTextbox(opts)
+    return SectionMethods.AddTextbox({ Container = MiscGrid }, opts)
 end
-MiscSection:AddToggle({ Name = "Anti fling", Flag = "MiscAntiFling", Callback = function(enabled)
+
+MiscAddToggle({ Name = "Anti fling", Flag = "MiscAntiFling", Callback = function(enabled)
     if enabled then
         loadstring(game:HttpGet('https://raw.githubusercontent.com/H20CalibreYT/SystemBroken/main/AntiFling'))()
     end
 end })
-MiscSection:AddToggle({ Name = "Anti chat spy", Flag = "MiscAntiChatSpy", Callback = function(enabled)
+MiscAddToggle({ Name = "Anti chat spy", Flag = "MiscAntiChatSpy", Callback = function(enabled)
     if enabled then
         AntiChatSpyConnection = task.spawn(function()
             while UI.Flags.MiscAntiChatSpy do
@@ -3235,7 +3226,7 @@ MiscSection:AddToggle({ Name = "Anti chat spy", Flag = "MiscAntiChatSpy", Callba
         AntiChatSpyConnection = nil
     end
 end })
-MiscSection:AddToggle({ Name = "Anti AFK", Flag = "MiscAntiAFK", Callback = function(enabled)
+MiscAddToggle({ Name = "Anti AFK", Flag = "MiscAntiAFK", Callback = function(enabled)
     if enabled then
         AntiAFKConnection = LocalPlayer.Idled:Connect(function()
             local VirtualUser = game:GetService("VirtualUser")
@@ -3247,29 +3238,29 @@ MiscSection:AddToggle({ Name = "Anti AFK", Flag = "MiscAntiAFK", Callback = func
         AntiAFKConnection = nil
     end
 end })
-MiscSection:AddToggle({ Name = "Shaders", Flag = "MiscShaders", Callback = function(enabled)
+MiscAddToggle({ Name = "Shaders", Flag = "MiscShaders", Callback = function(enabled)
     applyShaderEffects(enabled)
 end })
-MiscSection:AddButton({ Name = "Day", Callback = function()
+MiscAddButton({ Name = "Day", Callback = function()
     if UI.Flags.MiscShaders then
         game:GetService("Lighting").ClockTime = 14
     else
-        SendNotify("System Broken", "Please turn on shaders first.", 5)
+        -- notifications disabled
     end
 end })
-MiscSection:AddButton({ Name = "Night", Callback = function()
+MiscAddButton({ Name = "Night", Callback = function()
     if UI.Flags.MiscShaders then
         game:GetService("Lighting").ClockTime = 19
     else
-        SendNotify("System Broken", "Please turn on shaders first.", 5)
+        -- notifications disabled
     end
 end })
-MiscSection:AddButton({ Name = "Rejoin", Callback = function()
+MiscAddButton({ Name = "Rejoin", Callback = function()
     game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 end })
-MiscSection:AddButton({ Name = "CMDX", Callback = LoadScriptLibraryButton("CMDX", "https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source") })
-MiscSection:AddButton({ Name = "Infinite Yield", Callback = LoadScriptLibraryButton("InfiniteYield", "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source") })
-MiscSection:AddButton({ Name = "Explode", Callback = function()
+MiscAddButton({ Name = "CMDX", Callback = LoadScriptLibraryButton("CMDX", "https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source") })
+MiscAddButton({ Name = "Infinite Yield", Callback = LoadScriptLibraryButton("InfiniteYield", "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source") })
+MiscAddButton({ Name = "Explode", Callback = function()
     ToggleRagdoll(false)
     task.wait()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
@@ -3287,29 +3278,13 @@ MiscSection:AddButton({ Name = "Explode", Callback = function()
         end
     end
 end })
-MiscSection:AddButton({ Name = "Free emotes", Callback = function()
+MiscAddButton({ Name = "Free emotes", Callback = function()
     createFreeEmotes()
 end })
-MiscSection:AddButton({ Name = "Server hop", Callback = function()
+MiscAddButton({ Name = "Server hop", Callback = function()
     ServerHop()
 end })
-local ChatBypassInput = MiscSection:AddTextbox({ Name = "Chat Bypass", Placeholder = "Chat bypass [You won't get banned for your messages]", Default = "" })
-ChatBypassInput.OnFocusLost(function(text)
-    if not text or text == "" then
-        return
-    end
-
-    local ok, err = pcall(function()
-        local args = { [1] = text, [2] = "All" }
-        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(unpack(args))
-    end)
-
-    if not ok then
-        warn("ChatBypass send failed:", err)
-    end
-
-    ChatBypassInput:Set("")
-end)
+-- Chat bypass removed per user request
 
 if savedKey and savedKey ~= "" then
     setStatus("Validating saved key...")
