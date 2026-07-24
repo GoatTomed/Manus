@@ -1990,9 +1990,12 @@ local function UpdateTarget(player)
         if TargetInfoLabel then
             TargetInfoLabel.Text = "UserID: " .. player.UserId .. "\nDisplay: " .. player.DisplayName .. "\nJoined: " .. os.date("%d-%m-%Y", os.time() - player.AccountAge * 24 * 3600)
         end
-        if TargetImageLabel then
+        if TargetImageLabel and TargetImageLabel:IsA("ImageLabel") then
             pcall(function()
-                TargetImageLabel.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+                local thumb = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+                if type(thumb) == "string" and thumb ~= "" then
+                    TargetImageLabel.Image = thumb
+                end
             end)
         end
     else
@@ -2003,7 +2006,7 @@ local function UpdateTarget(player)
         if TargetInfoLabel then
             TargetInfoLabel.Text = "UserID: \nDisplay: \nJoined: "
         end
-        if TargetImageLabel then
+        if TargetImageLabel and TargetImageLabel:IsA("ImageLabel") then
             TargetImageLabel.Image = "rbxassetid://10818605405"
         end
     end
@@ -2927,6 +2930,10 @@ TargetSection:AddButton({ Name = "Whitelist Target", Callback = function()
             SendNotify("System Broken", TargetedPlayer.Name .. " added to whitelist.", 5)
         end
     end
+end })
+TargetSection:AddButton({ Name = "Clear Target", Callback = function()
+    UpdateTarget(nil)
+    SendNotify("System Broken", "Target cleared.", 5)
 end })
 TargetSection:AddToggle({ Name = "View Target", Flag = "ViewTarget", Callback = function(enabled)
     task.spawn(function()
