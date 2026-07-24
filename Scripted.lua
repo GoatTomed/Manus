@@ -1207,6 +1207,39 @@ UI = (function()
         return label
     end
 
+    function SectionMethods:AddImageLabel(data)
+        data = data or {}
+        local container = new("Frame", {
+            Size = UDim2.new(1, 0, 0, (data.Name and 18 or 0) + (data.SizeY or 128)),
+            BackgroundTransparency = 1,
+            Parent = self.Container,
+        })
+        if data.Name then
+            new("TextLabel", {
+                Size = UDim2.new(1, 0, 0, 18),
+                BackgroundTransparency = 1,
+                Text = tostring(data.Name),
+                TextColor3 = Theme.TextMid,
+                FontFace = FONT_REG,
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = container,
+            })
+        end
+        local image = new("ImageLabel", {
+            Size = UDim2.new(1, 0, 0, data.SizeY or 128),
+            Position = UDim2.new(0, 0, 0, data.Name and 18 or 0),
+            BackgroundTransparency = 0,
+            BackgroundColor3 = Theme.Surface,
+            Image = tostring(data.Image or ""),
+            ScaleType = Enum.ScaleType.Fit,
+            Parent = container,
+        })
+        corner(image, 10)
+        stroke(image, Theme.Border, 1, 0.35)
+        return image
+    end
+
     function SectionMethods:AddButton(data)
         data = data or {}
         local Button = new("TextButton", {
@@ -2856,6 +2889,7 @@ local TargetTab = Window:AddTab({ Name = "Target" })
 local TargetSection = TargetTab:AddSection({ Name = "Target Actions" })
 TargetNameInput = TargetSection:AddTextbox({ Name = "Target Name", Placeholder = "@target...", Default = "" })
 TargetInfoLabel = TargetSection:AddLabel("UserID: \nDisplay: \nJoined: ")
+TargetImageLabel = TargetSection:AddImageLabel({ Name = "Target Image", Image = "rbxassetid://10818605405", SizeY = 128 })
 TargetSection:AddButton({ Name = "Select Target Tool", Callback = function()
     createTargetingTool()
     SendNotify("System Broken", "Click the target tool on a player.", 5)
