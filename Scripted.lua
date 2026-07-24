@@ -3037,28 +3037,67 @@ CharacterSection:AddToggle({ Name = "Fly", Flag = "CharacterFly", Callback = fun
     end
 end })
 
--- Keybinds tab for character actions
-local KeybindsTab = Window:AddTab({ Name = "Keybinds", Icon = getIcon("key") or "" })
-local KeybindsSection = KeybindsTab:AddSection({ Name = "Character Keybinds" })
-local keybinds = {}
-local function registerKeybind(name, defaultKey, callback)
-    keybinds[name] = { Key = defaultKey, Callback = callback }
-    KeybindsSection:AddKeybind({ Name = name, Default = defaultKey, Callback = function(k) keybinds[name].Key = k end })
+-- Keybind controls placed under Target grid
+local TargetAddKeybind = function(opts)
+    return SectionMethods.AddKeybind({ Container = TargetGrid }, opts)
 end
 
--- Example: walk/jump bind toggles (user can reassign)
-registerKeybind("Toggle Fly", "F", function()
+local keybinds = {}
+local function addTargetKeybind(name, defaultKey, callback)
+    keybinds[name] = { Key = defaultKey, Callback = callback }
+    TargetAddKeybind({ Name = name, Default = defaultKey, Callback = function(k) keybinds[name].Key = k end })
+end
+
+addTargetKeybind("Toggle Walk Speed", "K", function()
+    if enforcers["WalkSpeed"] then
+        stopEnforcer("WalkSpeed")
+        pcall(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                LocalPlayer.Character.Humanoid.WalkSpeed = 16
+            end
+        end)
+    else
+        startEnforcer("WalkSpeed", function()
+            pcall(function()
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid.WalkSpeed = State.WalkSpeed
+                end
+            end)
+        end)
+    end
+end)
+
+addTargetKeybind("Toggle Jump Power", "J", function()
+    if enforcers["JumpPower"] then
+        stopEnforcer("JumpPower")
+        pcall(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                LocalPlayer.Character.Humanoid.JumpPower = 50
+            end
+        end)
+    else
+        startEnforcer("JumpPower", function()
+            pcall(function()
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid.JumpPower = State.JumpPower
+                end
+            end)
+        end)
+    end
+end)
+
+addTargetKeybind("Toggle Fly", "F", function()
     UI.Flags.CharacterFly = not UI.Flags.CharacterFly
     if UI.Flags.CharacterFly then startFly() else stopFly() end
 end)
 
--- Input listener for keybinds
-UserInputService.InputBegan:Connect(function(input,gpe)
+-- Input listener for target keybinds
+UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
     local keyName = tostring(input.KeyCode.Name or input.KeyCode)
     for name, info in pairs(keybinds) do
-        if tostring(info.Key) == keyName or tostring(info.Key) == keyName:gsub("Key","") then
+        if tostring(info.Key) == keyName or tostring(info.Key) == keyName:gsub("Key", "") then
             pcall(function() info.Callback() end)
         end
     end
