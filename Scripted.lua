@@ -2825,7 +2825,7 @@ HideUISection:AddKeybind({ Default = savedSettings.ToggleKey or "RightShift", Ca
 end })
 
 -- Feature tabs extracted from SystemBroken
-local CharacterTab = Window:AddTab({ Name = "Character" })
+local CharacterTab = Window:AddTab({ Name = "Character", Icon = getIcon("user") or "" })
 local CharacterSection = CharacterTab:AddSection({ Name = "Movement" })
 local WalkSpeedSlider = CharacterSection:AddSlider({ Name = "Walk Speed", Min = 1, Max = 99999, Default = 16, Callback = function(value)
     local v = tonumber(value) or 16
@@ -2884,7 +2884,7 @@ CharacterSection:AddToggle({ Name = "Fly", Flag = "CharacterFly", Callback = fun
     end
 end })
 
-local TargetTab = Window:AddTab({ Name = "Target" })
+local TargetTab = Window:AddTab({ Name = "Target", Icon = getIcon("target") or "" })
 local TargetSection = TargetTab:AddSection({ Name = "Target Actions" })
 TargetNameInput = TargetSection:AddTextbox({ Name = "Target Name", Placeholder = "@target...", Default = "" })
 TargetInfoLabel = TargetSection:AddLabel("UserID: \nDisplay: \nJoined: ")
@@ -2979,7 +2979,7 @@ TargetNameInput.OnFocusLost(function(text)
     UpdateTarget(player)
 end)
 
-local AnimationsTab = Window:AddTab({ Name = "Animations" })
+local AnimationsTab = Window:AddTab({ Name = "Animations", Icon = getIcon("play") or "" })
 local AnimSection = AnimationsTab:AddSection({ Name = "Presets" })
 local AnimGrid = new("Frame", {
     Size = UDim2.new(1, 0, 0, 0),
@@ -3186,7 +3186,7 @@ addAnimButton("Zombie FE", {
     fall = "http://www.roblox.com/asset/?id=616157476",
 })
 
-local MiscTab = Window:AddTab({ Name = "Misc" })
+local MiscTab = Window:AddTab({ Name = "Misc", Icon = getIcon("grid") or "" })
 -- two-column layout for misc utilities
 local MiscSection = MiscTab:AddSection({ Name = "Utilities" })
 local MiscGrid = new("Frame", {
