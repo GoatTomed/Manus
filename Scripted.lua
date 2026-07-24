@@ -1957,6 +1957,56 @@ local function TeleportTO(posX, posY, posZ, player, method)
     end)
 end
 
+-- Checkpoint helpers (no notifications)
+local function SaveCheckpoint()
+    local root = GetRoot(LocalPlayer)
+    if not root then return end
+    SavedCheckpoint = root.Position
+    pcall(function()
+        if hasFileWriteApi() then
+            local ok, encoded = pcall(function() return HttpService:JSONEncode({ x = SavedCheckpoint.X, y = SavedCheckpoint.Y, z = SavedCheckpoint.Z }) end)
+            if ok and type(encoded) == "string" then
+                writeFile(CHECKPOINT_FILE, encoded)
+            end
+        end
+    end)
+end
+
+local function LoadCheckpoint()
+    if not SavedCheckpoint then return end
+    pcall(function()
+        TeleportTO(SavedCheckpoint.X, SavedCheckpoint.Y, SavedCheckpoint.Z, "pos", "safe")
+    end)
+end
+
+local function ClearCheckpoint()
+    SavedCheckpoint = nil
+    pcall(function()
+        if hasFileWriteApi() then
+            if type(delfile) == "function" then pcall(delfile, CHECKPOINT_FILE) end
+            if type(deletefile) == "function" then pcall(deletefile, CHECKPOINT_FILE) end
+            pcall(function() writeFile(CHECKPOINT_FILE, "") end)
+        end
+    end)
+end
+
+local function RespawnAtCheckpoint()
+    if not LocalPlayer.Character then return end
+    pcall(function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.Health = 0
+        end
+    end)
+    local Character = LocalPlayer.CharacterAdded:Wait()
+    if Character then
+        Character:WaitForChild("Humanoid")
+        task.wait(GetPing() + 0.1)
+        if SavedCheckpoint then
+            LoadCheckpoint()
+        end
+    end
+end
+
 local function PredictionTP(player, method)
     local root = GetRoot(player)
     if not root then
@@ -2967,38 +3017,15 @@ local FlySpeedSlider = CharacterSection:AddSlider({ Name = "Fly Speed", Min = 1,
 end })
 
 CharacterSection:AddButton({ Name = "Save Checkpoint", Callback = function()
-    local root = GetRoot(LocalPlayer)
-    if root then
-        SavedCheckpoint = root.Position
-        -- persist checkpoint to disk if possible
-        pcall(function()
-            if hasFileWriteApi() then
-                local ok, encoded = pcall(function() return HttpService:JSONEncode({ x = SavedCheckpoint.X, y = SavedCheckpoint.Y, z = SavedCheckpoint.Z }) end)
-                if ok and type(encoded) == "string" then
-                    writeFile(CHECKPOINT_FILE, encoded)
-                end
-            end
-        end)
-        SendNotify("System Broken", "Checkpoint saved.", 5)
-    end
+    SaveCheckpoint()
 end })
 
 CharacterSection:AddButton({ Name = "Clear Checkpoint", Callback = function()
-    SavedCheckpoint = nil
-    SendNotify("System Broken", "Checkpoint cleared.", 5)
+    ClearCheckpoint()
 end })
 
 CharacterSection:AddButton({ Name = "Respawn", Callback = function()
-    local root = GetRoot(LocalPlayer)
-    local pos = root and root.Position
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid.Health = 0
-        if pos then
-            LocalPlayer.CharacterAdded:Wait()
-            task.wait(GetPing() + 0.1)
-            TeleportTO(pos.X, pos.Y, pos.Z, "pos", "safe")
-        end
-    end
+    RespawnAtCheckpoint()
 end })
 
 -- Place the Fly toggle directly under the FlySpeed slider
@@ -3548,7 +3575,7 @@ LocalPlayer.CharacterAdded:Connect(function(character)
         task.wait(GetPing() + 0.15)
         if SavedCheckpoint and character and character:FindFirstChild("Humanoid") then
             pcall(function()
-                TeleportTO(SavedCheckpoint.X, SavedCheckpoint.Y, SavedCheckpoint.Z, "pos", "safe")
+                LoadCheckpoint()
             end)
         end
     end)
