@@ -3253,7 +3253,7 @@ ChatBypassInput.OnFocusLost(function(text)
         end)
         ChatBypassInput:Set("")
     end
-end })
+end)
 
 if savedKey and savedKey ~= "" then
     setStatus("Validating saved key...")
