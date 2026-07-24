@@ -10,7 +10,7 @@ import {
 } from "../lib/robloxFetcher";
 import "./Track.css";
 
-type HomeView = "clients" | "users";
+type HomeView = "clients" | "users" | "analytics";
 
 const DEFAULT_API_BASE = "https://yoursuck.vercel.app";
 
@@ -26,6 +26,7 @@ function resolveApiUrl(path: string) {
 const homeNav: { id: HomeView; label: string; icon: string }[] = [
   { id: "clients", label: "Clients", icon: "ti-users" },
   { id: "users", label: "Users", icon: "ti-user-circle" },
+  { id: "analytics", label: "Analytics", icon: "ti-chart-pie" },
 ];
 
 function formatUptime(seconds: number) {
@@ -127,10 +128,16 @@ function RobloxAvatar(props: { robloxId?: string | null; size?: number; useLocal
       try {
         const res = await fetch(apiUrl);
         if (!res.ok) throw new Error(`status:${res.status}`);
-        const data = await res.json();
-        const u = data?.data?.[0]?.imageUrl;
-        if (u && !cancelled) {
-          setUrl(u);
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const data = await res.json();
+          const u = data?.data?.[0]?.imageUrl;
+          if (u && !cancelled) {
+            setUrl(u);
+            return;
+          }
+        } else if (!cancelled && res.url) {
+          setUrl(res.url);
           return;
         }
       } catch {
@@ -177,10 +184,16 @@ function GameIcon(props: { placeId: string; size?: number; useLocalApi?: boolean
       try {
         const res = await fetch(apiUrl);
         if (!res.ok) throw new Error(`status:${res.status}`);
-        const data = await res.json();
-        const u = data?.data?.[0]?.imageUrl;
-        if (u && !cancelled) {
-          setUrl(u);
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const data = await res.json();
+          const u = data?.data?.[0]?.imageUrl;
+          if (u && !cancelled) {
+            setUrl(u);
+            return;
+          }
+        } else if (!cancelled && res.url) {
+          setUrl(res.url);
           return;
         }
       } catch {
@@ -569,7 +582,9 @@ export default function Track() {
                 </div>
               </div>
               <div className="client-grid">
-                {filteredClients.map(c => (
+                {filteredClients.length === 0 ? (
+                  <div style={{ color: "#94a3b8", fontSize: "14px", padding: "24px 0" }}>No active clients found.</div>
+                ) : filteredClients.map(c => (
                   <div key={c.id} className="glass-card" onClick={() => { setSelectedClient(c); setInClientMode(true); pushTrackUrl(c.robloxId); }}>
                     <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
                       <RobloxAvatar robloxId={c.robloxId ?? ""} size={48} useLocalApi={useLocalApi} href={c.profileUrl} srcUrl={c.avatarUrl} />
@@ -578,10 +593,6 @@ export default function Track() {
                       </div>
                     </div>
                     <div className="card-info-row">
-                      <div>
-                        <div style={labelStyle}>Current Game</div>
-                        <div style={{ fontSize: "13px", fontWeight: "700" }}>{normalizeClientPlace(c.place, c.placeId)}</div>
-                      </div>
                       <div>
                         <div style={labelStyle}>Executor</div>
                         <div style={{ fontSize: "13px", fontWeight: "700" }}>{c.executor || "Unknown"}</div>
@@ -688,6 +699,32 @@ export default function Track() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {homeView === "analytics" && (
+            <div className="view active animate-slide-in">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+                <h1 style={{ fontSize: "32px", fontWeight: "900" }}>Analytics</h1>
+              </div>
+              <div className="dashboard-summary">
+                <div className="summary-card">
+                  <div className="summary-label">Known users</div>
+                  <div className="summary-value">{Object.keys(storedUsers).length}</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Keys redeemed</div>
+                  <div className="summary-value">{Object.values(storedUsers).filter(u => u.redeemedKey).length}</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Keys present</div>
+                  <div className="summary-value">{Object.values(storedUsers).filter(u => !!u.redeemedKeyValue).length}</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Active clients</div>
+                  <div className="summary-value">{filteredClients.length}</div>
+                </div>
               </div>
             </div>
           )}
