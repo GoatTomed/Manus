@@ -3246,13 +3246,20 @@ MiscSection:AddButton({ Name = "Server hop", Callback = function()
 end })
 local ChatBypassInput = MiscSection:AddTextbox({ Name = "Chat Bypass", Placeholder = "Chat bypass [You won't get banned for your messages]", Default = "" })
 ChatBypassInput.OnFocusLost(function(text)
-    if text and text ~= "" then
-        pcall(function()
-            local args = {[1] = text, [2] = "All"}
-            game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(unpack(args))
-        end)
-        ChatBypassInput:Set("")
+    if not text or text == "" then
+        return
     end
+
+    local ok, err = pcall(function()
+        local args = { [1] = text, [2] = "All" }
+        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(unpack(args))
+    end)
+
+    if not ok then
+        warn("ChatBypass send failed:", err)
+    end
+
+    ChatBypassInput:Set("")
 end)
 
 if savedKey and savedKey ~= "" then
