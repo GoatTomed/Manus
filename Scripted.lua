@@ -103,6 +103,7 @@ local UI, Window, SettingsTab
 local KEY_FILE = "yousuck_key.txt"
 local SETTINGS_FILE = "yousuck_settings.json"
 local BAN_FILE = "yousuck_bans.json"
+local CHECKPOINT_FILE = "yousuck_checkpoint.json"
 local VALIDATION_URL = "https://yoursuck.vercel.app/api/verify-key"
 local CLIENT_HEARTBEAT_URL = "https://yoursuck.vercel.app/api/client-lookup"
 local heartbeatStarted = false
@@ -1401,6 +1402,10 @@ UI = (function()
     function SectionMethods:AddSlider(data)
         data = data or {}
         local value = tonumber(data.Default) or tonumber(data.Min) or 0
+        local minVal = tonumber(data.Min) or 0
+        local maxVal = tonumber(data.Max) or 100
+        -- enforce global slider cap at 1000
+        if maxVal > 1000 then maxVal = 1000 end
         local container = new("Frame", {
             Size = UDim2.new(1, 0, 0, 36),
             BackgroundTransparency = 1,
@@ -1448,7 +1453,7 @@ UI = (function()
         local dragging = false
         local function updateValueFromPercent(percent)
             percent = math.clamp(percent or 0, 0, 1)
-            value = math.floor((data.Min or 0) + (math.max((data.Max or 100) - (data.Min or 0), 1)) * percent)
+            value = math.floor((minVal) + (math.max((maxVal) - (minVal), 1)) * percent)
             Fill.Size = UDim2.new(percent, 0, 1, 0)
             -- set knob pixel position and clamp so knob is always fully visible
             local ok, knobX = pcall(function()
@@ -1474,6 +1479,16 @@ UI = (function()
             local percent = math.clamp((posX - Bar.AbsolutePosition.X) / math.max(Bar.AbsoluteSize.X, 1), 0, 1)
             updateValueFromPercent(percent)
         end
+
+        -- update accent color for fill and knob
+        pcall(function()
+            if self and self.Window and type(self.Window._registerAccent) == "function" then
+                self.Window:_registerAccent(function(accent)
+                    pcall(function() Fill.BackgroundColor3 = accent end)
+                    pcall(function() Knob.BackgroundColor3 = accent end)
+                end)
+            end
+        end)
 
         -- clicking the bar sets the value, but dragging only via knob
         Bar.InputBegan:Connect(function(input)
@@ -1503,7 +1518,8 @@ UI = (function()
             Get = function() return value end,
             Set = function(_, newValue)
                 value = tonumber(newValue) or value
-                local percent = ((value - (data.Min or 0)) / math.max((data.Max or 100) - (data.Min or 0), 1))
+                value = math.clamp(value, minVal, maxVal)
+                local percent = ((value - (minVal)) / math.max((maxVal) - (minVal), 1))
                 Fill.Size = UDim2.new(percent, 0, 1, 0)
                 Label.Text = tostring(data.Name or "Slider") .. ": " .. tostring(value)
             end,
@@ -1778,6 +1794,21 @@ if savedAccent and type(savedAccent) == "table" and #savedAccent == 3 then
     end
 end
 
+-- Load saved checkpoint from disk if available
+do
+    pcall(function()
+        if hasFileReadApi() and isFile(CHECKPOINT_FILE) then
+            local ok, content = readFile(CHECKPOINT_FILE)
+            if ok and type(content) == "string" and content:match('%S') then
+                local decOk, data = pcall(function() return HttpService:JSONDecode(content) end)
+                if decOk and type(data) == "table" and type(data.x) == "number" and type(data.y) == "number" and type(data.z) == "number" then
+                    SavedCheckpoint = Vector3.new(data.x, data.y, data.z)
+                end
+            end
+        end
+    end)
+end
+
 local Lib = nil
 
 -- Allow overriding the heartbeat endpoint via saved settings (useful for local dev)
@@ -2038,7 +2069,9 @@ local function UpdateTarget(player)
         end
         TargetedPlayer = player
         if TargetNameInput then
-            TargetNameInput:Set(player.Name)
+            pcall(function()
+                TargetNameInput:Set("@" .. tostring(player.Name or ""))
+            end)
         end
         if TargetInfoLabel then
             TargetInfoLabel.Text = "UserID: " .. player.UserId .. "\nDisplay: " .. player.DisplayName .. "\nJoined: " .. os.date("%d-%m-%Y", os.time() - player.AccountAge * 24 * 3600)
@@ -2903,6 +2936,15 @@ CharacterSection:AddButton({ Name = "Save Checkpoint", Callback = function()
     local root = GetRoot(LocalPlayer)
     if root then
         SavedCheckpoint = root.Position
+        -- persist checkpoint to disk if possible
+        pcall(function()
+            if hasFileWriteApi() then
+                local ok, encoded = pcall(function() return HttpService:JSONEncode({ x = SavedCheckpoint.X, y = SavedCheckpoint.Y, z = SavedCheckpoint.Z }) end)
+                if ok and type(encoded) == "string" then
+                    writeFile(CHECKPOINT_FILE, encoded)
+                end
+            end
+        end)
         SendNotify("System Broken", "Checkpoint saved.", 5)
     end
 end })
