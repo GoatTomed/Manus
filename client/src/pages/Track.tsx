@@ -621,19 +621,7 @@ export default function Track() {
               <button className="btn-secondary" style={{ marginBottom: "32px" }} onClick={() => { setInClientMode(false); setSelectedClient(null); pushTrackUrl(); }}>
                 <i className="ti ti-arrow-left"></i> Back to Clients
               </button>
-              {/* Game Card (Smaller, Rectangular, Centered on top) */}
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px" }}>
-                <div className="glass-card" style={{ padding: "16px 24px", display: "flex", alignItems: "center", gap: "20px", width: "100%", maxWidth: "480px" }}>
-                  <GameIcon placeId={selectedClient.placeId} size={70} useLocalApi={useLocalApi} href={selectedClient.gameUrl} srcUrl={selectedClient.gameIconUrl} isRectangular={true} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#38bdf8", fontWeight: 800, marginBottom: "2px" }}>Active Game</div>
-                    <h2 style={{ fontSize: "20px", fontWeight: "900", margin: 0, lineHeight: 1.2 }}>{normalizeClientPlace(selectedClient.place, selectedClient.placeId)}</h2>
-                    {selectedClient.placeId ? <div style={{ fontSize: "12px", color: "#52525b", marginTop: "2px" }}>ID: {selectedClient.placeId}</div> : null}
-                  </div>
-                </div>
-              </div>
 
-              {/* Player Card (below) */}
               <div className="glass-card" style={{ padding: "40px", marginBottom: "40px" }}>
                 <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
                   <RobloxAvatar robloxId={selectedClient.robloxId ?? ""} size={120} useLocalApi={useLocalApi} href={selectedClient.profileUrl} srcUrl={selectedClient.avatarUrl} />
@@ -709,22 +697,22 @@ export default function Track() {
                 <h1 style={{ fontSize: "32px", fontWeight: "900" }}>Analytics</h1>
               </div>
               <div className="dashboard-summary">
-                <div className="summary-card">
+                <button className="summary-card" onClick={() => { setHomeView("users"); setSelectedUser(null); setInClientMode(false); }}>
                   <div className="summary-label">Known users</div>
                   <div className="summary-value">{Object.keys(storedUsers).length}</div>
-                </div>
-                <div className="summary-card">
+                </button>
+                <button className="summary-card" onClick={() => { setHomeView("users"); setSelectedUser(null); setInClientMode(false); }}>
                   <div className="summary-label">Keys redeemed</div>
                   <div className="summary-value">{Object.values(storedUsers).filter(u => u.redeemedKey).length}</div>
-                </div>
-                <div className="summary-card">
+                </button>
+                <button className="summary-card" onClick={() => { setHomeView("users"); setSelectedUser(null); setInClientMode(false); }}>
                   <div className="summary-label">Keys present</div>
                   <div className="summary-value">{Object.values(storedUsers).filter(u => !!u.redeemedKeyValue).length}</div>
-                </div>
-                <div className="summary-card">
+                </button>
+                <button className="summary-card" onClick={() => { setHomeView("clients"); setInClientMode(false); setSelectedClient(null); }}>
                   <div className="summary-label">Active clients</div>
                   <div className="summary-value">{filteredClients.length}</div>
-                </div>
+                </button>
               </div>
             </div>
           )}
@@ -742,28 +730,6 @@ export default function Track() {
             </div>
             <h2 style={{ fontSize: "24px", fontWeight: "900", marginTop: "16px" }}>{selectedUserData.roblox_name}</h2>
             <div style={{ marginTop: "16px" }}>{timeAgo(selectedUserData.last_seen, !!onlineNow(selectedUserData.roblox_id))}</div>
-          </div>
-          <div style={labelStyle}>Game History</div>
-          <div className="user-list">
-            {selectedUserData.sessions.map((s, i) => {
-              const currentClient = onlineNow(selectedUserData.roblox_id);
-              const isCurrent = currentClient?.id === s.id;
-              return (
-                <div key={i} className="user-row" style={{ background: isCurrent ? "rgba(0,171,255,0.05)" : "rgba(255,255,255,0.01)" }}>
-                  <GameIcon placeId={s.place_id} size={40} useLocalApi={useLocalApi} href={s.place_url} srcUrl={s.place_id ? `/api/roblox-gameicon?placeId=${s.place_id}` : undefined} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "14px", fontWeight: "800" }}>{normalizeClientPlace(s.place_name, s.place_id)}</div>
-                    <div style={{ fontSize: "11px", color: "#71717a" }}>{timeAgo(s.connected_at, isCurrent)}</div>
-                    {s.redeemedAt && (
-                      <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
-                        Redeemed {timeAgo(s.redeemedAt)}
-                      </div>
-                    )}
-                  </div>
-                  {isCurrent && <span className="status-badge active">Current</span>}
-                </div>
-              );
-            })}
           </div>
         </div>
       )}
