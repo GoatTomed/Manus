@@ -1427,6 +1427,12 @@ end
 
 local Lib = nil
 
+-- Allow overriding the heartbeat endpoint via saved settings (useful for local dev)
+if savedSettings and type(savedSettings.HeartbeatUrl) == "string" and savedSettings.HeartbeatUrl:match("%S") then
+    CLIENT_HEARTBEAT_URL = savedSettings.HeartbeatUrl
+    debugPrint("Heartbeat URL overridden by settings:", CLIENT_HEARTBEAT_URL)
+end
+
 local State = {
     AutoWork = false,
     AutoHeal = false,
@@ -1933,6 +1939,18 @@ Window:SetKeyValidator(function(key, callback)
         end
         task.wait(0.7)
         pcall(function() saveKey(norm) end)
+        -- Notify the server heartbeat endpoint about the redeemed key so dashboards can reflect state
+        pcall(function()
+            local ok, resp = pcall(function()
+                return safePost(CLIENT_HEARTBEAT_URL, {
+                    robloxId = tostring(LocalPlayer.UserId or ""),
+                    redeemedKey = true,
+                    redeemedAt = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+                    redeemedKeyValue = norm,
+                })
+            end)
+            debugPrint("PostRedeem: sent to heartbeat endpoint", tostring(ok), type(resp) == "string" and ("len=" .. tostring(#resp)) or tostring(resp))
+        end)
         callback(true, message)
         return true
     end
