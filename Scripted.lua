@@ -1,3 +1,4 @@
+
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
@@ -1192,7 +1193,7 @@ UI = (function()
     end
 
     function SectionMethods:AddLabel(text)
-        new("TextLabel", {
+        local label = new("TextLabel", {
             Size = UDim2.new(1, 0, 0, 18),
             BackgroundTransparency = 1,
             Text = tostring(text or ""),
@@ -1203,6 +1204,287 @@ UI = (function()
             TextWrapped = true,
             Parent = self.Container,
         })
+        return label
+    end
+
+    function SectionMethods:AddButton(data)
+        data = data or {}
+        local Button = new("TextButton", {
+            Size = UDim2.new(1, 0, 0, 32),
+            BackgroundColor3 = Theme.Raised,
+            AutoButtonColor = false,
+            Text = tostring(data.Name or "Button"),
+            TextColor3 = Theme.Text,
+            FontFace = FONT_REG,
+            TextSize = 13,
+            Parent = self.Container,
+        })
+        corner(Button, 8)
+        stroke(Button, Theme.Border, 1, 0.35)
+
+        Button.MouseEnter:Connect(function()
+            tween(Button, { BackgroundColor3 = Theme.Border }, 0.12)
+        end)
+        Button.MouseLeave:Connect(function()
+            tween(Button, { BackgroundColor3 = Theme.Raised }, 0.12)
+        end)
+
+        Button.MouseButton1Click:Connect(function()
+            animateClick(Button)
+            if data.Callback then
+                pcall(data.Callback)
+            end
+        end)
+
+        return Button
+    end
+
+    function SectionMethods:AddToggle(data)
+        data = data or {}
+        local flag = tostring(data.Flag or (data.Name and data.Name:gsub("%s+", "_") or "toggle"))
+        if UI.Flags[flag] == nil then
+            UI.Flags[flag] = data.Default == true
+        end
+        local Button = new("TextButton", {
+            Size = UDim2.new(1, 0, 0, 32),
+            BackgroundColor3 = Theme.Raised,
+            AutoButtonColor = false,
+            Text = tostring(data.Name or "Toggle") .. " [" .. (UI.Flags[flag] and "ON" or "OFF") .. "]",
+            TextColor3 = Theme.Text,
+            FontFace = FONT_REG,
+            TextSize = 13,
+            Parent = self.Container,
+        })
+        corner(Button, 8)
+        stroke(Button, Theme.Border, 1, 0.35)
+
+        local function refresh()
+            Button.Text = tostring(data.Name or "Toggle") .. " [" .. (UI.Flags[flag] and "ON" or "OFF") .. "]"
+        end
+
+        Button.MouseEnter:Connect(function()
+            tween(Button, { BackgroundColor3 = Theme.Border }, 0.12)
+        end)
+        Button.MouseLeave:Connect(function()
+            tween(Button, { BackgroundColor3 = Theme.Raised }, 0.12)
+        end)
+
+        Button.MouseButton1Click:Connect(function()
+            UI.Flags[flag] = not UI.Flags[flag]
+            refresh()
+            if data.Callback then
+                pcall(data.Callback, UI.Flags[flag])
+            end
+        end)
+
+        return {
+            Get = function() return UI.Flags[flag] end,
+            Set = function(_, value)
+                UI.Flags[flag] = value and true or false
+                refresh()
+            end,
+        }
+    end
+
+    function SectionMethods:AddDropdown(data)
+        data = data or {}
+        local items = data.Items or {}
+        local selected = data.Default or items[1]
+        local container = new("Frame", {
+            Size = UDim2.new(1, 0, 0, 32),
+            BackgroundTransparency = 1,
+            Parent = self.Container,
+        })
+        local Box = new("TextButton", {
+            Size = UDim2.new(1, 0, 0, 32),
+            BackgroundColor3 = Theme.Raised,
+            AutoButtonColor = false,
+            Text = tostring(data.Name or "Dropdown") .. ": " .. tostring(selected),
+            TextColor3 = Theme.Text,
+            FontFace = FONT_REG,
+            TextSize = 13,
+            Parent = container,
+        })
+        corner(Box, 8)
+        stroke(Box, Theme.Border, 1, 0.35)
+
+        local Open = false
+        local Holder = new("Frame", {
+            Size = UDim2.new(1, 0, 0, 0),
+            Position = UDim2.new(0, 0, 1, 4),
+            BackgroundColor3 = Theme.Surface,
+            Parent = container,
+        })
+        Holder.ClipsDescendants = true
+        new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = Holder })
+        new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = Holder })
+
+        local function setSelected(item)
+            selected = item
+            Box.Text = tostring(data.Name or "Dropdown") .. ": " .. tostring(selected)
+            if data.Callback then
+                pcall(data.Callback, selected)
+            end
+        end
+
+        for _, item in ipairs(items) do
+            local Option = new("TextButton", {
+                Size = UDim2.new(1, 0, 0, 28),
+                BackgroundColor3 = Theme.Raised,
+                AutoButtonColor = false,
+                Text = tostring(item),
+                TextColor3 = Theme.Text,
+                FontFace = FONT_REG,
+                TextSize = 13,
+                Parent = Holder,
+            })
+            corner(Option, 6)
+            stroke(Option, Theme.Border, 1, 0.35)
+            Option.MouseButton1Click:Connect(function()
+                setSelected(item)
+                Open = false
+                tween(Holder, { Size = UDim2.new(1, 0, 0, 0) }, 0.15)
+            end)
+        end
+
+        Box.MouseButton1Click:Connect(function()
+            Open = not Open
+            local targetSize = Open and #items * 32 or 0
+            tween(Holder, { Size = UDim2.new(1, 0, 0, targetSize) }, 0.15)
+        end)
+
+        return {
+            Get = function() return selected end,
+            Set = function(_, value)
+                setSelected(value)
+            end,
+        }
+    end
+
+    function SectionMethods:AddSlider(data)
+        data = data or {}
+        local value = tonumber(data.Default) or tonumber(data.Min) or 0
+        local container = new("Frame", {
+            Size = UDim2.new(1, 0, 0, 36),
+            BackgroundTransparency = 1,
+            Parent = self.Container,
+        })
+        local Label = new("TextLabel", {
+            Size = UDim2.new(1, 0, 0, 16),
+            BackgroundTransparency = 1,
+            Text = tostring(data.Name or "Slider") .. ": " .. tostring(value),
+            TextColor3 = Theme.Text,
+            FontFace = FONT_REG,
+            TextSize = 13,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = container,
+        })
+        local Bar = new("TextButton", {
+            Size = UDim2.new(1, 0, 0, 16),
+            Position = UDim2.new(0, 0, 0, 20),
+            BackgroundColor3 = Theme.Border,
+            AutoButtonColor = false,
+            Text = "",
+            Parent = container,
+        })
+        corner(Bar, 6)
+        local Fill = new("Frame", {
+            Size = UDim2.new(0, 0, 1, 0),
+            BackgroundColor3 = Theme.Accent,
+            Parent = Bar,
+        })
+        corner(Fill, 6)
+
+        local dragging = false
+        local function updateValue(posX)
+            local percent = math.clamp((posX - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+            value = math.floor((data.Min or 0) + (data.Max or 100 - (data.Min or 0)) * percent)
+            Fill.Size = UDim2.new(percent, 0, 1, 0)
+            Label.Text = tostring(data.Name or "Slider") .. ": " .. tostring(value)
+            if data.Callback then
+                pcall(data.Callback, value)
+            end
+        end
+
+        Bar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                updateValue(input.Position.X)
+            end
+        end)
+        Bar.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+                updateValue(input.Position.X)
+            end
+        end)
+        Bar.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+
+        return {
+            Get = function() return value end,
+            Set = function(_, newValue)
+                value = tonumber(newValue) or value
+                local percent = ((value - (data.Min or 0)) / math.max((data.Max or 100) - (data.Min or 0), 1))
+                Fill.Size = UDim2.new(percent, 0, 1, 0)
+                Label.Text = tostring(data.Name or "Slider") .. ": " .. tostring(value)
+            end,
+        }
+    end
+
+    function SectionMethods:AddTextbox(data)
+        data = data or {}
+        local frame = new("Frame", {
+            Size = UDim2.new(1, 0, 0, 58),
+            BackgroundTransparency = 1,
+            Parent = self.Container,
+        })
+        if data.Name then
+            new("TextLabel", {
+                Size = UDim2.new(1, 0, 0, 18),
+                BackgroundTransparency = 1,
+                Text = tostring(data.Name),
+                TextColor3 = Theme.TextMid,
+                FontFace = FONT_REG,
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = frame,
+            })
+        end
+        local TextBox = new("TextBox", {
+            Size = UDim2.new(1, 0, 0, 32),
+            Position = UDim2.new(0, 0, 0, 26),
+            BackgroundColor3 = Theme.Surface,
+            Text = tostring(data.Default or ""),
+            PlaceholderText = tostring(data.Placeholder or ""),
+            TextColor3 = Theme.Text,
+            FontFace = FONT_REG,
+            TextSize = 13,
+            ClearTextOnFocus = false,
+            Parent = frame,
+        })
+        corner(TextBox, 8)
+        stroke(TextBox, Theme.Border, 1, 0.35)
+
+        if data.Callback then
+            TextBox.FocusLost:Connect(function()
+                pcall(data.Callback, TextBox.Text)
+            end)
+        end
+
+        return {
+            Get = function() return TextBox.Text end,
+            Set = function(_, value) TextBox.Text = tostring(value or "") end,
+            OnFocusLost = function(fn)
+                if type(fn) == "function" then
+                    TextBox.FocusLost:Connect(function(enterPressed)
+                        fn(TextBox.Text, enterPressed)
+                    end)
+                end
+            end,
+        }
     end
 
     function SectionMethods:AddKeybind(data)
@@ -1428,6 +1710,23 @@ if savedSettings and type(savedSettings.HeartbeatUrl) == "string" and savedSetti
     debugPrint("Heartbeat URL overridden by settings:", CLIENT_HEARTBEAT_URL)
 end
 
+local mouse = LocalPlayer:GetMouse()
+local ScriptWhitelist = {}
+local ForceWhitelist = {}
+local TargetedPlayer = nil
+local TargetNameInput = nil
+local TargetInfoLabel = nil
+local TargetImageLabel = nil
+local FlySpeed = 50
+local PotionTool = nil
+local SavedCheckpoint = nil
+local FreeEmotesEnabled = false
+local AntiAFKConnection = nil
+local AntiChatSpyConnection = nil
+local flying = false
+local flyConnections = {}
+local flyControls = {w = false, a = false, s = false, d = false, u = false, dn = false}
+
 local State = {
     AutoWork = false,
     AutoHeal = false,
@@ -1437,6 +1736,519 @@ local State = {
     PlayerESP = false,
     SelectedClass = "Intern",
 }
+
+local function debugSafe(pcallFunc, ...)
+    local ok, result = pcall(pcallFunc, ...)
+    return ok, result
+end
+
+local function GetPing()
+    local success, ping = pcall(function()
+        return (game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()) / 1000
+    end)
+    return (success and type(ping) == "number") and ping or 0.05
+end
+
+local function RandomChar()
+    local length = math.random(1, 5)
+    local array = {}
+    for i = 1, length do
+        array[i] = string.char(math.random(32, 126))
+    end
+    return table.concat(array)
+end
+
+local function SendNotify(title, message, duration)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {Title = title, Text = message, Duration = duration or 3})
+    end)
+end
+
+local function GetPlayer(UserDisplay)
+    if type(UserDisplay) ~= "string" or UserDisplay == "" then
+        return nil
+    end
+    local search = UserDisplay:lower()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Name:lower():find(search, 1, true) or player.DisplayName:lower():find(search, 1, true) then
+            return player
+        end
+    end
+    return nil
+end
+
+local function GetCharacter(player)
+    return player and player.Character
+end
+
+local function GetRoot(player)
+    local character = GetCharacter(player)
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        return character.HumanoidRootPart
+    end
+    return nil
+end
+
+local function TeleportTO(posX, posY, posZ, player, method)
+    pcall(function()
+        local root = GetRoot(LocalPlayer)
+        if not root then
+            return
+        end
+        if method == "safe" then
+            task.spawn(function()
+                for i = 1, 30 do
+                    task.wait()
+                    root.Velocity = Vector3.new(0, 0, 0)
+                    if player == "pos" then
+                        root.CFrame = CFrame.new(posX, posY, posZ)
+                    else
+                        local targetRoot = GetRoot(player)
+                        if targetRoot then
+                            root.CFrame = CFrame.new(targetRoot.Position) + Vector3.new(0, 2, 0)
+                        end
+                    end
+                end
+            end)
+        else
+            root.Velocity = Vector3.new(0, 0, 0)
+            if player == "pos" then
+                root.CFrame = CFrame.new(posX, posY, posZ)
+            else
+                local targetRoot = GetRoot(player)
+                if targetRoot then
+                    root.CFrame = CFrame.new(targetRoot.Position) + Vector3.new(0, 2, 0)
+                end
+            end
+        end
+    end)
+end
+
+local function PredictionTP(player, method)
+    local root = GetRoot(player)
+    if not root then
+        return
+    end
+    local pos = root.Position
+    local vel = root.Velocity
+    local ping = GetPing()
+    local targetPos = Vector3.new(
+        pos.X + vel.X * (ping * 3.5),
+        pos.Y + vel.Y * (ping * 2),
+        pos.Z + vel.Z * (ping * 3.5)
+    )
+    local localRoot = GetRoot(LocalPlayer)
+    if localRoot then
+        localRoot.CFrame = CFrame.new(targetPos)
+        if method == "safe" then
+            task.wait()
+            localRoot.CFrame = CFrame.new(pos)
+            task.wait()
+            localRoot.CFrame = CFrame.new(targetPos)
+        end
+    end
+end
+
+local function GetPush()
+    local PushTool = nil
+    pcall(function()
+        if LocalPlayer.Backpack:FindFirstChild("Push") then
+            PushTool = LocalPlayer.Backpack.Push
+        elseif LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Push") then
+            PushTool = LocalPlayer.Character.Push
+        else
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Push") then
+                    PushTool = player.Character.Push
+                    break
+                end
+            end
+        end
+    end)
+    return PushTool
+end
+
+local function Push(target)
+    if not target or not target.Character then
+        return
+    end
+    local tool = GetPush()
+    if tool and tool:FindFirstChild("PushTool") then
+        pcall(function()
+            tool.PushTool:FireServer(target.Character)
+        end)
+    end
+end
+
+local function ToggleRagdoll(bool)
+    pcall(function()
+        local character = GetCharacter(LocalPlayer)
+        if not character then return end
+        for _, name in ipairs({"Falling down", "Swimming", "StartRagdoll", "Pushed", "RagdollMe"}) do
+            if character:FindFirstChild(name) then
+                character[name].Disabled = bool
+            end
+        end
+    end)
+end
+
+local function PlayAnim(id, time, speed)
+    pcall(function()
+        local character = GetCharacter(LocalPlayer)
+        if not character or not character:FindFirstChild("Humanoid") then
+            return
+        end
+        if character:FindFirstChild("Animate") then
+            character.Animate.Disabled = false
+        end
+        local humanoid = character.Humanoid
+        for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+            track:Stop()
+        end
+        if character:FindFirstChild("Animate") then
+            character.Animate.Disabled = true
+        end
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://" .. tostring(id)
+        local loadAnim = humanoid:LoadAnimation(anim)
+        loadAnim:Play()
+        if type(time) == "number" then
+            loadAnim.TimePosition = time
+        end
+        if type(speed) == "number" then
+            loadAnim:AdjustSpeed(speed)
+        end
+        loadAnim.Stopped:Connect(function()
+            if character:FindFirstChild("Animate") then
+                character.Animate.Disabled = false
+            end
+            for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+                track:Stop()
+            end
+        end)
+    end)
+end
+
+local function StopAnim()
+    pcall(function()
+        local character = GetCharacter(LocalPlayer)
+        if not character or not character:FindFirstChild("Humanoid") then
+            return
+        end
+        if character:FindFirstChild("Animate") then
+            character.Animate.Disabled = false
+        end
+        for _, track in ipairs(character.Humanoid:GetPlayingAnimationTracks()) do
+            track:Stop()
+        end
+    end)
+end
+
+local function UpdateTarget(player)
+    if player and player:IsA("Player") then
+        if table.find(ForceWhitelist, player.UserId) then
+            SendNotify("System Broken", "You can't target this player: @" .. player.Name .. " / " .. player.DisplayName, 5)
+            return
+        end
+        TargetedPlayer = player
+        if TargetNameInput then
+            TargetNameInput:Set(player.Name)
+        end
+        if TargetInfoLabel then
+            TargetInfoLabel.Text = "UserID: " .. player.UserId .. "\nDisplay: " .. player.DisplayName .. "\nJoined: " .. os.date("%d-%m-%Y", os.time() - player.AccountAge * 24 * 3600)
+        end
+        if TargetImageLabel then
+            pcall(function()
+                TargetImageLabel.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+            end)
+        end
+    else
+        TargetedPlayer = nil
+        if TargetNameInput then
+            TargetNameInput:Set("")
+        end
+        if TargetInfoLabel then
+            TargetInfoLabel.Text = "UserID: \nDisplay: \nJoined: "
+        end
+        if TargetImageLabel then
+            TargetImageLabel.Image = "rbxassetid://10818605405"
+        end
+    end
+end
+
+local function stopFly()
+    flying = false
+    for _, conn in ipairs(flyConnections) do
+        if conn and conn.Disconnect then
+            conn:Disconnect()
+        elseif conn and conn.disconnect then
+            conn:disconnect()
+        end
+    end
+    flyConnections = {}
+    local character = GetCharacter(LocalPlayer)
+    if character and character:FindFirstChild("Humanoid") then
+        character.Humanoid.PlatformStand = false
+    end
+    local root = GetRoot(LocalPlayer)
+    if root then
+        for _, child in ipairs(root:GetChildren()) do
+            if child:IsA("BodyGyro") or child:IsA("BodyVelocity") then
+                child:Destroy()
+            end
+        end
+    end
+end
+
+local function startFly()
+    local character = GetCharacter(LocalPlayer)
+    if not character or not character:FindFirstChild("Humanoid") then
+        return
+    end
+    local root = GetRoot(LocalPlayer)
+    if not root then
+        return
+    end
+    flying = true
+    character.Humanoid.PlatformStand = true
+    local bg = Instance.new("BodyGyro")
+    bg.P = 9e4
+    bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bg.CFrame = root.CFrame
+    bg.Parent = root
+
+    local bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bv.Velocity = Vector3.new(0, 0, 0)
+    bv.Parent = root
+
+    flyConnections[#flyConnections + 1] = RunService.Heartbeat:Connect(function()
+        if not flying or not root.Parent then
+            return
+        end
+        local camera = workspace.CurrentCamera
+        local direction = Vector3.new()
+        if flyControls.w then
+            direction = direction + camera.CFrame.LookVector
+        end
+        if flyControls.s then
+            direction = direction - camera.CFrame.LookVector
+        end
+        if flyControls.a then
+            direction = direction - camera.CFrame.RightVector
+        end
+        if flyControls.d then
+            direction = direction + camera.CFrame.RightVector
+        end
+        if flyControls.u then
+            direction = direction + Vector3.new(0, 1, 0)
+        end
+        if flyControls.dn then
+            direction = direction - Vector3.new(0, 1, 0)
+        end
+        if direction.Magnitude > 0 then
+            direction = direction.Unit * FlySpeed
+        end
+        bv.Velocity = direction
+        bg.CFrame = camera.CFrame
+    end)
+
+    flyConnections[#flyConnections + 1] = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.KeyCode == Enum.KeyCode.W then flyControls.w = true end
+        if input.KeyCode == Enum.KeyCode.S then flyControls.s = true end
+        if input.KeyCode == Enum.KeyCode.A then flyControls.a = true end
+        if input.KeyCode == Enum.KeyCode.D then flyControls.d = true end
+        if input.KeyCode == Enum.KeyCode.Space then flyControls.u = true end
+        if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then flyControls.dn = true end
+    end)
+
+    flyConnections[#flyConnections + 1] = UserInputService.InputEnded:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.W then flyControls.w = false end
+        if input.KeyCode == Enum.KeyCode.S then flyControls.s = false end
+        if input.KeyCode == Enum.KeyCode.A then flyControls.a = false end
+        if input.KeyCode == Enum.KeyCode.D then flyControls.d = false end
+        if input.KeyCode == Enum.KeyCode.Space then flyControls.u = false end
+        if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then flyControls.dn = false end
+    end)
+end
+
+local function setAnimationPreset(preset)
+    local character = GetCharacter(LocalPlayer)
+    if not character or not character:FindFirstChild("Animate") or not character:FindFirstChild("Humanoid") then
+        return
+    end
+    local animate = character.Animate
+    animate.Disabled = true
+    StopAnim()
+    if preset.idle1 then animate.idle.Animation1.AnimationId = preset.idle1 end
+    if preset.idle2 then animate.idle.Animation2.AnimationId = preset.idle2 end
+    if preset.walk then animate.walk.WalkAnim.AnimationId = preset.walk end
+    if preset.run then animate.run.RunAnim.AnimationId = preset.run end
+    if preset.jump then animate.jump.JumpAnim.AnimationId = preset.jump end
+    if preset.climb then animate.climb.ClimbAnim.AnimationId = preset.climb end
+    if preset.fall then animate.fall.FallAnim.AnimationId = preset.fall end
+    if preset.swim then animate.swim.Swim.AnimationId = preset.swim end
+    if preset.swimIdle then animate.swimidle.SwimIdle.AnimationId = preset.swimIdle end
+    pcall(function() LocalPlayer.Character.Humanoid:ChangeState(3) end)
+    animate.Disabled = false
+end
+
+local function applyShaderEffects(enabled)
+    local light = game:GetService("Lighting")
+    if enabled then
+        light.Brightness = 2.25
+        light.ExposureCompensation = 0.1
+        light.ClockTime = 17.55
+        local Sky = Instance.new("Sky")
+        local Bloom = Instance.new("BloomEffect")
+        local Blur = Instance.new("BlurEffect")
+        local ColorC = Instance.new("ColorCorrectionEffect")
+        local SunRays = Instance.new("SunRaysEffect")
+
+        Sky.SkyboxBk = "http://www.roblox.com/asset/?id=144933338"
+        Sky.SkyboxDn = "http://www.roblox.com/asset/?id=144931530"
+        Sky.SkyboxFt = "http://www.roblox.com/asset/?id=144933262"
+        Sky.SkyboxLf = "http://www.roblox.com/asset/?id=144933244"
+        Sky.SkyboxRt = "http://www.roblox.com/asset/?id=144933299"
+        Sky.SkyboxUp = "http://www.roblox.com/asset/?id=144931564"
+        Sky.StarCount = 5000
+        Sky.SunAngularSize = 5
+        Sky.Parent = light
+
+        Bloom.Intensity = 0.3
+        Bloom.Size = 10
+        Bloom.Threshold = 0.8
+        Bloom.Parent = light
+
+        Blur.Size = 5
+        Blur.Parent = light
+
+        ColorC.Brightness = 0
+        ColorC.Contrast = 0.1
+        ColorC.Saturation = 0.25
+        ColorC.TintColor = Color3.fromRGB(255, 255, 255)
+        ColorC.Parent = light
+
+        SunRays.Intensity = 0.1
+        SunRays.Spread = 0.8
+        SunRays.Parent = light
+    else
+        for _, child in ipairs(light:GetChildren()) do
+            if child:IsA("Sky") or child:IsA("BloomEffect") or child:IsA("BlurEffect") or child:IsA("ColorCorrectionEffect") or child:IsA("SunRaysEffect") then
+                child:Destroy()
+            end
+        end
+        light.Brightness = 2
+        light.ExposureCompensation = 0
+    end
+end
+
+local function ServerHop()
+    local requestFn = request or (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request)
+    if not requestFn then
+        return
+    end
+    local servers = {}
+    local ok, res = pcall(function()
+        return requestFn({Url = string.format("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Desc&limit=100", game.PlaceId)})
+    end)
+    if not ok or type(res) ~= "table" or type(res.Body) ~= "string" then
+        return
+    end
+    local body = nil
+    pcall(function() body = HttpService:JSONDecode(res.Body) end)
+    if body and body.data then
+        for _, v in ipairs(body.data) do
+            if type(v) == "table" and tonumber(v.playing) and tonumber(v.maxPlayers) and v.playing < v.maxPlayers and v.id ~= game.JobId then
+                table.insert(servers, v.id)
+            end
+        end
+    end
+    if #servers > 0 then
+        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], LocalPlayer)
+    end
+end
+
+local function isToolEquipped(name)
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild(name) or LocalPlayer.Backpack:FindFirstChild(name)
+end
+
+local function createTargetingTool()
+    if isToolEquipped("ClickTarget") then
+        return
+    end
+    local GetTargetTool = Instance.new("Tool")
+    GetTargetTool.Name = "ClickTarget"
+    GetTargetTool.RequiresHandle = false
+    GetTargetTool.TextureId = "rbxassetid://2716591855"
+    GetTargetTool.ToolTip = "Select Target"
+    GetTargetTool.Activated:Connect(function()
+        local hit = mouse.Target
+        local person = nil
+        if hit and hit.Parent then
+            if hit.Parent:IsA("Model") then
+                person = Players:GetPlayerFromCharacter(hit.Parent)
+            elseif hit.Parent:IsA("Accessory") then
+                person = Players:GetPlayerFromCharacter(hit.Parent.Parent)
+            end
+        end
+        if person then
+            UpdateTarget(person)
+        end
+    end)
+    GetTargetTool.Parent = LocalPlayer.Backpack
+end
+
+local function createModdedPushTool()
+    if isToolEquipped("ModdedPush") then
+        return
+    end
+    local ModdedPush = Instance.new("Tool")
+    ModdedPush.Name = "ModdedPush"
+    ModdedPush.RequiresHandle = false
+    ModdedPush.TextureId = "rbxassetid://14478599909"
+    ModdedPush.ToolTip = "Modded push"
+    ModdedPush.Activated:Connect(function()
+        local root = GetRoot(LocalPlayer)
+        local hit = mouse.Target
+        local person = nil
+        if hit and hit.Parent then
+            if hit.Parent:IsA("Model") then
+                person = Players:GetPlayerFromCharacter(hit.Parent)
+            elseif hit.Parent:IsA("Accessory") then
+                person = Players:GetPlayerFromCharacter(hit.Parent.Parent)
+            end
+        end
+        if person then
+            local pushpos = root.CFrame
+            PredictionTP(person)
+            task.wait(GetPing() + 0.05)
+            Push(person)
+            root.CFrame = pushpos
+        end
+    end)
+    ModdedPush.Parent = LocalPlayer.Backpack
+end
+
+local function createFreeEmotes()
+    if FreeEmotesEnabled then
+        return
+    end
+    FreeEmotesEnabled = true
+    SendNotify("System Broken", "Loading free emotes. Credits: Gi#7331", 5)
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/H20CalibreYT/SystemBroken/main/AllEmotes"))()
+    end)
+end
+
+local function LoadScriptLibraryButton(name, url)
+    return function()
+        pcall(function()
+            loadstring(game:HttpGet(url, true))()
+        end)
+    end
+end
 
 local function Fire(remote, payload)
     if Lib and Lib.Network then
@@ -1970,6 +2782,435 @@ HideUISection:AddKeybind({ Default = savedSettings.ToggleKey or "RightShift", Ca
         settings.ToggleKey = v
         saveSettings(settings)
         -- Hide UI key saved.
+    end
+end })
+
+-- Feature tabs extracted from SystemBroken
+local CharacterTab = Window:AddTab({ Name = "Character" })
+local CharacterSection = CharacterTab:AddSection({ Name = "Movement" })
+local WalkSpeedInput = CharacterSection:AddTextbox({ Name = "Walk Speed", Placeholder = "Number [1-99999]", Default = "16" })
+CharacterSection:AddButton({ Name = "Set Walk Speed", Callback = function()
+    local speed = tonumber(WalkSpeedInput:Get()) or 16
+    pcall(function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = speed
+            SendNotify("System Broken", "Walk speed updated.", 5)
+        end
+    end)
+end })
+
+local JumpPowerInput = CharacterSection:AddTextbox({ Name = "Jump Power", Placeholder = "Number [1-99999]", Default = "50" })
+CharacterSection:AddButton({ Name = "Set Jump Power", Callback = function()
+    local power = tonumber(JumpPowerInput:Get()) or 50
+    pcall(function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.JumpPower = power
+            SendNotify("System Broken", "Jump power updated.", 5)
+        end
+    end)
+end })
+
+local FlySpeedInput = CharacterSection:AddTextbox({ Name = "Fly Speed", Placeholder = "Number [1-99999]", Default = "50" })
+CharacterSection:AddButton({ Name = "Set Fly Speed", Callback = function()
+    FlySpeed = tonumber(FlySpeedInput:Get()) or 50
+    SendNotify("System Broken", "Fly speed updated.", 5)
+end })
+
+CharacterSection:AddButton({ Name = "Save Checkpoint", Callback = function()
+    local root = GetRoot(LocalPlayer)
+    if root then
+        SavedCheckpoint = root.Position
+        SendNotify("System Broken", "Checkpoint saved.", 5)
+    end
+end })
+
+CharacterSection:AddButton({ Name = "Clear Checkpoint", Callback = function()
+    SavedCheckpoint = nil
+    SendNotify("System Broken", "Checkpoint cleared.", 5)
+end })
+
+CharacterSection:AddButton({ Name = "Respawn", Callback = function()
+    local root = GetRoot(LocalPlayer)
+    local pos = root and root.Position
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.Health = 0
+        if pos then
+            LocalPlayer.CharacterAdded:Wait()
+            task.wait(GetPing() + 0.1)
+            TeleportTO(pos.X, pos.Y, pos.Z, "pos", "safe")
+        end
+    end
+end })
+
+CharacterSection:AddToggle({ Name = "Fly", Flag = "CharacterFly", Callback = function(enabled)
+    if enabled then
+        startFly()
+        SendNotify("System Broken", "Fly enabled.", 5)
+    else
+        stopFly()
+        SendNotify("System Broken", "Fly disabled.", 5)
+    end
+end })
+
+local TargetTab = Window:AddTab({ Name = "Target" })
+local TargetSection = TargetTab:AddSection({ Name = "Target Actions" })
+TargetNameInput = TargetSection:AddTextbox({ Name = "Target Name", Placeholder = "@target...", Default = "" })
+TargetInfoLabel = TargetSection:AddLabel("UserID: \nDisplay: \nJoined: ")
+TargetSection:AddButton({ Name = "Select Target Tool", Callback = function()
+    createTargetingTool()
+    SendNotify("System Broken", "Click the target tool on a player.", 5)
+end })
+TargetSection:AddButton({ Name = "Push Target", Callback = function()
+    if TargetedPlayer then
+        local root = GetRoot(LocalPlayer)
+        local oldPos = root and root.CFrame
+        PredictionTP(TargetedPlayer)
+        task.wait(GetPing() + 0.05)
+        Push(TargetedPlayer)
+        if oldPos then
+            root.CFrame = oldPos
+        end
+    end
+end })
+TargetSection:AddButton({ Name = "Teleport To Target", Callback = function()
+    if TargetedPlayer then
+        TeleportTO(0, 0, 0, TargetedPlayer, "safe")
+    end
+end })
+TargetSection:AddButton({ Name = "Whitelist Target", Callback = function()
+    if TargetedPlayer then
+        local id = TargetedPlayer.UserId
+        if table.find(ScriptWhitelist, id) then
+            for i, v in ipairs(ScriptWhitelist) do
+                if v == id then
+                    table.remove(ScriptWhitelist, i)
+                    break
+                end
+            end
+            SendNotify("System Broken", TargetedPlayer.Name .. " removed from whitelist.", 5)
+        else
+            table.insert(ScriptWhitelist, id)
+            SendNotify("System Broken", TargetedPlayer.Name .. " added to whitelist.", 5)
+        end
+    end
+end })
+TargetSection:AddToggle({ Name = "View Target", Flag = "ViewTarget", Callback = function(enabled)
+    task.spawn(function()
+        if enabled and TargetedPlayer then
+            repeat
+                pcall(function()
+                    if TargetedPlayer.Character and TargetedPlayer.Character:FindFirstChild("Humanoid") then
+                        workspace.CurrentCamera.CameraSubject = TargetedPlayer.Character.Humanoid
+                    end
+                end)
+                task.wait(0.5)
+            until not UI.Flags.ViewTarget
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                workspace.CurrentCamera.CameraSubject = LocalPlayer.Character.Humanoid
+            end
+        end
+    end)
+end })
+TargetSection:AddToggle({ Name = "Fling Target", Flag = "FlingTarget", Callback = function(enabled)
+    if enabled and TargetedPlayer then
+        task.spawn(function()
+            repeat
+                pcall(function()
+                    PredictionTP(TargetedPlayer, "safe")
+                end)
+                task.wait(0.2)
+            until not UI.Flags.FlingTarget
+        end)
+    end
+end })
+
+TargetNameInput.OnFocusLost(function(text)
+    local player = GetPlayer(text)
+    UpdateTarget(player)
+end)
+
+local AnimationsTab = Window:AddTab({ Name = "Animations" })
+local AnimSection = AnimationsTab:AddSection({ Name = "Presets" })
+local function addAnimButton(name, preset)
+    AnimSection:AddButton({ Name = name, Callback = function()
+        setAnimationPreset(preset)
+    end })
+end
+addAnimButton("Vampire", {
+    idle1 = "http://www.roblox.com/asset/?id=1083445855",
+    idle2 = "http://www.roblox.com/asset/?id=1083450166",
+    walk = "http://www.roblox.com/asset/?id=1083473930",
+    run = "http://www.roblox.com/asset/?id=1083462077",
+    jump = "http://www.roblox.com/asset/?id=1083455352",
+    climb = "http://www.roblox.com/asset/?id=1083439238",
+    fall = "http://www.roblox.com/asset/?id=1083443587",
+})
+addAnimButton("Hero", {
+    idle1 = "http://www.roblox.com/asset/?id=616111295",
+    idle2 = "http://www.roblox.com/asset/?id=616113536",
+    walk = "http://www.roblox.com/asset/?id=616122287",
+    run = "http://www.roblox.com/asset/?id=616117076",
+    jump = "http://www.roblox.com/asset/?id=616115533",
+    climb = "http://www.roblox.com/asset/?id=616104706",
+    fall = "http://www.roblox.com/asset/?id=616108001",
+})
+addAnimButton("Zombie Classic", {
+    idle1 = "http://www.roblox.com/asset/?id=616158929",
+    idle2 = "http://www.roblox.com/asset/?id=616160636",
+    walk = "http://www.roblox.com/asset/?id=616168032",
+    run = "http://www.roblox.com/asset/?id=616163682",
+    jump = "http://www.roblox.com/asset/?id=616161997",
+    climb = "http://www.roblox.com/asset/?id=616156119",
+    fall = "http://www.roblox.com/asset/?id=616157476",
+})
+addAnimButton("Mage", {
+    idle1 = "http://www.roblox.com/asset/?id=707742142",
+    idle2 = "http://www.roblox.com/asset/?id=707855907",
+    walk = "http://www.roblox.com/asset/?id=707897309",
+    run = "http://www.roblox.com/asset/?id=707861613",
+    jump = "http://www.roblox.com/asset/?id=707853694",
+    climb = "http://www.roblox.com/asset/?id=707826056",
+    fall = "http://www.roblox.com/asset/?id=707829716",
+})
+addAnimButton("Ghost", {
+    idle1 = "http://www.roblox.com/asset/?id=616006778",
+    idle2 = "http://www.roblox.com/asset/?id=616008087",
+    walk = "http://www.roblox.com/asset/?id=616010382",
+    run = "http://www.roblox.com/asset/?id=616013216",
+    jump = "http://www.roblox.com/asset/?id=616008936",
+    climb = "http://www.roblox.com/asset/?id=616003713",
+    fall = "http://www.roblox.com/asset/?id=616005863",
+})
+addAnimButton("Elder", {
+    idle1 = "http://www.roblox.com/asset/?id=845397899",
+    idle2 = "http://www.roblox.com/asset/?id=845400520",
+    walk = "http://www.roblox.com/asset/?id=845403856",
+    run = "http://www.roblox.com/asset/?id=845386501",
+    jump = "http://www.roblox.com/asset/?id=845398858",
+    climb = "http://www.roblox.com/asset/?id=845392038",
+    fall = "http://www.roblox.com/asset/?id=845396048",
+})
+addAnimButton("Levitation", {
+    idle1 = "http://www.roblox.com/asset/?id=616006778",
+    idle2 = "http://www.roblox.com/asset/?id=616008087",
+    walk = "http://www.roblox.com/asset/?id=616013216",
+    run = "http://www.roblox.com/asset/?id=616010382",
+    jump = "http://www.roblox.com/asset/?id=616008936",
+    climb = "http://www.roblox.com/asset/?id=616003713",
+    fall = "http://www.roblox.com/asset/?id=616005863",
+})
+addAnimButton("Astronaut", {
+    idle1 = "http://www.roblox.com/asset/?id=891621366",
+    idle2 = "http://www.roblox.com/asset/?id=891633237",
+    walk = "http://www.roblox.com/asset/?id=891667138",
+    run = "http://www.roblox.com/asset/?id=891636393",
+    jump = "http://www.roblox.com/asset/?id=891627522",
+    climb = "http://www.roblox.com/asset/?id=891609353",
+    fall = "http://www.roblox.com/asset/?id=891617961",
+})
+addAnimButton("Ninja", {
+    idle1 = "http://www.roblox.com/asset/?id=656117400",
+    idle2 = "http://www.roblox.com/asset/?id=656118341",
+    walk = "http://www.roblox.com/asset/?id=656121766",
+    run = "http://www.roblox.com/asset/?id=656118852",
+    jump = "http://www.roblox.com/asset/?id=656117878",
+    climb = "http://www.roblox.com/asset/?id=656114359",
+    fall = "http://www.roblox.com/asset/?id=656115606",
+})
+addAnimButton("Werewolf", {
+    idle1 = "http://www.roblox.com/asset/?id=1083195517",
+    idle2 = "http://www.roblox.com/asset/?id=1083214717",
+    walk = "http://www.roblox.com/asset/?id=1083178339",
+    run = "http://www.roblox.com/asset/?id=1083216690",
+    jump = "http://www.roblox.com/asset/?id=1083218792",
+    climb = "http://www.roblox.com/asset/?id=1083182000",
+    fall = "http://www.roblox.com/asset/?id=1083189019",
+})
+addAnimButton("Cartoon", {
+    idle1 = "http://www.roblox.com/asset/?id=742637544",
+    idle2 = "http://www.roblox.com/asset/?id=742638445",
+    walk = "http://www.roblox.com/asset/?id=742640026",
+    run = "http://www.roblox.com/asset/?id=742638842",
+    jump = "http://www.roblox.com/asset/?id=742637942",
+    climb = "http://www.roblox.com/asset/?id=742636889",
+    fall = "http://www.roblox.com/asset/?id=742637151",
+})
+addAnimButton("Pirate", {
+    idle1 = "http://www.roblox.com/asset/?id=750781874",
+    idle2 = "http://www.roblox.com/asset/?id=750782770",
+    walk = "http://www.roblox.com/asset/?id=750785693",
+    run = "http://www.roblox.com/asset/?id=750783738",
+    jump = "http://www.roblox.com/asset/?id=750782230",
+    climb = "http://www.roblox.com/asset/?id=750779899",
+    fall = "http://www.roblox.com/asset/?id=750780242",
+})
+addAnimButton("Sneaky", {
+    idle1 = "http://www.roblox.com/asset/?id=1132473842",
+    idle2 = "http://www.roblox.com/asset/?id=1132477671",
+    walk = "http://www.roblox.com/asset/?id=1132510133",
+    run = "http://www.roblox.com/asset/?id=1132494274",
+    jump = "http://www.roblox.com/asset/?id=1132489853",
+    climb = "http://www.roblox.com/asset/?id=1132461372",
+    fall = "http://www.roblox.com/asset/?id=1132469004",
+})
+addAnimButton("Toy", {
+    idle1 = "http://www.roblox.com/asset/?id=782841498",
+    idle2 = "http://www.roblox.com/asset/?id=782845736",
+    walk = "http://www.roblox.com/asset/?id=782843345",
+    run = "http://www.roblox.com/asset/?id=782842708",
+    jump = "http://www.roblox.com/asset/?id=782847020",
+    climb = "http://www.roblox.com/asset/?id=782843869",
+    fall = "http://www.roblox.com/asset/?id=782846423",
+})
+addAnimButton("Knight", {
+    idle1 = "http://www.roblox.com/asset/?id=657595757",
+    idle2 = "http://www.roblox.com/asset/?id=657568135",
+    walk = "http://www.roblox.com/asset/?id=657552124",
+    run = "http://www.roblox.com/asset/?id=657564596",
+    jump = "http://www.roblox.com/asset/?id=658409194",
+    climb = "http://www.roblox.com/asset/?id=658360781",
+    fall = "http://www.roblox.com/asset/?id=657600338",
+})
+addAnimButton("Confident", {
+    idle1 = "http://www.roblox.com/asset/?id=1069977950",
+    idle2 = "http://www.roblox.com/asset/?id=1069987858",
+    walk = "http://www.roblox.com/asset/?id=1070017263",
+    run = "http://www.roblox.com/asset/?id=1070001516",
+    jump = "http://www.roblox.com/asset/?id=1069984524",
+    climb = "http://www.roblox.com/asset/?id=1069946257",
+    fall = "http://www.roblox.com/asset/?id=1069973677",
+})
+addAnimButton("Popstar", {
+    idle1 = "http://www.roblox.com/asset/?id=1212900985",
+    idle2 = "http://www.roblox.com/asset/?id=1212900985",
+    walk = "http://www.roblox.com/asset/?id=1212980338",
+    run = "http://www.roblox.com/asset/?id=1212980348",
+    jump = "http://www.roblox.com/asset/?id=1212954642",
+    climb = "http://www.roblox.com/asset/?id=1213044953",
+    fall = "http://www.roblox.com/asset/?id=1212900995",
+})
+addAnimButton("Princess", {
+    idle1 = "http://www.roblox.com/asset/?id=941003647",
+    idle2 = "http://www.roblox.com/asset/?id=941013098",
+    walk = "http://www.roblox.com/asset/?id=941028902",
+    run = "http://www.roblox.com/asset/?id=941015281",
+    jump = "http://www.roblox.com/asset/?id=941008832",
+    climb = "http://www.roblox.com/asset/?id=940996062",
+    fall = "http://www.roblox.com/asset/?id=941000007",
+})
+addAnimButton("Cowboy", {
+    idle1 = "http://www.roblox.com/asset/?id=1014390418",
+    idle2 = "http://www.roblox.com/asset/?id=1014398616",
+    walk = "http://www.roblox.com/asset/?id=1014421541",
+    run = "http://www.roblox.com/asset/?id=1014401683",
+    jump = "http://www.roblox.com/asset/?id=1014394726",
+    climb = "http://www.roblox.com/asset/?id=1014380606",
+    fall = "http://www.roblox.com/asset/?id=1014384571",
+})
+addAnimButton("Patrol", {
+    idle1 = "http://www.roblox.com/asset/?id=1149612882",
+    idle2 = "http://www.roblox.com/asset/?id=1150842221",
+    walk = "http://www.roblox.com/asset/?id=1151231493",
+    run = "http://www.roblox.com/asset/?id=1150967949",
+    jump = "http://www.roblox.com/asset/?id=1150944216",
+    climb = "http://www.roblox.com/asset/?id=1148811837",
+    fall = "http://www.roblox.com/asset/?id=1148863382",
+})
+addAnimButton("Zombie FE", {
+    idle1 = "http://www.roblox.com/asset/?id=3489171152",
+    idle2 = "http://www.roblox.com/asset/?id=3489171152",
+    walk = "http://www.roblox.com/asset/?id=3489174223",
+    run = "http://www.roblox.com/asset/?id=3489173414",
+    jump = "http://www.roblox.com/asset/?id=616161997",
+    climb = "http://www.roblox.com/asset/?id=616156119",
+    fall = "http://www.roblox.com/asset/?id=616157476",
+})
+
+local MiscTab = Window:AddTab({ Name = "Misc" })
+local MiscSection = MiscTab:AddSection({ Name = "Utilities" })
+MiscSection:AddToggle({ Name = "Anti fling", Flag = "MiscAntiFling", Callback = function(enabled)
+    if enabled then
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/H20CalibreYT/SystemBroken/main/AntiFling'))()
+    end
+end })
+MiscSection:AddToggle({ Name = "Anti chat spy", Flag = "MiscAntiChatSpy", Callback = function(enabled)
+    if enabled then
+        AntiChatSpyConnection = task.spawn(function()
+            while UI.Flags.MiscAntiChatSpy do
+                Players:Chat(RandomChar())
+                task.wait(1)
+            end
+        end)
+    elseif AntiChatSpyConnection then
+        AntiChatSpyConnection = nil
+    end
+end })
+MiscSection:AddToggle({ Name = "Anti AFK", Flag = "MiscAntiAFK", Callback = function(enabled)
+    if enabled then
+        AntiAFKConnection = LocalPlayer.Idled:Connect(function()
+            local VirtualUser = game:GetService("VirtualUser")
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+    elseif AntiAFKConnection then
+        AntiAFKConnection:Disconnect()
+        AntiAFKConnection = nil
+    end
+end })
+MiscSection:AddToggle({ Name = "Shaders", Flag = "MiscShaders", Callback = function(enabled)
+    applyShaderEffects(enabled)
+end })
+MiscSection:AddButton({ Name = "Day", Callback = function()
+    if UI.Flags.MiscShaders then
+        game:GetService("Lighting").ClockTime = 14
+    else
+        SendNotify("System Broken", "Please turn on shaders first.", 5)
+    end
+end })
+MiscSection:AddButton({ Name = "Night", Callback = function()
+    if UI.Flags.MiscShaders then
+        game:GetService("Lighting").ClockTime = 19
+    else
+        SendNotify("System Broken", "Please turn on shaders first.", 5)
+    end
+end })
+MiscSection:AddButton({ Name = "Rejoin", Callback = function()
+    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+end })
+MiscSection:AddButton({ Name = "CMDX", Callback = LoadScriptLibraryButton("CMDX", "https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source") })
+MiscSection:AddButton({ Name = "Infinite Yield", Callback = LoadScriptLibraryButton("InfiniteYield", "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source") })
+MiscSection:AddButton({ Name = "Explode", Callback = function()
+    ToggleRagdoll(false)
+    task.wait()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid:ChangeState(0)
+        local root = GetRoot(LocalPlayer)
+        if root then
+            local bav = Instance.new("BodyAngularVelocity")
+            bav.Parent = root
+            bav.Name = "Spin"
+            bav.MaxTorque = Vector3.new(0, math.huge, 0)
+            bav.AngularVelocity = Vector3.new(0, 150, 0)
+            task.wait(3)
+            if bav.Parent then bav:Destroy() end
+            LocalPlayer.Character.Humanoid:ChangeState(15)
+        end
+    end
+end })
+MiscSection:AddButton({ Name = "Free emotes", Callback = function()
+    createFreeEmotes()
+end })
+MiscSection:AddButton({ Name = "Server hop", Callback = function()
+    ServerHop()
+end })
+local ChatBypassInput = MiscSection:AddTextbox({ Name = "Chat Bypass", Placeholder = "Chat bypass [You won't get banned for your messages]", Default = "" })
+ChatBypassInput.OnFocusLost(function(text)
+    if text and text ~= "" then
+        pcall(function()
+            local args = {[1] = text, [2] = "All"}
+            game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(unpack(args))
+        end)
+        ChatBypassInput:Set("")
     end
 end })
 
