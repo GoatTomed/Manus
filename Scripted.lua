@@ -1512,7 +1512,7 @@ UI = (function()
 
     function SectionMethods:AddTextbox(data)
         data = data or {}
-        local frame = new("Frame", {now
+        local frame = new("Frame", {
             Size = UDim2.new(1, 0, 0, 58),
             BackgroundTransparency = 1,
             Parent = self.Container,
