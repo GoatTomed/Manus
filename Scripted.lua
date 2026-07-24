@@ -1512,7 +1512,7 @@ UI = (function()
 
     function SectionMethods:AddTextbox(data)
         data = data or {}
-        local frame = new("Frame", {
+        local frame = new("Frame", {now
             Size = UDim2.new(1, 0, 0, 58),
             BackgroundTransparency = 1,
             Parent = self.Container,
@@ -1843,10 +1843,21 @@ local function GetPlayer(UserDisplay)
     if type(UserDisplay) ~= "string" or UserDisplay == "" then
         return nil
     end
-    local search = UserDisplay:lower()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player.Name:lower():find(search, 1, true) or player.DisplayName:lower():find(search, 1, true) then
-            return player
+    local search = UserDisplay:lower():gsub("^%s*(.-)%s*$", "%1")
+    -- if user provided a single letter, match players whose name or display name starts with that letter
+    if #search == 1 then
+        for _, player in ipairs(Players:GetPlayers()) do
+            local n = tostring(player.Name or ""):lower()
+            local d = tostring(player.DisplayName or ""):lower()
+            if n:sub(1,1) == search or (d ~= "" and d:sub(1,1) == search) then
+                return player
+            end
+        end
+    else
+        for _, player in ipairs(Players:GetPlayers()) do
+            if tostring(player.Name or ""):lower():find(search, 1, true) or tostring(player.DisplayName or ""):lower():find(search, 1, true) then
+                return player
+            end
         end
     end
     return nil
