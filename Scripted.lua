@@ -1431,32 +1431,63 @@ UI = (function()
             Parent = Bar,
         })
         corner(Fill, 6)
+        
+        -- Knob for easier dragging
+        local Knob = new("ImageButton", {
+            Size = UDim2.new(0, 16, 0, 16),
+            Position = UDim2.new(0, -8, 0.5, 0),
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundTransparency = 1,
+            Image = "",
+            Parent = Bar,
+        })
+        corner(Knob, 8)
+        stroke(Knob, Theme.Border, 1, 0.35)
 
         local dragging = false
-        local function updateValue(posX)
-            local percent = math.clamp((posX - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
-            value = math.floor((data.Min or 0) + (data.Max or 100 - (data.Min or 0)) * percent)
+        local function updateValueFromPercent(percent)
+            percent = math.clamp(percent or 0, 0, 1)
+            value = math.floor((data.Min or 0) + (math.max((data.Max or 100) - (data.Min or 0), 1)) * percent)
             Fill.Size = UDim2.new(percent, 0, 1, 0)
+            -- position knob centered on edge
+            Knob.Position = UDim2.new(percent, -8, 0.5, 0)
             Label.Text = tostring(data.Name or "Slider") .. ": " .. tostring(value)
             if data.Callback then
                 pcall(data.Callback, value)
             end
         end
 
+        local function updateValueFromX(posX)
+            local percent = math.clamp((posX - Bar.AbsolutePosition.X) / math.max(Bar.AbsoluteSize.X, 1), 0, 1)
+            updateValueFromPercent(percent)
+        end
+
         Bar.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = true
-                updateValue(input.Position.X)
+                updateValueFromX(input.Position.X)
             end
         end)
         Bar.InputChanged:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-                updateValue(input.Position.X)
+                updateValueFromX(input.Position.X)
             end
         end)
         Bar.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = false
+            end
+        end)
+
+        -- Knob dragging support
+        Knob.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+            end
+        end)
+        Knob.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+                updateValueFromX(input.Position.X)
             end
         end)
 
@@ -2895,6 +2926,7 @@ local TargetGrid = new("Frame", {
     BackgroundTransparency = 1,
     Parent = TargetSection.Container,
 })
+TargetGrid.AutomaticSize = Enum.AutomaticSize.Y
 local _tg = Instance.new("UIGridLayout")
 _tg.CellSize = UDim2.new(0.5, -8, 0, 36)
 _tg.CellPadding = UDim2.new(0, 8, 0, 8)
@@ -2986,6 +3018,7 @@ local AnimGrid = new("Frame", {
     BackgroundTransparency = 1,
     Parent = AnimSection.Container,
 })
+AnimGrid.AutomaticSize = Enum.AutomaticSize.Y
 local _ag = Instance.new("UIGridLayout")
 _ag.CellSize = UDim2.new(0.5, -8, 0, 36)
 _ag.CellPadding = UDim2.new(0, 8, 0, 8)
@@ -3194,6 +3227,7 @@ local MiscGrid = new("Frame", {
     BackgroundTransparency = 1,
     Parent = MiscSection.Container,
 })
+MiscGrid.AutomaticSize = Enum.AutomaticSize.Y
 local _mg = Instance.new("UIGridLayout")
 _mg.CellSize = UDim2.new(0.5, -8, 0, 36)
 _mg.CellPadding = UDim2.new(0, 8, 0, 8)

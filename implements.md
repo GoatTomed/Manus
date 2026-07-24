@@ -18,48 +18,70 @@ UI.__index = UI
 
 -- Theme
 local Theme = {
-    BG = Color3.fromRGB(18,18,18),
-    Surface = Color3.fromRGB(24,24,24),
-    Raised = Color3.fromRGB(30,30,30),
-    Sidebar = Color3.fromRGB(14,14,14),
-    Border = Color3.fromRGB(40,40,40),
-    Accent = Color3.fromRGB(247,197,46),
-    Text = Color3.fromRGB(240,240,240),
-    TextMid = Color3.fromRGB(150,150,150),
-    Success = Color3.fromRGB(34,197,94),
-    Error = Color3.fromRGB(239,68,68)
-}
-UI.Theme = Theme
-
--- Tween Helper
-local function tween(obj, goal, time)
-    local t = TweenService:Create(
-        obj,
-        TweenInfo.new(time or .18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-        goal
-    )
-    t:Play()
-    return t
-end
-
--- Window
-function UI:CreateWindow(cfg)
-    cfg = cfg or {}
-    local Window = {
-        Tabs = {},
-        Flags = UI.Flags,
-        Open = true
-    }
-    Window.ToggleKey = cfg.ToggleKey or Enum.KeyCode.RightShift
-
-    local Gui = Instance.new("ScreenGui")
-    Gui.Name = "UI"
-    Gui.ResetOnSpawn = false
-    Gui.Parent = Player.PlayerGui
-
-    local Main = Instance.new("Frame")
-    Main.Size = UDim2.new(0, cfg.Width or 580, 0, cfg.Height or 380)
     Main.Position = UDim2.new(.5, -290, .5, -190)
+
+    local Bar = Instance.new("TextButton")
+    Bar.Size = UDim2.new(1, -20, 0, 20)
+    Bar.BackgroundColor3 = Theme.Border
+    Bar.Text = ""
+    Bar.TextColor3 = Theme.Text
+    Bar.Parent = Section.Container
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, 0, 0, 16)
+    Label.BackgroundTransparency = 1
+    Label.Text = tostring(c.Name or "Slider") .. ": " .. tostring(Value)
+    Label.TextColor3 = Theme.Text
+    Label.Parent = Section.Container
+
+    local Fill = Instance.new("Frame")
+    Fill.Size = UDim2.new(0, 0, 1, 0)
+    Fill.BackgroundColor3 = Theme.Accent
+    Fill.Parent = Bar
+
+    -- Knob for easier dragging
+    local Knob = Instance.new("ImageButton")
+    Knob.Size = UDim2.new(0, 16, 0, 16)
+    Knob.Position = UDim2.new(0, -8, 0.5, 0)
+    Knob.AnchorPoint = Vector2.new(0, 0.5)
+    Knob.BackgroundTransparency = 1
+    Knob.Parent = Bar
+
+    local Dragging = false
+    local function setPercent(p)
+        p = math.clamp(p, 0, 1)
+        Value = math.floor((c.Min or 0) + (math.max((c.Max or 100) - (c.Min or 0), 1)) * p)
+        Fill.Size = UDim2.new(p, 0, 1, 0)
+        Knob.Position = UDim2.new(p, -8, 0.5, 0)
+        Label.Text = tostring(c.Name or "Slider") .. ": " .. tostring(Value)
+        if c.Callback then pcall(c.Callback, Value) end
+    end
+
+    Bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            Dragging = true
+            setPercent((input.Position.X - Bar.AbsolutePosition.X) / math.max(Bar.AbsoluteSize.X, 1))
+        end
+    end)
+    Bar.InputChanged:Connect(function(input)
+        if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            setPercent((input.Position.X - Bar.AbsolutePosition.X) / math.max(Bar.AbsoluteSize.X, 1))
+        end
+    end)
+    Bar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then Dragging = false end
+    end)
+
+    Knob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then Dragging = true end
+    end)
+    Knob.InputChanged:Connect(function(input)
+        if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            setPercent((input.Position.X - Bar.AbsolutePosition.X) / math.max(Bar.AbsoluteSize.X, 1))
+        end
+    end)
+
+    return { Get = function() return Value end }
     Main.BackgroundColor3 = Theme.Surface
     Main.Parent = Gui
 
