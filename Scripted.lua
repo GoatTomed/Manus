@@ -1432,13 +1432,14 @@ UI = (function()
         })
         corner(Fill, 6)
         
-        -- Knob for easier dragging
+        -- Knob for easier dragging (visible even at 0)
         local Knob = new("ImageButton", {
             Size = UDim2.new(0, 16, 0, 16),
-            Position = UDim2.new(0, -8, 0.5, 0),
+            Position = UDim2.new(0, 0, 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
-            BackgroundTransparency = 1,
+            BackgroundTransparency = 0,
             Image = "",
+            BackgroundColor3 = Theme.Accent,
             Parent = Bar,
         })
         corner(Knob, 8)
@@ -1449,8 +1450,20 @@ UI = (function()
             percent = math.clamp(percent or 0, 0, 1)
             value = math.floor((data.Min or 0) + (math.max((data.Max or 100) - (data.Min or 0), 1)) * percent)
             Fill.Size = UDim2.new(percent, 0, 1, 0)
-            -- position knob centered on edge
-            Knob.Position = UDim2.new(percent, -8, 0.5, 0)
+            -- set knob pixel position and clamp so knob is always fully visible
+            local ok, knobX = pcall(function()
+                local barW = Bar.AbsoluteSize.X or 0
+                local knobW = Knob.AbsoluteSize.X or 16
+                local x = math.floor(percent * barW - knobW / 2)
+                x = math.clamp(x, 0, math.max(barW - knobW, 0))
+                return x
+            end)
+            if ok and type(knobX) == "number" then
+                Knob.Position = UDim2.new(0, knobX, 0.5, 0)
+            else
+                -- fallback centering
+                Knob.Position = UDim2.new(percent, -8, 0.5, 0)
+            end
             Label.Text = tostring(data.Name or "Slider") .. ": " .. tostring(value)
             if data.Callback then
                 pcall(data.Callback, value)
@@ -1462,24 +1475,14 @@ UI = (function()
             updateValueFromPercent(percent)
         end
 
+        -- clicking the bar sets the value, but dragging only via knob
         Bar.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
                 updateValueFromX(input.Position.X)
-            end
-        end)
-        Bar.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-                updateValueFromX(input.Position.X)
-            end
-        end)
-        Bar.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
             end
         end)
 
-        -- Knob dragging support
+        -- Knob dragging support (drag only when holding the knob)
         Knob.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = true
@@ -1488,6 +1491,11 @@ UI = (function()
         Knob.InputChanged:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
                 updateValueFromX(input.Position.X)
+            end
+        end)
+        Knob.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
             end
         end)
 
