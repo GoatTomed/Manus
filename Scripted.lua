@@ -16,6 +16,10 @@ local function debugPrint(...)
     end, ...)
 end
 
+-- Silence all prints and warnings from this script per user request
+print = function(...) end
+warn = function(...) end
+
 local function hasFileReadApi()
     return type(readfile) == "function" or type(read_file) == "function"
 end
@@ -1792,9 +1796,8 @@ local function RandomChar()
 end
 
 local function SendNotify(title, message, duration)
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {Title = title, Text = message, Duration = duration or 3})
-    end)
+    -- notifications disabled
+    return
 end
 
 local function GetPlayer(UserDisplay)
@@ -2824,32 +2827,26 @@ end })
 -- Feature tabs extracted from SystemBroken
 local CharacterTab = Window:AddTab({ Name = "Character" })
 local CharacterSection = CharacterTab:AddSection({ Name = "Movement" })
-local WalkSpeedInput = CharacterSection:AddTextbox({ Name = "Walk Speed", Placeholder = "Number [1-99999]", Default = "16" })
-CharacterSection:AddButton({ Name = "Set Walk Speed", Callback = function()
-    local speed = tonumber(WalkSpeedInput:Get()) or 16
+local WalkSpeedSlider = CharacterSection:AddSlider({ Name = "Walk Speed", Min = 1, Max = 99999, Default = 16, Callback = function(value)
+    local v = tonumber(value) or 16
     pcall(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = speed
-            SendNotify("System Broken", "Walk speed updated.", 5)
+            LocalPlayer.Character.Humanoid.WalkSpeed = v
         end
     end)
 end })
 
-local JumpPowerInput = CharacterSection:AddTextbox({ Name = "Jump Power", Placeholder = "Number [1-99999]", Default = "50" })
-CharacterSection:AddButton({ Name = "Set Jump Power", Callback = function()
-    local power = tonumber(JumpPowerInput:Get()) or 50
+local JumpPowerSlider = CharacterSection:AddSlider({ Name = "Jump Power", Min = 1, Max = 99999, Default = 50, Callback = function(value)
+    local v = tonumber(value) or 50
     pcall(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.JumpPower = power
-            SendNotify("System Broken", "Jump power updated.", 5)
+            LocalPlayer.Character.Humanoid.JumpPower = v
         end
     end)
 end })
 
-local FlySpeedInput = CharacterSection:AddTextbox({ Name = "Fly Speed", Placeholder = "Number [1-99999]", Default = "50" })
-CharacterSection:AddButton({ Name = "Set Fly Speed", Callback = function()
-    FlySpeed = tonumber(FlySpeedInput:Get()) or 50
-    SendNotify("System Broken", "Fly speed updated.", 5)
+local FlySpeedSlider = CharacterSection:AddSlider({ Name = "Fly Speed", Min = 1, Max = 99999, Default = 50, Callback = function(value)
+    FlySpeed = tonumber(value) or 50
 end })
 
 CharacterSection:AddButton({ Name = "Save Checkpoint", Callback = function()
@@ -2878,13 +2875,12 @@ CharacterSection:AddButton({ Name = "Respawn", Callback = function()
     end
 end })
 
+-- Place the Fly toggle directly under the FlySpeed slider
 CharacterSection:AddToggle({ Name = "Fly", Flag = "CharacterFly", Callback = function(enabled)
     if enabled then
         startFly()
-        SendNotify("System Broken", "Fly enabled.", 5)
     else
         stopFly()
-        SendNotify("System Broken", "Fly disabled.", 5)
     end
 end })
 
@@ -2893,11 +2889,24 @@ local TargetSection = TargetTab:AddSection({ Name = "Target Actions" })
 TargetNameInput = TargetSection:AddTextbox({ Name = "Target Name", Placeholder = "@target...", Default = "" })
 TargetInfoLabel = TargetSection:AddLabel("UserID: \nDisplay: \nJoined: ")
 TargetImageLabel = TargetSection:AddImageLabel({ Name = "Target Image", Image = "rbxassetid://10818605405", SizeY = 128 })
-TargetSection:AddButton({ Name = "Select Target Tool", Callback = function()
+-- create two columns for target action buttons
+local TargetBtnsLeft = TargetTab:AddSection({ Name = "", Side = 1 })
+local TargetBtnsRight = TargetTab:AddSection({ Name = "", Side = 2 })
+local _target_next_col = 1
+local function TargetAddButton(opts)
+    if _target_next_col == 1 then
+        _target_next_col = 2
+        return TargetBtnsLeft:AddButton(opts)
+    else
+        _target_next_col = 1
+        return TargetBtnsRight:AddButton(opts)
+    end
+end
+
+TargetAddButton({ Name = "Select Target Tool", Callback = function()
     createTargetingTool()
-    SendNotify("System Broken", "Click the target tool on a player.", 5)
 end })
-TargetSection:AddButton({ Name = "Push Target", Callback = function()
+TargetAddButton({ Name = "Push Target", Callback = function()
     if TargetedPlayer then
         local root = GetRoot(LocalPlayer)
         local oldPos = root and root.CFrame
@@ -2909,12 +2918,12 @@ TargetSection:AddButton({ Name = "Push Target", Callback = function()
         end
     end
 end })
-TargetSection:AddButton({ Name = "Teleport To Target", Callback = function()
+TargetAddButton({ Name = "Teleport To Target", Callback = function()
     if TargetedPlayer then
         TeleportTO(0, 0, 0, TargetedPlayer, "safe")
     end
 end })
-TargetSection:AddButton({ Name = "Whitelist Target", Callback = function()
+TargetAddButton({ Name = "Whitelist Target", Callback = function()
     if TargetedPlayer then
         local id = TargetedPlayer.UserId
         if table.find(ScriptWhitelist, id) then
@@ -2924,16 +2933,15 @@ TargetSection:AddButton({ Name = "Whitelist Target", Callback = function()
                     break
                 end
             end
-            SendNotify("System Broken", TargetedPlayer.Name .. " removed from whitelist.", 5)
+            -- notification removed
         else
             table.insert(ScriptWhitelist, id)
-            SendNotify("System Broken", TargetedPlayer.Name .. " added to whitelist.", 5)
+            -- notification removed
         end
     end
 end })
-TargetSection:AddButton({ Name = "Clear Target", Callback = function()
+TargetAddButton({ Name = "Clear Target", Callback = function()
     UpdateTarget(nil)
-    SendNotify("System Broken", "Target cleared.", 5)
 end })
 TargetSection:AddToggle({ Name = "View Target", Flag = "ViewTarget", Callback = function(enabled)
     task.spawn(function()
@@ -2971,11 +2979,21 @@ TargetNameInput.OnFocusLost(function(text)
 end)
 
 local AnimationsTab = Window:AddTab({ Name = "Animations" })
-local AnimSection = AnimationsTab:AddSection({ Name = "Presets" })
+-- two-column layout for animation presets
+local AnimLeft = AnimationsTab:AddSection({ Name = "Presets", Side = 1 })
+local AnimRight = AnimationsTab:AddSection({ Name = "", Side = 2 })
+local _anim_next_col = 1
 local function addAnimButton(name, preset)
-    AnimSection:AddButton({ Name = name, Callback = function()
+    local btn = { Name = name, Callback = function()
         setAnimationPreset(preset)
-    end })
+    end }
+    if _anim_next_col == 1 then
+        _anim_next_col = 2
+        AnimLeft:AddButton(btn)
+    else
+        _anim_next_col = 1
+        AnimRight:AddButton(btn)
+    end
 end
 addAnimButton("Vampire", {
     idle1 = "http://www.roblox.com/asset/?id=1083445855",
@@ -3168,7 +3186,38 @@ addAnimButton("Zombie FE", {
 })
 
 local MiscTab = Window:AddTab({ Name = "Misc" })
-local MiscSection = MiscTab:AddSection({ Name = "Utilities" })
+-- two-column layout for misc utilities
+local MiscLeft = MiscTab:AddSection({ Name = "Utilities", Side = 1 })
+local MiscRight = MiscTab:AddSection({ Name = "", Side = 2 })
+local _misc_next_col = 1
+local MiscSection = {}
+function MiscSection:AddToggle(opts)
+    if _misc_next_col == 1 then
+        _misc_next_col = 2
+        return MiscLeft:AddToggle(opts)
+    else
+        _misc_next_col = 1
+        return MiscRight:AddToggle(opts)
+    end
+end
+function MiscSection:AddButton(opts)
+    if _misc_next_col == 1 then
+        _misc_next_col = 2
+        return MiscLeft:AddButton(opts)
+    else
+        _misc_next_col = 1
+        return MiscRight:AddButton(opts)
+    end
+end
+function MiscSection:AddTextbox(opts)
+    if _misc_next_col == 1 then
+        _misc_next_col = 2
+        return MiscLeft:AddTextbox(opts)
+    else
+        _misc_next_col = 1
+        return MiscRight:AddTextbox(opts)
+    end
+end
 MiscSection:AddToggle({ Name = "Anti fling", Flag = "MiscAntiFling", Callback = function(enabled)
     if enabled then
         loadstring(game:HttpGet('https://raw.githubusercontent.com/H20CalibreYT/SystemBroken/main/AntiFling'))()
