@@ -3419,6 +3419,19 @@ Window.Notify = function() end
 -- Window loaded
 Window:SetOpen(true)
 
+-- Restore saved checkpoint after character spawn
+LocalPlayer.CharacterAdded:Connect(function(character)
+    -- small delay to ensure humanoid/root exist and server processed respawn
+    task.spawn(function()
+        task.wait(GetPing() + 0.15)
+        if SavedCheckpoint and character and character:FindFirstChild("Humanoid") then
+            pcall(function()
+                TeleportTO(SavedCheckpoint.X, SavedCheckpoint.Y, SavedCheckpoint.Z, "pos", "safe")
+            end)
+        end
+    end)
+end)
+
 -- End of fixed.lua
 
 -- One-time connectivity diagnostic to help debug heartbeat issues
