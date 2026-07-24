@@ -1844,6 +1844,22 @@ local State = {
     SelectedClass = "Intern",
 }
 
+-- Enforcers to repeatedly apply settings (e.g., walkspeed) to the humanoid
+local enforcers = {}
+local function startEnforcer(name, fn)
+    if enforcers[name] then return end
+    enforcers[name] = true
+    task.spawn(function()
+        while enforcers[name] do
+            pcall(fn)
+            task.wait(0.5)
+        end
+    end)
+end
+local function stopEnforcer(name)
+    enforcers[name] = nil
+end
+
 local function debugSafe(pcallFunc, ...)
     local ok, result = pcall(pcallFunc, ...)
     return ok, result
@@ -2910,25 +2926,43 @@ end })
 -- Feature tabs extracted from SystemBroken
 local CharacterTab = Window:AddTab({ Name = "Character", Icon = getIcon("user") or "" })
 local CharacterSection = CharacterTab:AddSection({ Name = "Movement" })
-local WalkSpeedSlider = CharacterSection:AddSlider({ Name = "Walk Speed", Min = 1, Max = 99999, Default = 16, Callback = function(value)
+local WalkSpeedSlider = CharacterSection:AddSlider({ Name = "Walk Speed", Min = 1, Max = 1000, Default = 16, Callback = function(value)
     local v = tonumber(value) or 16
+    State.WalkSpeed = v
+    -- apply immediately
     pcall(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.WalkSpeed = v
         end
     end)
+    -- ensure enforcer runs to keep speed applied every 500ms
+    startEnforcer("WalkSpeed", function()
+        pcall(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                LocalPlayer.Character.Humanoid.WalkSpeed = State.WalkSpeed
+            end
+        end)
+    end)
 end })
 
-local JumpPowerSlider = CharacterSection:AddSlider({ Name = "Jump Power", Min = 1, Max = 99999, Default = 50, Callback = function(value)
+local JumpPowerSlider = CharacterSection:AddSlider({ Name = "Jump Power", Min = 1, Max = 1000, Default = 50, Callback = function(value)
     local v = tonumber(value) or 50
+    State.JumpPower = v
     pcall(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.JumpPower = v
         end
     end)
+    startEnforcer("JumpPower", function()
+        pcall(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                LocalPlayer.Character.Humanoid.JumpPower = State.JumpPower
+            end
+        end)
+    end)
 end })
 
-local FlySpeedSlider = CharacterSection:AddSlider({ Name = "Fly Speed", Min = 1, Max = 99999, Default = 50, Callback = function(value)
+local FlySpeedSlider = CharacterSection:AddSlider({ Name = "Fly Speed", Min = 1, Max = 1000, Default = 50, Callback = function(value)
     FlySpeed = tonumber(value) or 50
 end })
 
@@ -2975,6 +3009,33 @@ CharacterSection:AddToggle({ Name = "Fly", Flag = "CharacterFly", Callback = fun
         stopFly()
     end
 end })
+
+-- Keybinds tab for character actions
+local KeybindsTab = Window:AddTab({ Name = "Keybinds", Icon = getIcon("key") or "" })
+local KeybindsSection = KeybindsTab:AddSection({ Name = "Character Keybinds" })
+local keybinds = {}
+local function registerKeybind(name, defaultKey, callback)
+    keybinds[name] = { Key = defaultKey, Callback = callback }
+    KeybindsSection:AddKeybind({ Name = name, Default = defaultKey, Callback = function(k) keybinds[name].Key = k end })
+end
+
+-- Example: walk/jump bind toggles (user can reassign)
+registerKeybind("Toggle Fly", "F", function()
+    UI.Flags.CharacterFly = not UI.Flags.CharacterFly
+    if UI.Flags.CharacterFly then startFly() else stopFly() end
+end)
+
+-- Input listener for keybinds
+UserInputService.InputBegan:Connect(function(input,gpe)
+    if gpe then return end
+    if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+    local keyName = tostring(input.KeyCode.Name or input.KeyCode)
+    for name, info in pairs(keybinds) do
+        if tostring(info.Key) == keyName or tostring(info.Key) == keyName:gsub("Key","") then
+            pcall(function() info.Callback() end)
+        end
+    end
+end)
 
 local TargetTab = Window:AddTab({ Name = "Target", Icon = getIcon("target") or "" })
 local TargetSection = TargetTab:AddSection({ Name = "Target Actions" })
@@ -3488,6 +3549,31 @@ LocalPlayer.CharacterAdded:Connect(function(character)
         if SavedCheckpoint and character and character:FindFirstChild("Humanoid") then
             pcall(function()
                 TeleportTO(SavedCheckpoint.X, SavedCheckpoint.Y, SavedCheckpoint.Z, "pos", "safe")
+            end)
+        end
+    end)
+end)
+
+-- Re-apply enforcers on character spawn
+LocalPlayer.CharacterAdded:Connect(function(character)
+    task.spawn(function()
+        task.wait(0.5)
+        if State.WalkSpeed then
+            startEnforcer("WalkSpeed", function()
+                pcall(function()
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                        LocalPlayer.Character.Humanoid.WalkSpeed = State.WalkSpeed
+                    end
+                end)
+            end)
+        end
+        if State.JumpPower then
+            startEnforcer("JumpPower", function()
+                pcall(function()
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                        LocalPlayer.Character.Humanoid.JumpPower = State.JumpPower
+                    end
+                end)
             end)
         end
     end)
