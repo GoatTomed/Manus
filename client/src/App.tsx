@@ -14,7 +14,7 @@ import Track from "./pages/Track";
 import AICoding from "./pages/AICoding";
 import Verify from "./pages/Verify";
 import Test from "./pages/Test";
-import DashboardPage from "./pages/DashboardPAge";
+import { DashboardPage } from "./pages/DashboardPAge";
 import { useEffect } from "react";
 import { nanoid } from "nanoid";
 
