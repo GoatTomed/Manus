@@ -14,6 +14,7 @@ import Track from "./pages/Track";
 import AICoding from "./pages/AICoding";
 import Verify from "./pages/Verify";
 import Test from "./pages/Test";
+import DashboardPage from "./pages/DashboardPAge";
 import { useEffect } from "react";
 import { nanoid } from "nanoid";
 
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/key-admin" component={KeyAdmin} />
       <Route path="/executors" component={Executors} />
       <Route path="/track" component={Track} />
+      <Route path="/dashboard" component={DashboardPage} />
       <Route path="/ai" component={AICoding} />
       <Route path="/ai/chat/:chatId" component={AICoding} />
       <Route path="/404" component={NotFound} />

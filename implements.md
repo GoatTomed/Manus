@@ -243,6 +243,15 @@ function Section:AddDropdown(c)
     Holder.ClipsDescendants = true
     Holder.Parent = Box
 
+-- Slider accent note:
+-- Sliders should use the window accent registration API so the fill updates when the user changes the theme.
+-- In a SectionMethods:AddSlider implementation, call self.Window:_registerAccent(function(accent)
+--     fill.BackgroundColor3 = accent
+-- end)
+-- This ensures the slider follows the accent color chosen in Settings.
+-- If the slider is created before the accent is changed, registering the accent callback is required so
+-- the slider updates dynamically instead of staying on the original theme color.
+
     local Layout = Instance.new("UIListLayout")
     Layout.Parent = Holder
 
@@ -513,6 +522,72 @@ function Section:AddToggle(c)
         Get = function() return UI.Flags[flag] end,
         Set = function(_, v) UI.Flags[flag] = v; Btn.Text = (c.Name or "Toggle") .. " [" .. (v and "ON" or "OFF") .. "]" end
     }
+end
+
+-- Section:AddToggle implementation (switch-style row toggle)
+function Section:AddToggle(c)
+    c = c or {}
+    local enabled = c.CurrentValue or false
+
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, 32)
+    row.BackgroundTransparency = 1
+    row.Parent = Section.Container
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -70, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = c.Name or "Toggle"
+    label.TextColor3 = Theme.Text
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = row
+
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(0, 52, 0, 28)
+    toggle.Position = UDim2.new(1, -52, 0.5, -14)
+    toggle.BackgroundColor3 = enabled and Theme.Accent or Theme.Raised
+    toggle.AutoButtonColor = false
+    toggle.Text = ""
+    toggle.Parent = row
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 14)
+    toggleCorner.Parent = toggle
+    local toggleStroke = Instance.new("UIStroke")
+    toggleStroke.Color = Theme.Border
+    toggleStroke.Thickness = 1
+    toggleStroke.Transparency = 0.35
+    toggleStroke.Parent = toggle
+
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 20, 0, 20)
+    knob.Position = enabled and UDim2.new(0, 4, 0.5, -10) or UDim2.new(0, 28, 0.5, -10)
+    knob.BackgroundColor3 = Theme.Text
+    knob.BorderSizePixel = 0
+    knob.Parent = toggle
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(0, 10)
+    knobCorner.Parent = knob
+
+    local function updateState(state)
+        enabled = state
+        if enabled then
+            toggle.BackgroundColor3 = Theme.Accent
+            knob.Position = UDim2.new(0, 4, 0.5, -10)
+        else
+            toggle.BackgroundColor3 = Theme.Raised
+            knob.Position = UDim2.new(0, 28, 0.5, -10)
+        end
+    end
+
+    toggle.MouseButton1Click:Connect(function()
+        updateState(not enabled)
+        if c.Callback then pcall(c.Callback, enabled) end
+    end)
+
+    updateState(enabled)
+    return toggle
 end
 
 -- Section:AddTextbox implementation (single-line input)
